@@ -1,0 +1,367 @@
+// DigitalCAD Training - Complete Database Schema
+// Stack: PostgreSQL + Prisma ORM
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SessionType {
+  THEORY
+  CAD
+  BOTH
+}
+
+enum BatchStatus {
+  PENDING_APPROVAL
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum ScheduledSessionStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  RESUBMIT
+}
+
+enum QueryStatus {
+  OPEN
+  RESOLVED
+}
+
+enum OtpPurpose {
+  STUDENT_REGISTER
+  TUTOR_REGISTER
+  LOGIN
+  PASSWORD_RESET
+}
+
+// ──────────────────────────────────────────────
+// USERS
+// ──────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String   @unique
+  password_hash String
+  role          Role     @default(STUDENT)
+  is_verified   Boolean  @default(false)   // Phone OTP verified
+  is_active     Boolean  @default(true)
+  avatar_url    String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  enrollments        Enrollment[]
+  tutor_application  TutorApplication?  // One-to-one (tutor only)
+  tutor_batches      Batch[]            @relation("TutorBatches")
+  submissions        AssignmentSubmission[]
+  queries            Query[]
+  refresh_tokens     RefreshToken[]
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────
+// OTP VERIFICATION
+// ──────────────────────────────────────────────
+
+model OtpVerification {
+  id         String     @id @default(cuid())
+  phone      String
+  otp        String     // 6-digit (hashed in DB)
+  purpose    OtpPurpose
+  expires_at DateTime
+  is_used    Boolean    @default(false)
+  attempts   Int        @default(0)        // Max 3 attempts
+  created_at DateTime   @default(now())
+
+  @@index([phone, purpose])
+  @@map("otp_verifications")
+}
+
+// ──────────────────────────────────────────────
+// COURSES (created by Admin)
+// ──────────────────────────────────────────────
+
+model Course {
+  id              String   @id @default(cuid())
+  name            String                       // e.g. "Plastic Product Design"
+  slug            String   @unique             // e.g. "plastic-product-design"
+  short_name      String                       // e.g. "PPD" (for batch names)
+  description     String
+  duration_months Int
+  price           Decimal  @db.Decimal(10, 2)
+  overview_points Json     @default("[]")      // ["Learn CATIA", "Industry projects", ...]
+  tools_covered   Json     @default("[]")      // ["CATIA V5", "UG NX", ...]
+  is_active       Boolean  @default(true)
+  thumbnail_url   String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  batches             Batch[]
+  tutor_applications  TutorApplication[]
+
+  @@map("courses")
+}
+
+// ──────────────────────────────────────────────
+// TUTOR APPLICATIONS
+// ──────────────────────────────────────────────
+
+model TutorApplication {
+  id    String @id @default(cuid())
+
+  // Step 1 – Personal info
+  name  String
+  email String
+  phone String
+
+  // Step 2 – Professional background
+  occupation      String   // "Working Professional" | "Freelancer" | "Retired Expert"
+  years_exp       Int
+  companies       String   // Comma-separated: "Bajaj, Mahindra"
+  work_experience String   // Full text description
+
+  // Step 3 – Course applying for
+  course_id String
+  course    Course @relation(fields: [course_id], references: [id])
+
+  // Step 4 – Availability
+  time_slots Json @default("[]")  // ["8:00-9:00 PM", "9:00-10:00 PM"]
+
+  // Step 5 – Preferences
+  hide_identity Boolean @default(false)
+  location      String
+  languages     Json    @default("[]")  // [{name:"Hindi", proficiency:"Native"}]
+
+  // Admin review
+  status         ApplicationStatus @default(PENDING)
+  applied_on     DateTime          @default(now())
+  reviewed_on    DateTime?
+  rejection_note String?
+
+  // When approved → user account created
+  user_id String? @unique
+  user    User?   @relation(fields: [user_id], references: [id])
+
+  // Syllabus built during application → copied to batch on approval
+  syllabus_sessions SyllabusTemplate[]
+  syllabus_projects SyllabusProject[]
+
+  @@map("tutor_applications")
+}
+
+// ──────────────────────────────────────────────
+// SYLLABUS TEMPLATE (from Tutor Application)
+// Stored once on application, copied to batch sessions when batch created
+// ──────────────────────────────────────────────
+
+model SyllabusTemplate {
+  id              String           @id @default(cuid())
+  application_id  String
+  application     TutorApplication @relation(fields: [application_id], references: [id])
+  session_number  Int
+  name            String           // "Introduction to CATIA V5"
+  type            SessionType      @default(BOTH)
+
+  @@map("syllabus_templates")
+}
+
+model SyllabusProject {
+  id             String           @id @default(cuid())
+  application_id String
+  application    TutorApplication @relation(fields: [application_id], references: [id])
+  name           String           // "Front Bumper Design"
+  highlights     Json             @default("[]")  // ["CATIA surfacing", "Mould analysis"]
+
+  @@map("syllabus_projects")
+}
+
+// ──────────────────────────────────────────────
+// BATCHES (created by approved Tutor)
+// Name auto-generated: "PPD - April 2025"
+// ──────────────────────────────────────────────
+
+model Batch {
+  id           String      @id @default(cuid())
+  course_id    String
+  course       Course      @relation(fields: [course_id], references: [id])
+  tutor_id     String
+  tutor        User        @relation("TutorBatches", fields: [tutor_id], references: [id])
+  name         String      // Auto: "Plastic Product Design - April 2025"
+  start_date   DateTime
+  end_date     DateTime
+  max_students Int         @default(50)
+  description  String?
+zoom_link    String?
+  time_slots   Json        @default("[]")
+  status       BatchStatus @default(PENDING_APPROVAL)
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+
+  // Relations
+  enrollments        Enrollment[]
+  scheduled_sessions ScheduledSession[]
+  assignments        Assignment[]
+
+  @@map("batches")
+}
+
+// ──────────────────────────────────────────────
+// ENROLLMENTS (Student joins a Batch)
+// ──────────────────────────────────────────────
+
+model Enrollment {
+  id             String        @id @default(cuid())
+  student_id     String
+  student        User          @relation(fields: [student_id], references: [id])
+  batch_id       String
+  batch          Batch         @relation(fields: [batch_id], references: [id])
+  enrolled_at    DateTime      @default(now())
+  payment_status PaymentStatus @default(PENDING)
+  payment_ref    String?       // Payment gateway reference
+  progress       Int           @default(0)   // 0-100 percent
+
+  @@unique([student_id, batch_id])  // One enrollment per student per batch
+  @@map("enrollments")
+}
+
+// ──────────────────────────────────────────────
+// SCHEDULED SESSIONS (actual class sessions in a batch)
+// Auto-created from SyllabusTemplate when batch is published
+// ──────────────────────────────────────────────
+
+model ScheduledSession {
+  id               String                 @id @default(cuid())
+  batch_id         String
+  batch            Batch                  @relation(fields: [batch_id], references: [id])
+  session_number   Int
+  name             String                 // From syllabus template
+  type             SessionType            @default(BOTH)
+  scheduled_at     DateTime?              // Null = TBD
+  duration_minutes Int                    @default(90)
+  zoom_link        String?                // Override batch default
+  recording_url    String?
+  notes_url        String?
+  status           ScheduledSessionStatus @default(UPCOMING)
+  created_at       DateTime               @default(now())
+
+  // Relations
+  assignments Assignment[]
+  queries     Query[]
+
+  @@map("scheduled_sessions")
+}
+
+// ──────────────────────────────────────────────
+// ASSIGNMENTS
+// ──────────────────────────────────────────────
+
+model Assignment {
+  id          String    @id @default(cuid())
+  batch_id    String
+  batch       Batch     @relation(fields: [batch_id], references: [id])
+  session_id  String?
+  session     ScheduledSession? @relation(fields: [session_id], references: [id])
+  title       String
+  description String?
+  file_url    String?   // Problem statement / CATPart file
+  due_date    DateTime?
+  created_at  DateTime  @default(now())
+
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id            String           @id @default(cuid())
+  assignment_id String
+  assignment    Assignment       @relation(fields: [assignment_id], references: [id])
+  student_id    String
+  student       User             @relation(fields: [student_id], references: [id])
+  file_url      String           // Submitted CATPart/file
+  submitted_at  DateTime         @default(now())
+  status        SubmissionStatus @default(SUBMITTED)
+  grade         String?          // "A", "B+", etc.
+  feedback      String?
+  reviewed_at   DateTime?
+
+  @@unique([assignment_id, student_id])
+  @@map("assignment_submissions")
+}
+
+// ──────────────────────────────────────────────
+// STUDENT QUERIES
+// ──────────────────────────────────────────────
+
+model Query {
+  id          String      @id @default(cuid())
+  student_id  String
+  student     User        @relation(fields: [student_id], references: [id])
+  session_id  String?
+  session     ScheduledSession? @relation(fields: [session_id], references: [id])
+  batch_id    String
+  question    String
+  answer      String?
+  status      QueryStatus @default(OPEN)
+  created_at  DateTime    @default(now())
+  answered_at DateTime?
+
+  @@map("queries")
+}
+
+// ──────────────────────────────────────────────
+// REFRESH TOKENS (for JWT rotation)
+// ──────────────────────────────────────────────
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  token      String   @unique  // Hashed
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("refresh_tokens")
+}

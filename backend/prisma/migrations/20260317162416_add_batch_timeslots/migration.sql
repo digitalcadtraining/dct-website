@@ -1,0 +1,6 @@
+-- AlterEnum
+ALTER TYPE "BatchStatus" ADD VALUE 'PENDING_APPROVAL';
+
+-- AlterTable
+ALTER TABLE "batches" ADD COLUMN     "time_slots" JSONB NOT NULL DEFAULT '[]',
+ALTER COLUMN "status" SET DEFAULT 'PENDING_APPROVAL';

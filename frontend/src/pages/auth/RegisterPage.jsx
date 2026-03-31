@@ -1,0 +1,251 @@
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { authApi, courseApi } from "../../services/api.js";
+import { Input, Button } from "../../components/ui/index.jsx";
+import AuthHero from "../../components/shared/AuthHero.jsx";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function RegisterPage() {
+  const { login }      = useAuth();
+  const navigate       = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const [step, setStep]   = useState(1); // 1=details, 2=otp
+  const [courses, setCourses]   = useState([]);
+  const [batches, setBatches]   = useState([]);
+  const [phoneToken, setPhoneToken] = useState(""); // from OTP verify
+  const [form, setForm] = useState({
+    name: "", email: "", phone: "",
+    password: "", confirm_password: "",
+    course_id: searchParams.get("course") || "",
+    batch_id: "",
+  });
+  const [otp, setOtp]         = useState(["","","","","",""]);
+  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [err, setErr]         = useState("");
+  const [countdown, setCountdown] = useState(0);
+
+  // Load courses from backend on mount
+  useEffect(() => {
+    courseApi.list()
+      .then(res => setCourses(res.data || []))
+      .catch(() => setCourses([]));
+  }, []);
+
+  // Load batches when course selected
+  useEffect(() => {
+    if (!form.course_id) { setBatches([]); return; }
+    courseApi.getBatches(form.course_id)
+      .then(res => setBatches(res.data || []))
+      .catch(() => setBatches([]));
+    setForm(f => ({ ...f, batch_id: "" }));
+  }, [form.course_id]);
+
+  // Countdown for OTP resend
+  useEffect(() => {
+    if (countdown > 0) {
+      const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [countdown]);
+
+  const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const validate = () => {
+    if (!form.name.trim())    return "Full name is required.";
+    if (!form.email.trim())   return "Email is required.";
+    if (!form.phone.trim() || form.phone.replace(/\D/g,"").length < 10) return "Enter a valid 10-digit phone number.";
+    if (!form.course_id)      return "Please select a course.";
+    if (!form.batch_id)       return "Please select a batch.";
+    if (form.password.length < 8) return "Password must be at least 8 characters.";
+    if (form.password !== form.confirm_password) return "Passwords do not match.";
+    return null;
+  };
+
+  const handleSendOtp = async () => {
+    setErr("");
+    const validErr = validate();
+    if (validErr) return setErr(validErr);
+    setOtpLoading(true);
+    try {
+      await authApi.sendOtp(form.phone, "STUDENT_REGISTER");
+      setStep(2);
+      setCountdown(60);
+    } catch (e) {
+      setErr(e.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyAndRegister = async (e) => {
+    e.preventDefault();
+    const otpString = otp.join("");
+    if (otpString.length < 6) return setErr("Enter the complete 6-digit OTP.");
+    setLoading(true);
+    setErr("");
+    try {
+      // Step 1: verify OTP → get phone_token
+      const verifyRes = await authApi.verifyOtp(form.phone, otpString, "STUDENT_REGISTER");
+      const phone_token = verifyRes.data.phone_token;
+
+      // Step 2: register with phone_token
+      const registerRes = await authApi.register({
+        name:          form.name,
+        email:         form.email,
+        phone:         form.phone,
+        password:      form.password,
+        course_id:     form.course_id,
+        batch_id:      form.batch_id,
+        phone_token,
+      });
+
+      login(registerRes.data); // saves user + access_token
+      navigate("/student/courses");
+    } catch (e) {
+      setErr(e.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpInput = (val, idx) => {
+    const cleaned = val.replace(/\D/g, "").slice(-1);
+    const next = [...otp]; next[idx] = cleaned;
+    setOtp(next);
+    if (cleaned && idx < 5) document.getElementById(`otp-${idx + 1}`)?.focus();
+  };
+  const handleOtpKeyDown = (e, idx) => {
+    if (e.key === "Backspace" && !otp[idx] && idx > 0) document.getElementById(`otp-${idx - 1}`)?.focus();
+  };
+
+  return (
+    <div className="min-h-screen w-screen flex">
+      <motion.div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-12 bg-white overflow-y-auto py-10"
+        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
+        <div className="w-full max-w-sm">
+          <Link to="/" className="flex flex-col items-center mb-6">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg"
+              style={{ background: "linear-gradient(135deg, #007BBF, #003C6E)" }}>D</div>
+            <p className="text-xs font-bold tracking-widest text-dct-dark mt-2">
+              <span className="font-black">DIGITAL</span><span className="text-dct-primary font-black">CAD</span>
+            </p>
+          </Link>
+
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+              <motion.div key="step1" initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }}>
+                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Create Account</h1>
+                <p className="text-sm text-dct-lightgray text-center mb-6">Join DigitalCAD Training</p>
+
+                <div className="space-y-4">
+                  <Input label="Full Name" placeholder="Rahul Sharma" value={form.name} onChange={e => update("name", e.target.value)} />
+                  <Input label="Email Address" type="email" placeholder="rahul@gmail.com" value={form.email} onChange={e => update("email", e.target.value)} />
+                  <Input label="Phone Number" type="tel" placeholder="98765 43210" value={form.phone} onChange={e => update("phone", e.target.value)} />
+
+                  {/* Course selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">Select Course</label>
+                    <select value={form.course_id} onChange={e => update("course_id", e.target.value)} className="dct-input w-full">
+                      <option value="">
+                        {courses.length === 0 ? "Loading courses…" : "Choose a course…"}
+                      </option>
+                      {courses.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} — ₹{Number(c.price).toLocaleString("en-IN")} · {c.duration_months} Months
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Batch selector */}
+                  {form.course_id && (
+                    <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }}>
+                      <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">Select Batch</label>
+                      <select value={form.batch_id} onChange={e => update("batch_id", e.target.value)} className="dct-input w-full">
+                        <option value="">
+                          {batches.length === 0 ? "No batches available" : "Choose a batch…"}
+                        </option>
+                        {batches.map(b => (
+                          <option key={b.id} value={b.id} disabled={b.is_full}>
+                            {b.name} — {b.is_full ? "FULL" : `${b.available_seats} seats left`}
+                          </option>
+                        ))}
+                      </select>
+                    </motion.div>
+                  )}
+
+                  <Input label="Password" type="password" placeholder="Min 8 characters" value={form.password} onChange={e => update("password", e.target.value)} />
+                  <Input label="Confirm Password" type="password" placeholder="Repeat password" value={form.confirm_password} onChange={e => update("confirm_password", e.target.value)} />
+
+                  {err && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <p className="text-red-600 text-sm text-center">{err}</p>
+                    </div>
+                  )}
+
+                  <Button fullWidth size="lg" onClick={handleSendOtp} disabled={otpLoading}>
+                    {otpLoading ? "Sending OTP…" : "Send OTP & Continue"}
+                  </Button>
+                </div>
+
+                <p className="text-center text-sm text-dct-gray mt-5">
+                  Already have an account?{" "}
+                  <Link to="/auth/login" className="text-dct-primary font-bold hover:underline">Sign In</Link>
+                </p>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div key="step2" initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }}>
+                <button onClick={() => { setStep(1); setOtp(["","","","","",""]); setErr(""); }}
+                  className="flex items-center gap-1 text-sm text-dct-gray hover:text-dct-dark mb-5 transition-colors">
+                  ← Back
+                </button>
+                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Verify Phone</h1>
+                <p className="text-sm text-dct-lightgray text-center mb-2">
+                  OTP sent to <strong className="text-dct-dark">+91 {form.phone}</strong>
+                </p>
+                <p className="text-xs text-dct-lightgray text-center mb-6">
+                  Check your backend terminal for OTP during development
+                </p>
+
+                <form onSubmit={handleVerifyAndRegister} className="space-y-6">
+                  <div className="flex justify-center gap-2">
+                    {otp.map((digit, idx) => (
+                      <input key={idx} id={`otp-${idx}`} type="text" inputMode="numeric" maxLength={1}
+                        value={digit} onChange={e => handleOtpInput(e.target.value, idx)}
+                        onKeyDown={e => handleOtpKeyDown(e, idx)}
+                        className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl outline-none transition-all"
+                        style={{ borderColor: digit ? "#007BBF" : "#e5e7eb", color: "#1F1A17" }} />
+                    ))}
+                  </div>
+
+                  {err && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <p className="text-red-600 text-sm text-center">{err}</p>
+                    </div>
+                  )}
+
+                  <Button type="submit" fullWidth size="lg" disabled={loading}>
+                    {loading ? "Creating account…" : "Verify & Create Account"}
+                  </Button>
+
+                  <p className="text-center text-xs text-dct-lightgray">
+                    {countdown > 0
+                      ? `Resend OTP in ${countdown}s`
+                      : <button type="button" onClick={handleSendOtp} className="text-dct-primary font-bold hover:underline">Resend OTP</button>
+                    }
+                  </p>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+      <AuthHero />
+    </div>
+  );
+}
