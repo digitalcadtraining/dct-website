@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DigitalCAD Training — Full Stack Project
 
 ## Tech Stack
@@ -323,3 +324,7 @@ To switch to real SMS: set `NODE_ENV=production` and fill MSG91 credentials in `
 4. **Server for Backend** — Railway.app (free) or any VPS
 
 That's it. Everything else is coded.
+=======
+# dct-website
+Official website and landing pages for Digital CAD Training. Includes automotive plastic product design course, webinar funnels, and FOMO-based offer system built using React.
+>>>>>>> e0135a99844b7d4c7ee815a76f3a6826b1774994

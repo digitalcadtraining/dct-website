@@ -291,7 +291,49 @@ const toggleUserStatus = async (req, res, next) => {
   }
 };
 
+const listPendingBatches = async (req, res, next) => {
+  try {
+    const batches = await prisma.batch.findMany({
+      where:   { status: "PENDING_APPROVAL" },
+      orderBy: { created_at: "desc" },
+      include: {
+        course: { select: { name: true } },
+        tutor:  { select: { name: true, email: true } },
+        _count: { select: { scheduled_sessions: true, enrollments: true } },
+      },
+    });
+    return success(res, 200, "Pending batches.", batches);
+  } catch (err) { next(err); }
+};
+
+const approveBatch = async (req, res, next) => {
+  try {
+    const updated = await prisma.batch.update({
+      where: { id: req.params.id },
+      data:  { status: "UPCOMING" },
+    });
+    return success(res, 200, "Batch approved.", updated);
+  } catch (err) { next(err); }
+};
+
+const rejectBatch = async (req, res, next) => {
+  try {
+    await prisma.batch.delete({ where: { id: req.params.id } });
+    return success(res, 200, "Batch rejected and removed.");
+  } catch (err) { next(err); }
+};
+
 module.exports = {
-  getStats, listApplications, approveApplication, rejectApplication,
-  listStudents, listTutors, listAllBatches, listAllQueries, toggleUserStatus,
+  getStats,
+  listApplications,
+  approveApplication,
+  rejectApplication,
+  listStudents,
+  listTutors,
+  listAllBatches,
+  listAllQueries,
+  toggleUserStatus,
+  listPendingBatches,
+  approveBatch,
+  rejectBatch,
 };

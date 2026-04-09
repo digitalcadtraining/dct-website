@@ -96,6 +96,8 @@ export const adminApi = {
   students:     (search) => http(`/admin/students${search ? `?search=${search}` : ""}`),
   tutors:       () => http("/admin/tutors"),
   batches:      (status) => http(`/admin/batches${status ? `?status=${status}` : ""}`),
+  approveBatch: (id) => http(`/admin/batches/${id}/approve`, { method: "POST" }),
+  rejectBatch:  (id) => http(`/admin/batches/${id}/reject`,  { method: "POST" }),
   queries:      (status) => http(`/admin/queries${status ? `?status=${status}` : ""}`),
 };
 
