@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DigitalCAD Training – LMS Platform v2
 
 ## 🚀 Setup
@@ -44,3 +45,7 @@ src/
 1. `npm run build`
 2. Upload `/dist` contents to `public_html/dct/`
 3. Upload `.htaccess` to `public_html/dct/`
+=======
+# dct-website
+Official website and landing pages for Digital CAD Training. Includes automotive plastic product design course, webinar funnels, and FOMO-based offer system built using React.
+>>>>>>> e0135a99844b7d4c7ee815a76f3a6826b1774994
