@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # DigitalCAD Training — Full Stack Project
 
 ## Tech Stack
@@ -324,6 +325,54 @@ To switch to real SMS: set `NODE_ENV=production` and fill MSG91 credentials in `
 4. **Server for Backend** — Railway.app (free) or any VPS
 
 That's it. Everything else is coded.
+=======
+# DigitalCAD Training – LMS Platform v2
+
+## 🚀 Setup
+```bash
+npm install
+npm run dev        # http://localhost:5173/dct/
+npm run build      # outputs to /dist
+```
+
+## 📁 Folder Structure
+```
+src/
+├── styles/         index.css
+├── constants/      dummyData.js
+├── context/        AuthContext.jsx
+├── services/       api.js
+├── routes/         AppRoutes.jsx, ProtectedRoute.jsx
+├── components/
+│   ├── ui/         Button, Input, Textarea, Modal, Badge, Avatar, ProgressBar, ChipBtn, PageWrapper
+│   ├── layout/     AppShell, Sidebar, Header
+│   └── shared/     HeroBanner, SessionCard, widgets (Calendar, Attendance, Completion, Refer), AuthHero
+└── pages/
+    ├── auth/       LoginPage, RegisterPage
+    ├── student/    Dashboard, Sessions (All/Upcoming/Completed), Assignments (All/Feedback), MyCourses, MyQueries
+    ├── tutor/      MyBatches, TutorAssignments, TutorSessions
+    └── admin/      AdminDashboard
+```
+
+## 🎨 Brand Colors
+- Dark:      #1F1A17
+- Navy:      #003C6E
+- Blue:      #024981
+- Primary:   #007BBF
+- Gray:      #6A6B6D
+- LightGray: #7E7F81
+- Gradient:  linear-gradient(135deg, #003C6E → #007BBF)
+
+## 🔑 Demo Login
+- Student: click Student → Sign In
+- Tutor:   click Tutor   → Sign In
+- Admin:   click Admin   → Sign In
+
+## 🌐 Hostinger Deploy
+1. `npm run build`
+2. Upload `/dist` contents to `public_html/dct/`
+3. Upload `.htaccess` to `public_html/dct/`
+>>>>>>> 4732671e975006f2a6f2f1e0573105b29cd4843a
 =======
 # dct-website
 Official website and landing pages for Digital CAD Training. Includes automotive plastic product design course, webinar funnels, and FOMO-based offer system built using React.
