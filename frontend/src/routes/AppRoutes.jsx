@@ -59,7 +59,7 @@ export default function AppRoutes() {
       <Route path="/student/syllabus"             element={<ProtectedRoute roles={["student"]}><SyllabusPage /></ProtectedRoute>} />
 
       {/* Tutor */}
-      <Route path="/tutor/dashboard"          element={<ProtectedRoute roles={["tutor"]}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/tutor/dashboard"          element={<ProtectedRoute roles={["tutor"]}><MyBatches /></ProtectedRoute>} />
       <Route path="/tutor/batches"            element={<ProtectedRoute roles={["tutor"]}><MyBatches /></ProtectedRoute>} />
       <Route path="/tutor/assignments"        element={<ProtectedRoute roles={["tutor"]}><TutorAssignments /></ProtectedRoute>} />
       <Route path="/tutor/sessions/all"       element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
