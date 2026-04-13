@@ -1,33 +1,56 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, ClipboardList, BookOpen, HelpCircle, ChevronDown, X, Layers, GraduationCap, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  ClipboardList,
+  BookOpen,
+  HelpCircle,
+  ChevronDown,
+  X,
+  Layers,
+  GraduationCap,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const STUDENT_NAV = [
   { label: "My Courses", icon: BookOpen, to: "/student/courses" },
-  { label: "Sessions", icon: CalendarDays, children: [
-    { label: "All Sessions", to: "/student/sessions/all" },
-    { label: "Upcoming Sessions", to: "/student/sessions/upcoming" },
-    { label: "Completed Sessions", to: "/student/sessions/completed" },
-  ]},
-  { label: "Assignments", icon: ClipboardList, children: [
-    { label: "All Assignments", to: "/student/assignments/all" },
-    { label: "Assignments Feedback", to: "/student/assignments/feedback" },
-  ]},
+  {
+    label: "Sessions",
+    icon: CalendarDays,
+    children: [
+      { label: "All Sessions", to: "/student/sessions/all" },
+      { label: "Upcoming Sessions", to: "/student/sessions/upcoming" },
+      { label: "Completed Sessions", to: "/student/sessions/completed" },
+    ],
+  },
+  {
+    label: "Assignments",
+    icon: ClipboardList,
+    children: [
+      { label: "All Assignments", to: "/student/assignments/all" },
+      { label: "Assignments Feedback", to: "/student/assignments/feedback" },
+    ],
+  },
   { label: "Syllabus", icon: BookOpen, to: "/student/syllabus" },
   { label: "My Queries", icon: HelpCircle, to: "/student/queries" },
 ];
 
 const TUTOR_NAV = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/tutor/dashboard" },
-  { label: "Sessions", icon: CalendarDays, children: [
-    { label: "All Sessions", to: "/tutor/sessions/all" },
-    { label: "Upcoming Sessions", to: "/tutor/sessions/upcoming" },
-    { label: "Completed Sessions", to: "/tutor/sessions/completed" },
-  ]},
+  { label: "My Batches",  icon: Layers,        to: "/tutor/batches"      },
+  {
+    label: "Sessions",
+    icon: CalendarDays,
+    children: [
+      { label: "All Sessions",       to: "/tutor/sessions/all"       },
+      { label: "Upcoming Sessions",  to: "/tutor/sessions/upcoming"  },
+      { label: "Completed Sessions", to: "/tutor/sessions/completed" },
+    ],
+  },
   { label: "Assignments", icon: ClipboardList, to: "/tutor/assignments" },
-  { label: "My Batches", icon: Layers, to: "/tutor/batches" },
+  { label: "Queries",     icon: HelpCircle,    to: "/tutor/queries"     },
 ];
 
 const ADMIN_NAV = [
@@ -40,21 +63,25 @@ const ADMIN_NAV = [
 
 function NavItem({ item, onClose }) {
   const location = useLocation();
-  const [open, setOpen] = useState(() => item.children?.some(c => location.pathname.startsWith(c.to)));
+  const [open, setOpen] = useState(() =>
+    item.children?.some((c) => location.pathname.startsWith(c.to)),
+  );
 
   if (item.children) {
-    const isAnyActive = item.children.some(c => location.pathname === c.to);
+    const isAnyActive = item.children.some((c) => location.pathname === c.to);
     return (
       <div>
         <button
-          onClick={() => setOpen(v => !v)}
+          onClick={() => setOpen((v) => !v)}
           className={`sidebar-item w-full ${isAnyActive ? "text-white" : ""}`}
         >
           <item.icon size={18} />
           <span className="flex-1 text-left">{item.label}</span>
-          <ChevronDown size={14} className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
         </button>
-
         <AnimatePresence>
           {open && (
             <motion.div
@@ -65,20 +92,21 @@ function NavItem({ item, onClose }) {
               className="overflow-hidden"
             >
               <div className="ml-6 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-                {item.children.map(child => (
+                {item.children.map((child) => (
                   <NavLink
                     key={child.to}
                     to={child.to}
                     onClick={onClose}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-medium transition-all duration-150 ${
-                        isActive ? "text-white" : "text-gray-400 hover:text-white"
-                      }`
-                    }
+                    className={({
+                      isActive,
+                    }) => `flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-medium transition-all duration-150
+                      ${isActive ? "text-white" : "text-gray-400 hover:text-white"}`}
                   >
                     {({ isActive }) => (
                       <>
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-dct-primary" : "bg-transparent"}`} />
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-dct-primary" : "bg-transparent"}`}
+                        />
                         {child.label}
                       </>
                     )}
@@ -93,7 +121,11 @@ function NavItem({ item, onClose }) {
   }
 
   return (
-    <NavLink to={item.to} onClick={onClose} className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}>
+    <NavLink
+      to={item.to}
+      onClick={onClose}
+      className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
+    >
       <item.icon size={18} />
       <span>{item.label}</span>
     </NavLink>
@@ -105,14 +137,10 @@ export default function Sidebar({ mobileOpen, onClose }) {
   const role = user?.role?.toUpperCase();
 
   const nav =
-    role === "TUTOR"
-      ? TUTOR_NAV
-      : role === "ADMIN"
-      ? ADMIN_NAV
-      : STUDENT_NAV;
-
+    role === "TUTOR" ? TUTOR_NAV : role === "ADMIN" ? ADMIN_NAV : STUDENT_NAV;
   const content = (
     <div className="flex flex-col h-full bg-dct-dark text-white w-56 flex-shrink-0">
+      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-lg"
@@ -123,16 +151,21 @@ export default function Sidebar({ mobileOpen, onClose }) {
         <span className="font-bold text-base tracking-tight">Dashboard</span>
       </div>
 
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        {nav.map(item => <NavItem key={item.label} item={item} onClose={onClose} />)}
+        {nav.map((item) => (
+          <NavItem key={item.label} item={item} onClose={onClose} />
+        ))}
       </nav>
     </div>
   );
 
   return (
     <>
+      {/* Desktop */}
       <div className="hidden lg:flex h-full">{content}</div>
 
+      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>

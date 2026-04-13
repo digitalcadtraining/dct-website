@@ -5,9 +5,10 @@
  * Batch name: "Plastic Product Design - 1 April 26"
  */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
-import { Plus, Users, BookOpen, Calendar, Clock, X, Info } from "lucide-react";
+import { Plus, Users, BookOpen, Calendar, Clock, X, Info, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { batchApi, courseApi } from "../../services/api.js";
 
@@ -305,25 +306,46 @@ function NewBatchModal({ isOpen, onClose, onCreated }) {
 }
 
 // ── Batch Card ────────────────────────────────────────────
+function deriveBatchStatus(batch) {
+  if (batch.status === "PENDING_APPROVAL") return "PENDING_APPROVAL";
+  const now   = new Date();
+  const start = batch.start_date ? new Date(batch.start_date) : null;
+  const end   = batch.end_date   ? new Date(batch.end_date)   : null;
+  if (start && end) {
+    if (now < start)  return "UPCOMING";
+    if (now > end)    return "COMPLETED";
+    return "ACTIVE";
+  }
+  return batch.status || "UPCOMING";
+}
+
 function BatchCard({ batch, index }) {
+  const navigate    = useNavigate();
+  const realStatus  = deriveBatchStatus(batch);
   const STATUS = {
     PENDING_APPROVAL: { bg:"bg-yellow-50",  text:"text-yellow-700", border:"border-yellow-200", label:"Pending Approval" },
     UPCOMING:         { bg:"bg-blue-50",    text:"text-blue-700",   border:"border-blue-200",   label:"Upcoming"         },
     ACTIVE:           { bg:"bg-green-50",   text:"text-green-700",  border:"border-green-200",  label:"Active"           },
     COMPLETED:        { bg:"bg-gray-50",    text:"text-gray-600",   border:"border-gray-200",   label:"Completed"        },
-  }[batch.status] || { bg:"bg-gray-50", text:"text-gray-600", border:"border-gray-200", label:batch.status };
+  }[realStatus] || { bg:"bg-gray-50", text:"text-gray-600", border:"border-gray-200", label:realStatus };
 
   const enrolled  = batch._count?.enrollments        || 0;
   const sessions  = batch._count?.scheduled_sessions || 0;
   const pct       = Math.round((enrolled / (batch.max_students || 1)) * 100);
   const slots     = batch.time_slots || [];
+  const isApproved = realStatus !== "PENDING_APPROVAL";
 
   return (
-    <motion.div className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-all"
-      style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}
+    <motion.div
+      className={`bg-white rounded-2xl border border-gray-100 p-5 transition-all
+        ${isApproved ? "cursor-pointer hover:shadow-lg hover:border-dct-primary/30" : ""}`}
+      style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)", position:"relative" }}
       initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
       transition={{ duration:0.3, delay: index * 0.07 }}
-      whileHover={{ y:-2 }}>
+      whileHover={isApproved ? { y:-3 } : {}}
+      onClick={() => {
+        if (isApproved) navigate(`/tutor/batches/${batch.id}/sessions`);
+      }}>
 
       <div className="flex items-start justify-between mb-3">
         <span className={`text-xs font-bold px-3 py-1 rounded-full border ${STATUS.bg} ${STATUS.text} ${STATUS.border}`}>
@@ -365,9 +387,26 @@ function BatchCard({ batch, index }) {
         <span className="flex items-center gap-1"><BookOpen size={11}/> {sessions} sessions</span>
       </div>
 
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
         <div className="h-full rounded-full bg-dct-primary transition-all" style={{ width:`${pct}%` }}/>
       </div>
+
+      {/* Click CTA — only for approved batches */}
+      {isApproved ? (
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <span className="text-xs font-bold text-dct-primary">View Sessions</span>
+          <div className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background:"linear-gradient(135deg,#024981,#007BBF)" }}>
+            <ChevronRight size={13} color="white" />
+          </div>
+        </div>
+      ) : (
+        <div className="pt-3 border-t border-gray-100">
+          <span className="text-[10px] text-yellow-600 font-semibold">
+            ⏳ Waiting for admin approval before sessions are accessible
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -386,8 +425,8 @@ export default function MyBatches() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter === "ALL" ? batches : batches.filter(b => b.status === filter);
-  const pendingCount = batches.filter(b => b.status === "PENDING_APPROVAL").length;
+  const filtered = filter === "ALL" ? batches : batches.filter(b => deriveBatchStatus(b) === filter);
+  const pendingCount = batches.filter(b => deriveBatchStatus(b) === "PENDING_APPROVAL").length;
 
   return (
     <AppShell>

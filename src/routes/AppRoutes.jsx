@@ -22,6 +22,7 @@ import StudentDashboard from "../pages/student/StudentDashboard.jsx";
 import MyBatches          from "../pages/tutor/MyBatches.jsx";
 import TutorAssignments   from "../pages/tutor/TutorAssignments.jsx";
 import TutorSessionsPage  from "../pages/tutor/TutorSessions.jsx";
+import TutorQueriesPage   from "../pages/tutor/TutorQueriesPage.jsx";
 
 import AdminDashboard from "../pages/admin/AdminDashboard.jsx";
 import AdminTutors    from "../pages/admin/AdminTutors.jsx";
@@ -58,13 +59,15 @@ export default function AppRoutes() {
       <Route path="/student/queries"              element={<ProtectedRoute roles={["student"]}><MyQueriesPage /></ProtectedRoute>} />
       <Route path="/student/syllabus"             element={<ProtectedRoute roles={["student"]}><SyllabusPage /></ProtectedRoute>} />
 
-      {/* Tutor */}
-      <Route path="/tutor/dashboard"          element={<ProtectedRoute roles={["tutor"]}><MyBatches /></ProtectedRoute>} />
-      <Route path="/tutor/batches"            element={<ProtectedRoute roles={["tutor"]}><MyBatches /></ProtectedRoute>} />
-      <Route path="/tutor/assignments"        element={<ProtectedRoute roles={["tutor"]}><TutorAssignments /></ProtectedRoute>} />
-      <Route path="/tutor/sessions/all"       element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
-      <Route path="/tutor/sessions/upcoming"  element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
-      <Route path="/tutor/sessions/completed" element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
+      {/* Tutor — dashboard redirects to batches (same content, no duplication) */}
+      <Route path="/tutor/dashboard"                    element={<Navigate to="/tutor/batches" replace />} />
+      <Route path="/tutor/batches"                      element={<ProtectedRoute roles={["tutor"]}><MyBatches /></ProtectedRoute>} />
+      <Route path="/tutor/batches/:batchId/sessions"    element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
+      <Route path="/tutor/assignments"                  element={<ProtectedRoute roles={["tutor"]}><TutorAssignments /></ProtectedRoute>} />
+      <Route path="/tutor/queries"                      element={<ProtectedRoute roles={["tutor"]}><TutorQueriesPage /></ProtectedRoute>} />
+      <Route path="/tutor/sessions/all"                 element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
+      <Route path="/tutor/sessions/upcoming"            element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
+      <Route path="/tutor/sessions/completed"           element={<ProtectedRoute roles={["tutor"]}><TutorSessionsPage /></ProtectedRoute>} />
 
       {/* Admin */}
       <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
