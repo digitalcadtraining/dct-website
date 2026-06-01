@@ -1,0 +1,12 @@
+[33mf6cd228[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mbackup-before-pull-20260414-1243[m[33m, [m[1;32mbackup-before-pull-20260414-0137[m[33m, [m[1;32mbackup-before-pull-[m[33m)[m HEAD@{Mon Apr 13 23:08:07 2026}: commit: new
+[33mc22187c[m HEAD@{Mon Apr 13 22:13:34 2026}: reset: moving to origin/main
+[33mc22187c[m HEAD@{Mon Apr 13 21:28:10 2026}: reset: moving to origin/main
+[33mc22187c[m HEAD@{Mon Apr 13 21:24:15 2026}: reset: moving to origin/main
+[33mc22187c[m HEAD@{Sat Apr 11 15:54:06 2026}: commit: new
+[33m558c3ba[m HEAD@{Fri Apr 10 15:10:24 2026}: revert: Revert "Remove duplicate src folder"
+[33m356109b[m HEAD@{Fri Apr 10 14:43:44 2026}: commit: Remove duplicate src folder
+[33m5b45b9a[m HEAD@{Fri Apr 10 14:42:10 2026}: commit: Fix tutor login routing and role handling
+[33m05acd5d[m HEAD@{Fri Apr 10 01:47:57 2026}: commit (merge): Merge + backend added
+[33mc8dc89c[m HEAD@{Fri Apr 10 01:47:32 2026}: commit (merge): Add backend + new frontend updates
+[33m27ae3c5[m HEAD@{Tue Mar 31 21:58:16 2026}: Branch: renamed refs/heads/master to refs/heads/main
+[33m27ae3c5[m HEAD@{Tue Mar 31 21:57:58 2026}: commit (initial): initial commit
