@@ -1,126 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
-import { TUTOR_STUDENT_ASSIGNMENTS, SESSION_LIST_NAMES } from "../../constants/dummyData.js";
-import { Modal, Input, Textarea, Button, Avatar, PageWrapper } from "../../components/ui/index.jsx";
-import { Filter, Download, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { Modal, Input, Textarea, Button, PageWrapper } from "../../components/ui/index.jsx";
+import { assignmentApi, batchApi, sessionApi, mediaUrl } from "../../services/api.js";
+import { Plus, Upload, FileText, Download, RefreshCw, ClipboardList, CheckCircle2 } from "lucide-react";
 
-function FeedbackModal({ isOpen, onClose, assignment }) {
-  const [feedback, setFeedback] = useState("");
-  const [status, setStatus] = useState("unchecked");
-  if (!assignment) return null;
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Assignment Feedback" maxWidth="max-w-xl">
-      <div className="space-y-4">
-        <Input label="Student Name" value={assignment.studentName} readOnly />
-        <Input label="Assignment Name" value={assignment.assignmentName} readOnly />
-        <div>
-          <label className="block text-sm font-semibold text-dct-dark mb-1.5">Session Name</label>
-          <div className="dct-input bg-gray-50 cursor-default">
-            <p className="font-semibold text-dct-dark text-sm">{assignment.sessionName}</p>
-            <p className="text-xs text-dct-primary">{assignment.sessionTopic}</p>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-dct-dark mb-1.5">Assignment File</label>
-          <div className="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <FileText size={16} className="text-dct-primary" />
-              <span className="text-sm font-medium text-dct-dark">{assignment.fileName}</span>
-            </div>
-            <button className="flex items-center gap-1.5 bg-dct-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-dct-blue transition-colors">
-              <Download size={12} /> Download File
-            </button>
-          </div>
-        </div>
-        <Textarea label="Give Your Feedback" placeholder="Write your feedback" value={feedback} onChange={e => setFeedback(e.target.value)} rows={4} />
-        <div>
-          <label className="block text-sm font-semibold text-dct-dark mb-1.5">Assignment Checking Status</label>
-          <div className="border border-gray-200 rounded-xl p-4 flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={status === "checked"} onChange={() => setStatus("checked")} className="w-4 h-4 rounded accent-dct-primary" />
-              <span className="text-sm font-medium text-dct-dark">Checked</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={status === "unchecked"} onChange={() => setStatus("unchecked")} className="w-4 h-4 rounded accent-dct-primary" />
-              <span className="text-sm font-medium text-dct-dark">Unchecked</span>
-            </label>
-          </div>
-        </div>
-        <Button onClick={onClose} variant="primary" size="md">Submit Feedback</Button>
-      </div>
-    </Modal>
-  );
-}
-
-function AssignmentCard({ assignment, onView, index }) {
-  return (
-    <motion.div className="dct-card p-5"
-      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.07 }}>
-      <div className="flex items-start gap-3 mb-3">
-        <Avatar name={assignment.studentName} color="bg-dct-primary" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-dct-dark">{assignment.studentName}</p>
-          <p className="text-xs text-dct-lightgray">{assignment.batch}</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-xs text-dct-lightgray">{assignment.date}</p>
-          <span className="status-badge-unchecked"><span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" /> {assignment.status}</span>
-        </div>
-      </div>
-
-      <h3 className="text-base font-bold text-dct-dark mb-0.5">{assignment.title}</h3>
-      <p className="text-sm font-semibold text-dct-primary mb-4">Topic : {assignment.topic}</p>
-
-      <div className="border border-gray-100 rounded-xl p-3 mb-2 bg-gray-50/50">
-        <p className="text-xs text-dct-lightgray font-semibold mb-0.5">Assignment Name</p>
-        <p className="text-sm font-bold text-dct-dark">{assignment.assignmentName}</p>
-      </div>
-      <div className="border border-gray-100 rounded-xl p-3 mb-4 bg-gray-50/50">
-        <p className="text-xs text-dct-lightgray font-semibold mb-1">Assignment File</p>
-        <div className="flex items-center gap-2">
-          <FileText size={14} className="text-dct-primary" />
-          <span className="text-sm font-medium text-dct-dark">{assignment.fileName}</span>
-        </div>
-      </div>
-
-      <Button fullWidth variant="primary" onClick={() => onView(assignment)}>View Assignment</Button>
-    </motion.div>
-  );
-}
-
-export default function TutorAssignments() {
-  const [selected, setSelected] = useState(null);
-  const [filterSession, setFilterSession] = useState("");
-
-  return (
-    <AppShell>
-      <PageWrapper>
-        <h2 className="text-xl font-bold text-dct-dark mb-5">Assignments</h2>
-
-        {/* Filter bar */}
-        <div className="flex gap-3 mb-6">
-          <div className="flex-1 relative">
-            <select className="dct-input appearance-none pr-8 text-dct-lightgray cursor-pointer"
-              value={filterSession} onChange={e => setFilterSession(e.target.value)}>
-              <option value="">Enter a Session Name</option>
-              {SESSION_LIST_NAMES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-dct-lightgray pointer-events-none">▾</span>
-          </div>
-          <button className="flex items-center gap-2 bg-dct-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-dct-blue transition-colors">
-            <Filter size={14} /> Apply Filter
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {TUTOR_STUDENT_ASSIGNMENTS.map((a, i) => (
-            <AssignmentCard key={a.id} assignment={a} index={i} onView={setSelected} />
-          ))}
-        </div>
-
-        <FeedbackModal isOpen={!!selected} onClose={() => setSelected(null)} assignment={selected} />
-      </PageWrapper>
-    </AppShell>
-  );
-}
+function fmtDate(d){return d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—"}
+function CreateModal({open,onClose,batchId,sessions,onCreated,initialSession}){const [form,setForm]=useState({title:"",description:"",due_date:"",session_id:initialSession||""});const [file,setFile]=useState(null),[loading,setLoading]=useState(false),[err,setErr]=useState("");useEffect(()=>setForm(f=>({...f,session_id:initialSession||""})),[initialSession]);const set=(k,v)=>setForm(f=>({...f,[k]:v}));const submit=async()=>{setErr("");if(!batchId)return setErr("Select batch first.");if(!form.title.trim())return setErr("Assignment title required.");setLoading(true);try{await assignmentApi.create({batch_id:batchId,...form},file);onCreated();onClose();setForm({title:"",description:"",due_date:"",session_id:initialSession||""});setFile(null)}catch(e){setErr(e.message||"Failed to create assignment") }finally{setLoading(false)}};return <Modal isOpen={open} onClose={onClose} title="Upload Assignment" maxWidth="max-w-xl"><div className="space-y-4"><Input label="Assignment Title" value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Door Trim Attachment Design"/><div><label className="block text-sm font-semibold text-dct-dark mb-1.5">Session</label><select className="dct-input" value={form.session_id} onChange={e=>set("session_id",e.target.value)}><option value="">Batch level assignment</option>{sessions.map(s=><option key={s.id} value={s.id}>Session {s.session_number}: {s.name}</option>)}</select></div><Input label="Due Date" type="date" value={form.due_date} onChange={e=>set("due_date",e.target.value)}/><Textarea label="Instructions" value={form.description} onChange={e=>set("description",e.target.value)} placeholder="Explain what student has to submit..."/><label className="border-2 border-dashed rounded-xl p-5 flex flex-col items-center gap-2 cursor-pointer"><Upload size={22}/><span className="text-sm text-dct-gray">{file?file.name:"Upload PDF / ZIP / CAD file"}</span><input type="file" className="hidden" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>{err&&<p className="text-sm text-red-600 font-semibold">{err}</p>}<Button fullWidth onClick={submit} disabled={loading}>{loading?"Uploading...":"Create Assignment"}</Button></div></Modal>}
+function ReviewModal({sub,onClose,onSaved}){const [feedback,setFeedback]=useState(sub?.feedback||""),[grade,setGrade]=useState(sub?.grade||""),[status,setStatus]=useState(sub?.status==="RESUBMIT"?"RESUBMIT":"REVIEWED"),[loading,setLoading]=useState(false); if(!sub)return null; const save=async()=>{setLoading(true);try{await assignmentApi.reviewSubmission(sub.id,{feedback,grade,status});onSaved();onClose()}catch(e){alert(e.message)}finally{setLoading(false)}};return <Modal isOpen={!!sub} onClose={onClose} title="Review Submission"><div className="space-y-4"><Input label="Student" value={sub.student?.name||""} readOnly/><Input label="Assignment" value={sub.assignment?.title||""} readOnly/><Input label="Grade" value={grade} onChange={e=>setGrade(e.target.value)} placeholder="A / Good / Needs improvement"/><Textarea label="Feedback" value={feedback} onChange={e=>setFeedback(e.target.value)} rows={4}/><select className="dct-input" value={status} onChange={e=>setStatus(e.target.value)}><option value="REVIEWED">Reviewed / Accepted</option><option value="RESUBMIT">Need Resubmission</option></select><Button fullWidth onClick={save} disabled={loading}>{loading?"Saving...":"Submit Feedback"}</Button></div></Modal>}
+export default function TutorAssignments(){const [params]=useSearchParams();const initialBatch=params.get("batch_id")||"";const initialSession=params.get("session_id")||"";const [batches,setBatches]=useState([]),[batchId,setBatchId]=useState(initialBatch),[sessions,setSessions]=useState([]),[assignments,setAssignments]=useState([]),[subs,setSubs]=useState([]),[tab,setTab]=useState("assignments"),[open,setOpen]=useState(false),[review,setReview]=useState(null),[loading,setLoading]=useState(true),[err,setErr]=useState("");
+ const loadBatches=async()=>{const r=await batchApi.mine();const list=r.data||[];setBatches(list);if(!batchId&&list[0])setBatchId(list[0].id)}; useEffect(()=>{loadBatches().catch(e=>setErr(e.message))},[]);
+ const load=async()=>{if(!batchId)return;setLoading(true);setErr("");try{const [s,a,sub]=await Promise.all([sessionApi.getForBatch(batchId),assignmentApi.getForBatch(batchId),assignmentApi.tutorSubmissions(batchId)]);setSessions(s.data||[]);setAssignments(a.data||[]);setSubs(sub.data||[])}catch(e){setErr(e.message||"Failed to load assignments")}finally{setLoading(false)}}; useEffect(()=>{load()},[batchId]); const pending=subs.filter(s=>s.status==="SUBMITTED").length;
+ return <AppShell><PageWrapper><div className="flex items-center justify-between gap-3 mb-5 flex-wrap"><div><h1 className="text-2xl font-extrabold text-dct-dark">Assignments</h1><p className="text-sm text-dct-gray">Upload tasks and review student submissions</p></div><div className="flex gap-2"><button onClick={load} className="px-4 py-2 rounded-xl border bg-white text-sm font-bold flex items-center gap-2"><RefreshCw size={14} className={loading?"animate-spin":""}/>Refresh</button><button onClick={()=>setOpen(true)} className="px-4 py-2 rounded-xl bg-dct-primary text-white text-sm font-bold flex items-center gap-2"><Plus size={14}/>Upload Assignment</button></div></div>{batches.length>0&&<select className="dct-input max-w-md mb-5" value={batchId} onChange={e=>setBatchId(e.target.value)}>{batches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}{err&&<div className="mb-4 bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm">{err}</div>}<div className="flex gap-2 mb-5"><button onClick={()=>setTab("assignments")} className={`px-4 py-2 rounded-xl text-xs font-bold ${tab==="assignments"?"bg-dct-primary text-white":"bg-gray-100"}`}>Uploaded Assignments ({assignments.length})</button><button onClick={()=>setTab("submissions")} className={`px-4 py-2 rounded-xl text-xs font-bold ${tab==="submissions"?"bg-dct-primary text-white":"bg-gray-100"}`}>Student Submissions ({pending} pending)</button></div>{loading?<p className="text-sm text-dct-gray">Loading...</p>:tab==="assignments"?<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{assignments.map(a=><div key={a.id} className="dct-card p-5"><h3 className="font-extrabold text-dct-dark">{a.title}</h3><p className="text-sm text-dct-primary mt-1">{a.session?`Session ${a.session.session_number}: ${a.session.name}`:"Batch assignment"}</p><p className="text-xs text-dct-gray my-3 line-clamp-3">{a.description||"No instructions"}</p><div className="flex justify-between text-xs mb-3"><span>Due: {fmtDate(a.due_date)}</span><span>{a.submissions?.length||0} submissions</span></div>{a.file_url&&<button onClick={()=>window.open(mediaUrl(a.file_url),"_blank")} className="text-xs font-bold text-dct-primary flex items-center gap-1"><Download size={13}/>Open File</button>}</div>)}{assignments.length===0&&<div className="col-span-full bg-white border rounded-2xl p-12 text-center"><ClipboardList className="mx-auto text-gray-300 mb-3"/><p className="font-bold">No assignments uploaded</p></div>}</div>:<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{subs.map(s=><div key={s.id} className="dct-card p-5"><div className="flex justify-between gap-2"><div><p className="font-extrabold text-dct-dark">{s.student?.name}</p><p className="text-xs text-dct-gray">{s.student?.email}</p></div><span className={`text-[10px] font-bold px-2 py-1 rounded-full h-fit ${s.status==="REVIEWED"?"bg-green-100 text-green-700":s.status==="RESUBMIT"?"bg-red-100 text-red-700":"bg-orange-100 text-orange-700"}`}>{s.status}</span></div><h3 className="font-bold text-sm mt-4">{s.assignment?.title}</h3><p className="text-xs text-dct-primary mt-1">{s.assignment?.session?`Session ${s.assignment.session.session_number}`:"Batch assignment"}</p><p className="text-xs text-dct-gray my-3">Submitted: {fmtDate(s.submitted_at)}</p><div className="grid grid-cols-2 gap-2"><button onClick={()=>window.open(mediaUrl(s.file_url),"_blank")} className="py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1"><FileText size={13}/>File</button><button onClick={()=>setReview(s)} className="py-2 rounded-xl bg-dct-primary text-white text-xs font-bold flex items-center justify-center gap-1"><CheckCircle2 size={13}/>Review</button></div></div>)}{subs.length===0&&<div className="col-span-full bg-white border rounded-2xl p-12 text-center"><FileText className="mx-auto text-gray-300 mb-3"/><p className="font-bold">No student submissions yet</p></div>}</div>}<CreateModal open={open} onClose={()=>setOpen(false)} batchId={batchId} sessions={sessions} initialSession={initialSession} onCreated={load}/><ReviewModal sub={review} onClose={()=>setReview(null)} onSaved={load}/></PageWrapper></AppShell>}

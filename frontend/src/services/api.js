@@ -1,5 +1,6 @@
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 const APP_BASE = import.meta.env.BASE_URL || "/dct/";
+const BACKEND = BASE.replace(/\/api\/v1\/?$/, "");
 
 function appPath(path) {
   const base = APP_BASE.endsWith("/") ? APP_BASE.slice(0, -1) : APP_BASE;
@@ -8,18 +9,16 @@ function appPath(path) {
 }
 
 function isAuthRoute(path) {
-  return (
-    path.startsWith("/auth/login") ||
+  return path.startsWith("/auth/login") ||
     path.startsWith("/auth/admin/login") ||
     path.startsWith("/auth/otp/send") ||
     path.startsWith("/auth/otp/verify") ||
-    path.startsWith("/auth/register")
-  );
+    path.startsWith("/auth/register");
 }
 
 async function parseResponse(res) {
-  const contentType = res.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) return res.json();
+  const type = res.headers.get("content-type") || "";
+  if (type.includes("application/json")) return res.json();
   const text = await res.text();
   return { success: res.ok, message: text };
 }
@@ -40,25 +39,14 @@ async function http(path, opts = {}, retry = true) {
 
   if (res.status === 401 && retry && !isAuthRoute(path)) {
     try {
-      const refreshRes = await fetch(`${BASE}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
-
+      const refreshRes = await fetch(`${BASE}/auth/refresh`, { method: "POST", credentials: "include" });
       const refreshData = await parseResponse(refreshRes);
-      const newToken =
-        refreshData?.data?.access_token ||
-        refreshData?.data?.accessToken ||
-        refreshData?.access_token ||
-        refreshData?.accessToken ||
-        "";
-
+      const newToken = refreshData?.data?.access_token || refreshData?.data?.accessToken || refreshData?.access_token || refreshData?.accessToken || "";
       if (refreshRes.ok && newToken) {
         localStorage.setItem("dct_access_token", newToken);
         return http(path, opts, false);
       }
     } catch {}
-
     localStorage.removeItem("dct_access_token");
     localStorage.removeItem("dct_user");
     window.location.href = appPath("/auth/login");
@@ -79,23 +67,18 @@ function toQuery(params = {}) {
   return s ? `?${s}` : "";
 }
 
-export function mediaUrl(url) {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  const apiRoot = BASE.replace(/\/api\/v1\/?$/, "");
-  return `${apiRoot}/${String(url).replace(/^\/+/, "")}`;
+export function mediaUrl(filePath) {
+  if (!filePath) return "";
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  return `${BACKEND}/${String(filePath).replace(/^\/+/, "").replace(/\\/g, "/")}`;
 }
 
 export const authApi = {
-  sendOtp: (phone, purpose) =>
-    http("/auth/otp/send", { method: "POST", body: JSON.stringify({ phone, purpose }) }),
-  verifyOtp: (phone, otp, purpose) =>
-    http("/auth/otp/verify", { method: "POST", body: JSON.stringify({ phone, otp, purpose }) }),
+  sendOtp: (phone, purpose) => http("/auth/otp/send", { method: "POST", body: JSON.stringify({ phone, purpose }) }),
+  verifyOtp: (phone, otp, purpose) => http("/auth/otp/verify", { method: "POST", body: JSON.stringify({ phone, otp, purpose }) }),
   register: (data) => http("/auth/register", { method: "POST", body: JSON.stringify(data) }),
-  login: (email_or_phone, password) =>
-    http("/auth/login", { method: "POST", body: JSON.stringify({ email_or_phone, password }) }),
-  adminLogin: (email, password) =>
-    http("/auth/admin/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  login: (email_or_phone, password) => http("/auth/login", { method: "POST", body: JSON.stringify({ email_or_phone, password }) }),
+  adminLogin: (email, password) => http("/auth/admin/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => http("/auth/logout", { method: "POST" }),
   me: () => http("/auth/me"),
 };
@@ -138,25 +121,23 @@ export const assignmentApi = {
     fd.append("file", file);
     return http(`/assignments/${assignmentId}/submit`, { method: "POST", body: fd });
   },
-  tutorSubmissions: (batchId = "", sessionId = "") =>
-    http(`/assignments/tutor/submissions${toQuery({ batch_id: batchId, session_id: sessionId })}`),
-  reviewSubmission: (submissionId, data) =>
-    http(`/assignments/submissions/${submissionId}/review`, { method: "PATCH", body: JSON.stringify(data) }),
+  tutorSubmissions: (batchId = "", sessionId = "") => http(`/assignments/tutor/submissions${toQuery({ batch_id: batchId, session_id: sessionId })}`),
+  reviewSubmission: (submissionId, data) => http(`/assignments/submissions/${submissionId}/review`, { method: "PATCH", body: JSON.stringify(data) }),
 };
 
 export const queryApi = {
   mine: (batchId) => http(`/queries/mine${toQuery({ batch_id: batchId })}`),
   create: (data) => http("/queries", { method: "POST", body: JSON.stringify(data) }),
-  answer: (id, answer) => http(`/queries/${id}/answer`, { method: "PATCH", body: JSON.stringify({ answer }) }),
+  getBatchQueries: (batchId) => http(`/queries/batch/${batchId}`),
   batch: (batchId) => http(`/queries/batch/${batchId}`),
+  answer: (id, answer) => http(`/queries/${id}/answer`, { method: "PATCH", body: JSON.stringify({ answer }) }),
 };
 
 export const adminApi = {
   stats: () => http("/admin/stats"),
   applications: (status) => http(`/admin/applications${toQuery({ status })}`),
   approveApp: (id) => http(`/admin/applications/${id}/approve`, { method: "POST" }),
-  rejectApp: (id, note) =>
-    http(`/admin/applications/${id}/reject`, { method: "POST", body: JSON.stringify({ rejection_note: note }) }),
+  rejectApp: (id, note) => http(`/admin/applications/${id}/reject`, { method: "POST", body: JSON.stringify({ rejection_note: note }) }),
   students: (search) => http(`/admin/students${toQuery({ search })}`),
   tutors: () => http("/admin/tutors"),
   batches: (status) => http(`/admin/batches${toQuery({ status })}`),
