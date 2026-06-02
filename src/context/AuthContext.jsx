@@ -3,25 +3,44 @@ import { authApi } from "../services/api";
 
 const AuthContext = createContext(null);
 
+function normalizeAuthData(data) {
+  const userData = data?.user || data || null;
+
+  // Login returns access_token, register returns accessToken.
+  // Save both formats safely.
+  const token = data?.access_token || data?.accessToken || data?.token || "";
+
+  return { userData, token };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem("dct_user");
       return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   });
 
   const login = (data) => {
-    const userData = data.user || data;
-    const token    = data.access_token;
-    // Save to localStorage FIRST (synchronously) before setting state
-    localStorage.setItem("dct_user", JSON.stringify(userData));
-    if (token) localStorage.setItem("dct_access_token", token);
-    setUser(userData);
+    const { userData, token } = normalizeAuthData(data);
+
+    if (userData) {
+      localStorage.setItem("dct_user", JSON.stringify(userData));
+      setUser(userData);
+    }
+
+    if (token) {
+      localStorage.setItem("dct_access_token", token);
+    }
   };
 
   const logout = async () => {
-    try { await authApi.logout(); } catch {}
+    try {
+      await authApi.logout();
+    } catch {}
+
     localStorage.removeItem("dct_user");
     localStorage.removeItem("dct_access_token");
     setUser(null);
@@ -34,4 +53,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() { return useContext(AuthContext); }
+export function useAuth() {
+  return useContext(AuthContext);
+}
