@@ -1,100 +1,132 @@
 /**
  * DigitalCAD Training - Express Server
- * Entry point: loads config, middleware, routes, then starts listening
+ * Supabase-ready backend entry point.
  */
-
 require("dotenv").config();
 
-const express    = require("express");
-const cors       = require("cors");
-const helmet     = require("helmet");
-const morgan     = require("morgan");
-const compression= require("compression");
-const cookieParser=require("cookie-parser");
-const rateLimit  = require("express-rate-limit");
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
+const compression = require("compression");
+const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
 
-const routes        = require("./src/routes/index");
-const errorHandler  = require("./src/middleware/errorHandler");
-const { prisma }    = require("./src/config/db");
+const routes = require("./src/routes/index");
+const errorHandler = require("./src/middleware/errorHandler");
+const { prisma, checkDatabaseConnection } = require("./src/config/db");
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
-// ── SECURITY MIDDLEWARE ───────────────────────────────────
-app.use(helmet());   // Sets secure HTTP headers
+function normalizeOrigins(value) {
+  return String(value || "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
 
-// ── CORS ─────────────────────────────────────────────────
+const allowedOrigins = [
+  ...normalizeOrigins(process.env.FRONTEND_URL),
+  ...normalizeOrigins(process.env.EXTRA_CORS_ORIGINS),
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+];
+
+app.use(helmet());
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-  ],
-  credentials: true,   // Allow cookies (refresh token)
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-// ── GENERAL RATE LIMITING ─────────────────────────────────
 const generalLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max:      parseInt(process.env.RATE_LIMIT_MAX)        || 100,
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX) || 300,
   standardHeaders: true,
-  legacyHeaders:   false,
+  legacyHeaders: false,
   message: { success: false, message: "Too many requests, please try again later." },
 });
 app.use(generalLimiter);
 
-// ── BODY PARSING ─────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 app.use(compression());
 
-// ── LOGGING ──────────────────────────────────────────────
-if (process.env.NODE_ENV !== "test") {
-  app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+if (NODE_ENV !== "test") {
+  app.use(morgan(NODE_ENV === "production" ? "combined" : "dev"));
 }
 
-// ── HEALTH CHECK ─────────────────────────────────────────
 app.get("/health", (req, res) => {
   res.json({ success: true, message: "DCT API is running", timestamp: new Date() });
 });
 
-// ── API ROUTES ────────────────────────────────────────────
+app.get("/health/db", async (req, res) => {
+  try {
+    await checkDatabaseConnection();
+    res.json({ success: true, message: "Database connected", timestamp: new Date() });
+  } catch (err) {
+    res.status(503).json({ success: false, message: "Database not reachable", error: err.message });
+  }
+});
+
 app.use("/api/v1", routes);
 
-// ── 404 HANDLER ──────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
-// ── GLOBAL ERROR HANDLER ─────────────────────────────────
 app.use(errorHandler);
 
-// ── START SERVER ─────────────────────────────────────────
+async function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function connectWithRetry(maxAttempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await checkDatabaseConnection();
+      console.log("✅ Database connected");
+      return;
+    } catch (err) {
+      lastError = err;
+      console.error(`❌ Database connection failed (${attempt}/${maxAttempts}):`, err.message);
+      if (attempt < maxAttempts) await wait(1500 * attempt);
+    }
+  }
+  throw lastError;
+}
+
 async function startServer() {
   try {
-    // Test DB connection
-    await prisma.$connect();
-    console.log("✅ Database connected");
-
+    await connectWithRetry(Number(process.env.DB_CONNECT_RETRIES) || 3);
     app.listen(PORT, () => {
       console.log(`🚀 DCT Server running on http://localhost:${PORT}`);
-      console.log(`📋 API docs: http://localhost:${PORT}/api/v1`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📋 API base: http://localhost:${PORT}/api/v1`);
+      console.log(`🌍 Environment: ${NODE_ENV}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
+    console.error("Check backend/.env DATABASE_URL and DIRECT_URL. For Supabase, use the pooler/direct connection string with sslmode=require.");
     process.exit(1);
   }
 }
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM received, shutting down gracefully...");
+async function shutdown(signal) {
+  console.log(`${signal} received, shutting down gracefully...`);
   await prisma.$disconnect();
   process.exit(0);
-});
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 startServer();
