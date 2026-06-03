@@ -6,12 +6,12 @@ import { Input, Button } from "../../components/ui/index.jsx";
 import { motion } from "framer-motion";
 
 export default function AdminLoginPage() {
-  const { login }   = useAuth();
-  const navigate    = useNavigate();
-  const [email, setEmail]       = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [err, setErr]           = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,8 +20,8 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const res = await authApi.adminLogin(email, password);
-      login(res.data);
-      navigate("/admin/dashboard");
+      login(res.data, "admin");
+      navigate("/admin/dashboard", { replace: true });
     } catch (e) {
       setErr(e.message || "Invalid credentials.");
     } finally {

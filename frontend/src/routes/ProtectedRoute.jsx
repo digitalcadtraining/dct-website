@@ -1,25 +1,34 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
+function normalizeRole(role) {
+  return String(role || "").toLowerCase();
+}
+
+function loginPathFor(role) {
+  return normalizeRole(role) === "admin" ? "/admin/login" : "/auth/login";
+}
+
 export default function ProtectedRoute({ children, roles }) {
-  // Check both React state AND localStorage (handles timing issue on navigate)
-  const { user: ctxUser } = useAuth();
-  const user = ctxUser || (() => {
-    try { return JSON.parse(localStorage.getItem("dct_user")); } catch { return null; }
-  })();
+  const location = useLocation();
+  const { getUserForRole } = useAuth();
+  const allowedRoles = (roles || []).map(normalizeRole);
+  const primaryRole = allowedRoles[0] || "student";
+  const user = getUserForRole(primaryRole);
 
-  if (!user) return <Navigate to="/auth/login" replace />;
+  if (!user) {
+    return <Navigate to={loginPathFor(primaryRole)} replace state={{ from: location.pathname }} />;
+  }
 
-  const userRole     = user.role?.toUpperCase();
-  const allowedRoles = roles?.map(r => r.toUpperCase());
+  const userRole = normalizeRole(user.role);
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (allowedRoles.length && !allowedRoles.includes(userRole)) {
     const redirects = {
-      STUDENT: "/student/courses",
-      TUTOR:   "/tutor/dashboard",
-      ADMIN:   "/admin/dashboard",
+      student: "/student/courses",
+      tutor: "/tutor/dashboard",
+      admin: "/admin/dashboard",
     };
-    return <Navigate to={redirects[userRole] || "/auth/login"} replace />;
+    return <Navigate to={redirects[userRole] || loginPathFor(primaryRole)} replace />;
   }
 
   return children;

@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function Header({ onMenuToggle }) {
-  const { user, logout } = useAuth();
+  const { user, activeRole, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
@@ -16,16 +16,17 @@ export default function Header({ onMenuToggle }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleLogout = () => { logout(); navigate("/auth/login"); };
+  const handleLogout = async () => {
+    await logout(activeRole);
+    navigate(activeRole === "admin" ? "/admin/login" : "/auth/login", { replace: true });
+  };
 
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-30">
-      {/* Left */}
       <div className="flex items-center gap-3">
         <button onClick={onMenuToggle} className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors text-dct-gray">
           <Menu size={18} />
         </button>
-        {/* Top nav links - desktop */}
         <nav className="hidden md:flex items-center gap-6">
           {["Home","About","Courses","Contact Us","Tutor"].map(item => (
             <a key={item} href="#" className="text-sm font-semibold text-dct-dark hover:text-dct-primary transition-colors">{item}</a>
@@ -33,22 +34,21 @@ export default function Header({ onMenuToggle }) {
         </nav>
       </div>
 
-      {/* Right */}
       <div className="flex items-center gap-3">
         <div className="hidden sm:flex items-center gap-2 text-sm font-semibold text-dct-dark">
           <div className="w-8 h-8 rounded-full bg-dct-primary/10 flex items-center justify-center">
             <Phone size={14} className="text-dct-primary" />
           </div>
-          <span>{user?.phone || "+91 1234567890"}</span>
+          <span>{user?.phone || user?.role || "+91 1234567890"}</span>
         </div>
 
         <div className="relative" ref={ref}>
           <button onClick={() => setOpen(v => !v)}
             className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors">
             <div className="w-8 h-8 rounded-full bg-dct-primary flex items-center justify-center text-white font-bold text-sm">
-              {user?.name?.charAt(0) || "U"}
+              {user?.name?.charAt(0) || user?.role?.charAt(0) || "U"}
             </div>
-            <span className="hidden sm:block text-sm font-semibold text-dct-dark">{user?.name || "User"}</span>
+            <span className="hidden sm:block text-sm font-semibold text-dct-dark">{user?.name || activeRole}</span>
             <ChevronDown size={14} className={`text-dct-gray transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
 
