@@ -5,33 +5,44 @@ import "./HomePage.css";
 import { initHomePageScripts } from "./HomePage.scripts.js";
 
 const homepageHtml = `
-<div class="hero">
+<div class="hero hero-interior360">
   <div class="hero-left">
     <div class="hero-beam"></div><div class="hero-beam2"></div>
     <div class="hero-content">
       <h1 class="hero-heading">Industry-Focused<br>Advanced&nbsp;<span class="word-anim-wrap"><span class="word-anim"><span>Engineer</span><span>Enhance</span><span>Upgrade</span><span>Engineer</span></span></span><br>Courses</h1>
-      <p class="hero-sub">Designed To Equip Engineers With Practical, Industry-Relevant Skills Through Advanced, Real-World Domain Training.</p>
+      <p class="hero-sub">Designed To Equip Engineers With Practical, Industry-Relevant Skills<br>Through Advanced, Real-World Domain Training.</p>
       <button class="btn-checkout" id="checkoutCoursesBtn">Checkout Our Courses</button>
     </div>
   </div>
-  <div class="hero-right">
-    <div class="cad-mockup">
-      <div class="cad-screen">
-        <div class="cad-screen-header"><span class="cad-badge-label">CATIA V5</span><span class="cad-badge-label">Live Session</span></div>
-        <div class="cad-viewport">
-          <div class="cad-axis-x"></div>
-          <div class="cad-toolbar"><div class="cad-tool"></div><div class="cad-tool"></div><div class="cad-tool"></div><div class="cad-tool"></div><div class="cad-tool"></div></div>
-          <svg width="240" height="180" viewBox="0 0 260 200" fill="none" style="position:relative;z-index:2;">
-            <rect x="60" y="70" width="130" height="80" rx="4" fill="#1e2a3a" stroke="#2a3f5a" stroke-width="1"/>
-            <polygon points="60,70 100,50 230,50 190,70" fill="#243040" stroke="#2a3f5a" stroke-width="1"/>
-            <polygon points="190,70 230,50 230,130 190,150" fill="#162030" stroke="#2a3f5a" stroke-width="1"/>
-            <ellipse cx="185" cy="110" rx="28" ry="28" fill="#0a1520" stroke="#037EC4" stroke-width="1.5"/>
-            <ellipse cx="185" cy="110" rx="20" ry="20" fill="#1a2535" stroke="#037EC4" stroke-width="1"/>
-            <ellipse cx="185" cy="110" rx="10" ry="10" fill="#0D92DB" opacity="0.4"/>
-            <rect x="55" y="148" width="140" height="7" rx="2" fill="#037EC4" opacity="0.8"/>
-            <rect x="50" y="153" width="150" height="10" rx="2" fill="#0D92DB" opacity="0.45"/>
-          </svg>
-          <div class="cad-footer-label">⊕ Plastic Product Design</div>
+
+  <div class="hero-right interior360-right">
+    <div class="interior360-viewer" id="interior360Viewer" aria-label="Premium car interior 360 viewer">
+      <div class="interior360-stage" id="interior360Stage">
+        <img id="interior360Frame" class="interior360-img" src="/images/interier360/frame-01.png" alt="Premium SUV interior 360 view" draggable="false" />
+
+        <button class="interior360-hotspot" data-frame-target="2" style="--x:17%;--y:53%;" type="button"><span>door trim</span></button>
+        <button class="interior360-hotspot" data-frame-target="2" style="--x:22%;--y:70%;" type="button"><span>map pocket</span></button>
+        <button class="interior360-hotspot" data-frame-target="3" style="--x:45%;--y:42%;" type="button"><span>instrument panel</span></button>
+        <button class="interior360-hotspot" data-frame-target="4" style="--x:50%;--y:68%;" type="button"><span>center console</span></button>
+        <button class="interior360-hotspot" data-frame-target="5" style="--x:63%;--y:47%;" type="button"><span>steering</span></button>
+        <button class="interior360-hotspot" data-frame-target="6" style="--x:78%;--y:56%;" type="button"><span>switch panel</span></button>
+        <button class="interior360-hotspot" data-frame-target="6" style="--x:82%;--y:68%;" type="button"><span>armrest</span></button>
+
+        <button class="interior360-arrow interior360-prev" id="interior360Prev" type="button" aria-label="Previous interior view">‹</button>
+        <button class="interior360-arrow interior360-next" id="interior360Next" type="button" aria-label="Next interior view">›</button>
+
+        <div class="interior360-drag-hint">drag / swipe</div>
+      </div>
+
+      <div class="interior360-bottom">
+        <div class="interior360-dots" id="interior360Dots">
+          <button class="active" data-frame="0" type="button"></button>
+          <button data-frame="1" type="button"></button>
+          <button data-frame="2" type="button"></button>
+          <button data-frame="3" type="button"></button>
+          <button data-frame="4" type="button"></button>
+          <button data-frame="5" type="button"></button>
+          <button data-frame="6" type="button"></button>
         </div>
       </div>
     </div>
@@ -54,14 +65,89 @@ const homepageHtml = `
 <section class="dashboard-section">
   <div class="dash-left">
     <h2 class="dash-section-title">Smartly Designed Student<br>Learning Dashboard</h2>
-    <div class="accordion" id="accordion">
-      <div class="acc-item active"><div class="acc-header" onclick="toggleAcc(0)"><span class="acc-title">Sessions Overview</span></div><div class="acc-body"><div class="acc-body-inner">View All Sessions, Upcoming Schedules, And Completed Classes In One Organized And Easy-To-Track Dashboard View.</div></div></div>
-      <div class="acc-item"><div class="acc-header" onclick="toggleAcc(1)"><span class="acc-title">Structured Syllabus Access</span></div><div class="acc-body"><div class="acc-body-inner">Access A Well-Structured Syllabus With Module-Wise Breakdown, Resources, And Progress Tracking.</div></div></div>
-      <div class="acc-item"><div class="acc-header" onclick="toggleAcc(2)"><span class="acc-title">Assignments & Feedback</span></div><div class="acc-body"><div class="acc-body-inner">Submit Assignments Based On Real Industry Projects And Receive Detailed Expert Feedback.</div></div></div>
-      <div class="acc-item"><div class="acc-header" onclick="toggleAcc(3)"><span class="acc-title">Ask Doubts Anytime</span></div><div class="acc-body"><div class="acc-body-inner">Post Your Questions At Any Time And Get Answers From Expert Mentors.</div></div></div>
+    <div class="acc-list">
+      <div class="acc-item active" data-dash-tab="sessions"><div class="acc-header" onclick="toggleAcc(0)"><span class="acc-title">Sessions Overview</span></div><div class="acc-body"><div class="acc-body-inner">View all sessions, upcoming schedules, and completed classes in one organized and easy-to-track dashboard view.</div></div></div>
+      <div class="acc-item" data-dash-tab="syllabus"><div class="acc-header" onclick="toggleAcc(1)"><span class="acc-title">Structured Syllabus Access</span></div><div class="acc-body"><div class="acc-body-inner">Track module-wise learning progress, completed topics, and upcoming design concepts without confusion.</div></div></div>
+      <div class="acc-item" data-dash-tab="assignments"><div class="acc-header" onclick="toggleAcc(2)"><span class="acc-title">Assignments &amp; Feedback</span></div><div class="acc-body"><div class="acc-body-inner">Submit CAD tasks, view due dates, and understand exactly what needs to be improved after every session.</div></div></div>
+      <div class="acc-item" data-dash-tab="queries"><div class="acc-header" onclick="toggleAcc(3)"><span class="acc-title">Ask Doubts Anytime</span></div><div class="acc-body"><div class="acc-body-inner">Raise session-wise doubts with screenshots and get guided support from the tutor side.</div></div></div>
     </div>
   </div>
-  <div class="dash-right"><div class="dash-right-pill"></div><div class="dash-mockup-wrap"><div class="dash-mockup-outer"><div class="dash-mockup-inner"><div class="dash-sidebar"><div class="dash-sidebar-title">▦ Dashboard</div><div class="dash-nav-item section-title-nav">Sessions ▾</div><div class="dash-nav-sub active">All Sessions</div><div class="dash-nav-sub">Upcoming Sessions</div><div class="dash-nav-sub">Completed Sessions</div><div class="dash-sidebar-divider"></div><div class="dash-nav-item">Assignments</div><div class="dash-nav-item">Syllabus</div><div class="dash-nav-item">My Queries</div></div><div class="dash-main"><div class="dash-banner"><div class="dash-banner-text"><h4>Got Questions?</h4><p>We are Here to Help you!</p><button class="dash-banner-btn">Ask a question</button></div><div class="dash-banner-icon">▣</div></div><div class="dash-sessions-title">All Sessions</div><div class="dash-session-card"><div class="dash-session-card-title">Plastic Product Design Course Session 1</div><div class="dash-session-topic">Topic : CATIA Surfacing Session 01</div><div class="dash-session-meta"><div class="dash-meta-box"><div class="dash-meta-label">Session Date</div><div class="dash-meta-val">19/06/2025</div></div><div class="dash-meta-box"><div class="dash-meta-label">Session Time</div><div class="dash-meta-val">8:00 PM To 9:30 PM</div></div></div><div class="dash-action-row"><div class="dash-action-btn">Assignment ›</div><div class="dash-action-btn">Ask a Question ›</div></div><div class="dash-goto-btn">Go to Session</div></div></div></div></div></div></div>
+
+  <div class="dash-right" aria-label="Interactive student dashboard preview">
+    <div class="dash-right-pill"></div>
+    <div class="dash-mockup-wrap">
+      <div class="dash-mockup-outer">
+        <div class="dash-mockup-inner">
+          <aside class="dash-sidebar">
+            <div class="dash-sidebar-title">▦ Dashboard</div>
+            <div class="dash-nav-item section-title-nav active" data-dash-nav="sessions">Sessions ▾</div>
+            <div class="dash-nav-sub active">All Sessions</div>
+            <div class="dash-nav-sub">Upcoming Sessions</div>
+            <div class="dash-nav-sub">Completed Sessions</div>
+            <div class="dash-sidebar-divider"></div>
+            <div class="dash-nav-item" data-dash-nav="assignments">Assignments</div>
+            <div class="dash-nav-item" data-dash-nav="syllabus">Syllabus</div>
+            <div class="dash-nav-item" data-dash-nav="queries">My Queries</div>
+          </aside>
+
+          <main class="dash-main">
+            <div class="dash-banner">
+              <div class="dash-banner-text">
+                <h4 id="dashPreviewBannerTitle">Got Questions?</h4>
+                <p id="dashPreviewBannerText">We are here to help you!</p>
+                <button class="dash-banner-btn" id="dashPreviewBannerBtn">Ask a question</button>
+              </div>
+              <div class="dash-banner-icon" id="dashPreviewIcon">▣</div>
+            </div>
+
+            <div class="dash-preview-view active" data-dash-view="sessions">
+              <div class="dash-sessions-title">All Sessions</div>
+              <div class="dash-session-card">
+                <div class="dash-session-card-title">Plastic Product Design Course Session 1</div>
+                <div class="dash-session-topic">Topic : CATIA Surfacing Session 01</div>
+                <div class="dash-session-meta">
+                  <div class="dash-meta-box"><div class="dash-meta-label">Session Date</div><div class="dash-meta-val">19/06/2025</div></div>
+                  <div class="dash-meta-box"><div class="dash-meta-label">Session Time</div><div class="dash-meta-val">8:00 PM To 9:30 PM</div></div>
+                </div>
+                <div class="dash-action-row"><div class="dash-action-btn">Assignment ›</div><div class="dash-action-btn">Ask a Question ›</div></div>
+                <div class="dash-goto-btn">Go to Session</div>
+              </div>
+            </div>
+
+            <div class="dash-preview-view" data-dash-view="syllabus">
+              <div class="dash-sessions-title">Syllabus Progress</div>
+              <div class="dash-syllabus-card">
+                <div class="dash-syllabus-row"><span>CATIA Surfacing</span><strong>Completed</strong></div>
+                <div class="dash-progress-line"><i style="width:100%"></i></div>
+                <div class="dash-syllabus-row"><span>Tooling Direction</span><strong>In Progress</strong></div>
+                <div class="dash-progress-line"><i style="width:58%"></i></div>
+                <div class="dash-syllabus-row muted"><span>B-Side Features</span><strong>Upcoming</strong></div>
+                <div class="dash-progress-line"><i style="width:20%"></i></div>
+              </div>
+            </div>
+
+            <div class="dash-preview-view" data-dash-view="assignments">
+              <div class="dash-sessions-title">Assignments & Feedback</div>
+              <div class="dash-assignment-card">
+                <div class="dash-assignment-top"><strong>Door Trim B-Side Task</strong><span>Due Today</span></div>
+                <p>Submit CAD file with ribs, dog house, locator and draft check screenshots.</p>
+                <div class="dash-feedback-box">Tutor Feedback: Improve rib thickness and mounting clearance.</div>
+              </div>
+            </div>
+
+            <div class="dash-preview-view" data-dash-view="queries">
+              <div class="dash-sessions-title">My Queries</div>
+              <div class="dash-query-card">
+                <div class="dash-query-question">How to decide tooling direction for this door trim?</div>
+                <div class="dash-query-answer">Tutor Reply: Check main Class-A face normal, undercut areas and slider requirement.</div>
+                <div class="dash-query-status">Resolved</div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="video-section">
