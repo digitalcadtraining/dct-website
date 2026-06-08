@@ -33,11 +33,17 @@ function deriveBatchStatus(batch) {
   return { code, label: "Upcoming", active: false };
 }
 
+function safeProgress(value) {
+  const n = Number(value || 0);
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
 function CourseCard({ enrollment, index }) {
   const batch  = enrollment.batch  || {};
   const course = batch.course      || {};
   const tutor  = batch.tutor       || {};
-  const pct    = enrollment.progress || 0;
+  const pct    = safeProgress(enrollment.progress);
   const total  = batch._count?.scheduled_sessions || 0;
   const fmt    = d => d ? new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";
   const status = deriveBatchStatus(batch);
@@ -71,6 +77,7 @@ function CourseCard({ enrollment, index }) {
           <div style={{ height:5, background:"#e5e7eb", borderRadius:4, overflow:"hidden" }}>
             <motion.div style={{ height:"100%", background:`linear-gradient(90deg,${C.blue},${C.primary})`, borderRadius:4 }} initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration:1 }} />
           </div>
+          <p style={{ marginTop:5, fontSize:10, color:C.lg }}>Progress increases as submitted assignments are counted.</p>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
           <div style={{ width:28, height:28, borderRadius:"50%", background:`linear-gradient(135deg,${C.blue},${C.primary})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:12, fontWeight:700, flexShrink:0 }}>{tutor.name?.[0]?.toUpperCase()||"T"}</div>
@@ -96,11 +103,20 @@ export default function MyCourses() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError("");
     batchApi.enrolled()
       .then(res => setEnrollments(res.data || []))
       .catch(e  => setError(e.message || "Failed to load courses."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const hasActive = enrollments.some(e => deriveBatchStatus(e.batch).code === "ACTIVE");
@@ -108,7 +124,7 @@ export default function MyCourses() {
   return (
     <AppShell>
       <PageWrapper>
-        <motion.div className="rounded-2xl p-6 mb-6 relative overflow-hidden"
+        <motion.div className="rounded-2xl p-5 sm:p-6 mb-6 relative overflow-hidden"
           style={{ background:"linear-gradient(135deg,#024981,#007BBF)" }}
           initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }}>
           <div style={{ position:"absolute", right:-28, top:-28, width:130, height:130, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }} />
@@ -124,16 +140,16 @@ export default function MyCourses() {
           {!loading && enrollments.length > 0 && <span className={`${hasActive ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"} text-xs font-bold px-3 py-1 rounded-full`}>{hasActive ? "Active" : "Enrolled"}</span>}
         </div>
 
-        {loading && <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16, marginBottom:32 }}>{[1,2,3].map(i=><div key={i} style={{ height:360, background:"#f3f4f6", borderRadius:16 }} className="animate-pulse"/>)}</div>}
+        {loading && <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,320px))", gap:16, marginBottom:32 }}>{[1,2,3].map(i=><div key={i} style={{ height:360, background:"#f3f4f6", borderRadius:16 }} className="animate-pulse"/>)}</div>}
 
-        {!loading && error && <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center mb-8"><p className="text-red-600 font-semibold mb-3">{error}</p><button onClick={()=>window.location.reload()} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold">Retry</button></div>}
+        {!loading && error && <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center mb-8"><p className="text-red-600 font-semibold mb-3">{error}</p><button onClick={load} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold">Retry</button></div>}
 
-        {!loading && !error && enrollments.length === 0 && <div className="bg-white rounded-2xl border border-gray-100 p-14 text-center mb-8" style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}><BookOpen size={40} className="mx-auto mb-3 text-gray-300"/><p className="font-bold text-dct-dark mb-1">No courses enrolled yet</p><p className="text-sm text-dct-lightgray mb-5">Browse our courses and enroll to start learning.</p><Link to="/" className="inline-block px-6 py-2.5 text-white text-sm font-bold rounded-xl" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>Browse Courses</Link></div>}
+        {!loading && !error && enrollments.length === 0 && <div className="bg-white rounded-2xl border border-gray-100 p-10 sm:p-14 text-center mb-8" style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}><BookOpen size={40} className="mx-auto mb-3 text-gray-300"/><p className="font-bold text-dct-dark mb-1">No courses enrolled yet</p><p className="text-sm text-dct-lightgray mb-5">Browse our courses and enroll to start learning.</p><Link to="/" className="inline-block px-6 py-2.5 text-white text-sm font-bold rounded-xl" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>Browse Courses</Link></div>}
 
-        {!loading && !error && enrollments.length > 0 && <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16, marginBottom:32 }}>{enrollments.map((e,i)=><CourseCard key={e.enrollment_id||i} enrollment={e} index={i}/>)}</div>}
+        {!loading && !error && enrollments.length > 0 && <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,320px))", gap:16, marginBottom:32 }}>{enrollments.map((e,i)=><CourseCard key={e.enrollment_id||i} enrollment={e} index={i}/>)}</div>}
 
         <h2 className="text-xl font-bold text-dct-dark mb-4">Explore These Free Courses</h2>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:16 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,300px))", gap:16 }}>
           {FREE.map((c,i)=><motion.div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 relative" initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.3, delay:0.4+i*0.07 }} whileHover={{ y:-2 }} style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.04)" }}><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}><span style={{ fontSize:28 }}>{c.icon}</span><span style={{ background:"#FFE8EE", color:"#F8285A", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999 }}>Free</span></div><h3 className="font-bold text-sm text-dct-dark mb-3 leading-snug">{c.title}</h3><div className="grid grid-cols-2 gap-3 mb-4"><div><p className="text-sm font-bold text-dct-dark">{c.sessions} Sessions</p><p className="text-xs text-dct-lightgray">No. of Sessions</p></div><div><p className="text-sm font-bold text-dct-dark">{c.duration}</p><p className="text-xs text-dct-lightgray">Duration</p></div></div><button className="w-full bg-dct-primary hover:bg-dct-blue text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">View Course</button></motion.div>)}
         </div>
       </PageWrapper>

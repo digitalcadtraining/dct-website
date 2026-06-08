@@ -71,6 +71,7 @@ export function initHomePageScripts({ navigate }) {
   initTestimonials(add);
   initCompanyMarquee();
   initInterior360Hero(add);
+  initTrustCounters(add);
 
   return () => { cleanupFns.forEach((fn) => fn()); window.clearInterval(heroTimer); delete window.toggleAcc; };
 }
@@ -398,4 +399,36 @@ function initHeroAutoExplorer(add) {
   });
 
   setMode("plastic");
+}
+
+
+function initTrustCounters(add) {
+  const counters = Array.from(document.querySelectorAll(".trust-count[data-count]"));
+  if (!counters.length) return;
+
+  const animateCounter = (el) => {
+    if (el.dataset.done === "true") return;
+    el.dataset.done = "true";
+    const target = Number(el.dataset.count || 0);
+    const duration = 1300;
+    const start = performance.now();
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(target * eased);
+      el.textContent = String(value);
+      if (progress < 1) requestAnimationFrame(tick);
+      else el.textContent = String(target);
+    }
+    requestAnimationFrame(tick);
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      animateCounter(entry.target);
+    });
+  }, { threshold: 0.35 });
+
+  counters.forEach((counter) => io.observe(counter));
 }

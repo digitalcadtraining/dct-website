@@ -146,27 +146,53 @@ const updateBatch = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+function progressFromAssignments(batch, storedProgress = 0) {
+  const assignments = Array.isArray(batch.assignments) ? batch.assignments : [];
+  const total = assignments.length;
+  if (total === 0) return Math.max(0, Math.min(100, Math.round(Number(storedProgress || 0))));
+
+  const submitted = assignments.filter((a) => Array.isArray(a.submissions) && a.submissions.length > 0).length;
+  return Math.round((submitted / total) * 100);
+}
+
 const getEnrolledBatches = async (req, res, next) => {
   try {
+    const studentId = req.user.id;
     const enrollments = await prisma.enrollment.findMany({
-      where: { student_id: req.user.id },
+      where: { student_id: studentId },
       include: {
         batch: {
           include: {
             course: { select: { id: true, name: true, slug: true, thumbnail_url: true } },
             tutor: { select: { name: true } },
+            assignments: {
+              select: {
+                id: true,
+                submissions: {
+                  where: { student_id: studentId },
+                  select: { id: true, status: true, submitted_at: true },
+                },
+              },
+            },
             _count: { select: { scheduled_sessions: true, assignments: true } },
           },
         },
       },
     });
-    const result = enrollments.map(e => ({
-      enrollment_id: e.id,
-      enrolled_at: e.enrolled_at,
-      payment_status: e.payment_status,
-      progress: e.progress,
-      batch: e.batch,
-    }));
+
+    const result = enrollments.map(e => {
+      const batch = e.batch || {};
+      const progress = progressFromAssignments(batch, e.progress);
+      const { assignments, ...cleanBatch } = batch;
+      return {
+        enrollment_id: e.id,
+        enrolled_at: e.enrolled_at,
+        payment_status: e.payment_status,
+        progress,
+        batch: cleanBatch,
+      };
+    });
+
     return success(res, 200, "Your enrolled courses.", result);
   } catch (err) { next(err); }
 };

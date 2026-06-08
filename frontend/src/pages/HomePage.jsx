@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./HomePage.css";
+import "./HomePageCoursePatch.css";
+import "./HomePageCourseTrustPatch.css";
 import { initHomePageScripts } from "./HomePage.scripts.js";
 
 const homepageHtml = `
@@ -50,16 +52,25 @@ const homepageHtml = `
   </div>
 </div>
 
-<section class="courses-section" id="courses">
+<section class="courses-section dct-trust-courses-section" id="courses">
   <div class="courses-header">
+    <div class="dct-trust-eyebrow">CADPOINT Authorized Partner • PAN India MNC/OEM Hiring Direction</div>
     <h2 class="courses-title">Industry-Focused Mechanical<br>Engineering Courses</h2>
-    <p class="courses-sub">Designed To Equip Engineers With Practical, Industry-Relevant Skills<br>Through Advanced, Real-World Domain Training.</p>
+    <p class="courses-sub">Courses designed to give 2–3 years experience-level project confidence with MNC, OEM and Tier-1 supplier career direction.</p>
   </div>
-  <div class="courses-grid">
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-plastic"></div><span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><h3 class="card-title">Plastic Product Design Course</h3><p class="card-desc">Master CATIA V5 surfacing, mould design & plastic part manufacturing with real industry projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">312 reviews</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 40+ Live Sessions with recordings</li><li>✓ 11 Real Industry Projects</li><li>✓ 100% Placement Support</li></ul><a class="btn-enroll" href="/courses/plastic-product-design">Enroll Now</a></div></div>
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-biw"></div><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><h3 class="card-title">BIW Product Design Course</h3><p class="card-desc">Body-in-White automotive design with structural analysis, weld design and CATIA BIW tools.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">198 reviews</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ Live Sessions with recordings</li><li>✓ Real Automotive BIW Projects</li><li>✓ Direct Company Referrals</li></ul><a class="btn-enroll" href="/courses/biw-product-design">Enroll Now</a></div></div>
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-nx"></div><span class="card-badge badge-selling">New Batch</span></div><div class="card-body"><h3 class="card-title">UG NX Product Design Course</h3><p class="card-desc">Comprehensive UG NX training — synchronous modelling, simulation and manufacturing prep.</p><div class="card-rating"><span class="rating-num">4.7</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">87 reviews</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 30+ Live Sessions with recordings</li><li>✓ Industry Product Design Projects</li><li>✓ Placement Assistance Included</li></ul><a class="btn-enroll" href="/courses/ug-nx-product-design">Enroll Now</a></div></div>
+  <div class="dct-course-trust-strip-home">
+    <div><strong>CADPOINT</strong><span>Partner & Authorized Training Direction</span></div>
+    <div><strong>PAN India</strong><span>MNC / OEM / Tier-1 Hiring Exposure</span></div>
+    <div><strong>7+ Years</strong><span>Trust Connection For Career Support</span></div>
+    <div><strong>₹3.5–9 LPA</strong><span>Course-wise Package Guidance</span></div>
   </div>
+  <div class="courses-grid courses-grid-four">
+    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-plastic"></div><span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><div class="dct-card-authority">CADPOINT Authorized • OEM/Tier-1 Track</div><h3 class="card-title">Plastic Product Design Course</h3><p class="card-desc">CATIA V5 surfacing, B-side features, tooling direction, mould feasibility and real automotive trim projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–8 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 50-session practical syllabus</li><li>✓ 9+ real automotive projects with images</li><li>✓ Placement + portfolio support</li></ul><a class="btn-enroll" href="/courses/plastic-product-design">Register Now</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-biw"></div><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><div class="dct-card-authority">MNC/OEM Career Direction</div><h3 class="card-title">BIW Product Design Course</h3><p class="card-desc">Automotive Body-in-White design with sheet metal, joints, reinforcements, assembly and BIW project workflow.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–7 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ live sessions with recordings</li><li>✓ BIW component + assembly projects</li><li>✓ Resume, mock interview & referrals</li></ul><a class="btn-enroll" href="/courses/biw-product-design">Register Now</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-ansys"></div><span class="card-badge badge-selling">CAE Track</span></div><div class="card-body"><div class="dct-card-authority">Analysis / CAE Job Track</div><h3 class="card-title">Analysis With Ansys Course</h3><p class="card-desc">FEA fundamentals, meshing, boundary conditions, structural, modal, thermal analysis and CAE reports.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ analysis-focused sessions</li><li>✓ 10 CAE projects + report creation</li><li>✓ 2–3 years workflow confidence</li></ul><a class="btn-enroll" href="/courses/analysis-with-ansys">Register Now</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-mould"></div><span class="card-badge badge-popular">Tooling Track</span></div><div class="card-body"><div class="dct-card-authority">Toolroom-Level Workflow</div><h3 class="card-title">Mould Design Course</h3><p class="card-desc">Injection moulding, core-cavity, parting, runner-gate, cooling, ejection, slider-lifter and DFM review.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ tooling sessions</li><li>✓ 12 mould design projects</li><li>✓ Portfolio + toolroom review training</li></ul><a class="btn-enroll" href="/courses/mould-design">Register Now</a></div></div>
+  </div>
+  <div class="dct-course-bottom-trust-note">Students can review complete syllabus, projects, package guidance and hiring direction before registration.</div>
 </section>
 
 <section class="dashboard-section">
@@ -150,9 +161,6 @@ const homepageHtml = `
   </div>
 </section>
 
-<section class="video-section">
-  <div class="video-content"><div class="video-header"><h2 class="video-title">Watch Experts Build Real <span>Industry</span> Projects</h2><p class="video-sub">Detailed project videos help you understand tools, methods, and professional execution from start to finish.</p></div><div class="video-frame-outer"><div class="video-frame-inner"><div class="yt-embed-wrap"><iframe src="https://www.youtube.com/embed/YEPGvStBahk?si=YjtoayfxIjpAusso" title="DigitalCAD Training — Industry Project Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div></div></div>
-</section>
 
 <section class="project-swipe-section">
   <div class="project-showcase-layout">
@@ -161,7 +169,50 @@ const homepageHtml = `
   </div>
 </section>
 
-<section class="free-section"><div class="free-header"><h2 class="free-title">Explore Our Free Courses</h2></div><div class="free-grid"><div class="free-card"><div class="free-card-top"><div class="free-card-logo">CATIA / 3DS</div><span class="free-badge-blue">Free</span></div><div class="free-card-title">CATIA Tool for Beginners</div><div class="free-card-stats"><div><div class="free-stat-num">10 Sessions</div><div class="free-stat-label">No. of Sessions</div></div><div><div class="free-stat-num">2hrs, 50mins</div><div class="free-stat-label">Course Duration</div></div></div><button class="btn-view-course">View Course</button></div><div class="free-card"><div class="free-card-top"><div class="free-card-logo">Siemens NX</div><span class="free-badge-pink">Free</span></div><div class="free-card-title">UG NX Tool for Beginners</div><div class="free-card-stats"><div><div class="free-stat-num">10 Sessions</div><div class="free-stat-label">No. of Sessions</div></div><div><div class="free-stat-num">2hrs, 50mins</div><div class="free-stat-label">Course Duration</div></div></div><button class="btn-view-course">View Course</button></div><div class="free-card"><div class="free-card-top"><div class="free-card-logo">CATIA / 3DS</div><span class="free-badge-blue">Free</span></div><div class="free-card-title">Mould Design Fundamentals</div><div class="free-card-stats"><div><div class="free-stat-num">8 Sessions</div><div class="free-stat-label">No. of Sessions</div></div><div><div class="free-stat-num">2hrs, 10mins</div><div class="free-stat-label">Course Duration</div></div></div><button class="btn-view-course">View Course</button></div></div></section>
+
+<section class="trust-verified-section" id="trust-verified">
+  <div class="trust-verified-inner">
+    <div class="trust-verified-head">
+      <span class="trust-verified-eyebrow">GET TRUST VERIFIED</span>
+      <h2 class="trust-verified-title">Trusted Digital CAD Training Community</h2>
+      <p class="trust-verified-sub">Since 2018, students have followed Digital CAD Training across social platforms, WhatsApp groups and professional communities for CAD, automotive design and placement-oriented guidance.</p>
+    </div>
+
+    <div class="trust-verified-grid">
+      <a class="trust-verified-card instagram" href="https://www.instagram.com/digitalcadtraining/" target="_blank" rel="noopener noreferrer">
+        <div class="trust-icon-wrap"><span class="trust-icon">◎</span></div>
+        <div class="trust-count-row"><span class="trust-count" data-count="20">0</span><span class="trust-plus">K+</span></div>
+        <h3>Instagram Followers</h3>
+        <p>Daily reels, student updates, CAD tips and course awareness for mechanical engineers.</p>
+      </a>
+      <a class="trust-verified-card youtube" href="https://www.youtube.com/@digitalcadtraining" target="_blank" rel="noopener noreferrer">
+        <div class="trust-icon-wrap"><span class="trust-icon">▶</span></div>
+        <div class="trust-count-row"><span class="trust-count" data-count="15">0</span><span class="trust-plus">K+</span></div>
+        <h3>YouTube Subscribers</h3>
+        <p>Webinars, CAD learning videos and design career direction from experienced mentors.</p>
+      </a>
+      <a class="trust-verified-card linkedin" href="https://www.linkedin.com/company/digital-cad-training/" target="_blank" rel="noopener noreferrer">
+        <div class="trust-icon-wrap"><span class="trust-icon">in</span></div>
+        <div class="trust-count-row"><span class="trust-count" data-count="4">0</span><span class="trust-plus">Lakh+</span></div>
+        <h3>LinkedIn Reach</h3>
+        <p>Professional trust, hiring updates and PAN India MNC/OEM/Tier-1 career visibility.</p>
+      </a>
+      <div class="trust-verified-card community">
+        <div class="trust-icon-wrap"><span class="trust-icon">✦</span></div>
+        <div class="trust-count-row"><span class="trust-count" data-count="30">0</span><span class="trust-plus">K+</span></div>
+        <h3>WhatsApp + Telegram</h3>
+        <p>Fresh job openings, course updates, placement guidance and student support community.</p>
+      </div>
+    </div>
+
+    <div class="trust-verified-bottom">
+      <div><strong>Trusted since 2018</strong><span>7+ years of training, guidance and career-support relationship.</span></div>
+      <div><strong>CADPOINT Authorized Partner</strong><span>Professional CAD training direction with recognized branding support.</span></div>
+      <div><strong>PAN India Hiring Direction</strong><span>MNC, OEM and Tier-1 opportunities shared through genuine connections.</span></div>
+    </div>
+  </div>
+</section>
+
 
 <section class="home-stories-section">
   <div class="home-stories-inner"><div class="home-stories-header"><h2 class="home-stories-title">Real Student <span>Success Stories</span></h2><p class="home-stories-sub">Freshers, quality engineers, drafters and CAD users who moved towards better design careers.</p></div><div class="home-stories-stats"><div><strong>12+</strong><span>Verified Stories</span></div><div><strong>₹16 LPA</strong><span>Highest Package</span></div><div><strong>Design</strong><span>Career Switches</span></div></div><div class="home-company-marquee-section"><p class="home-company-marquee-title">Our Students Are Placed In</p><div class="home-company-marquee-row"><div class="home-company-marquee-track toRight" id="companyMarqueeRow1"></div></div><div class="home-company-marquee-row"><div class="home-company-marquee-track toLeft" id="companyMarqueeRow2"></div></div></div><div class="home-stories-grid" id="homeTestimonialsGrid"></div><div class="home-stories-action"><button class="home-stories-btn" id="homeTestimonialsMoreBtn">Show more students</button></div></div>
@@ -170,6 +221,34 @@ const homepageHtml = `
 <section class="career-roadmap-section">
   <div class="career-roadmap-inner"><div class="career-roadmap-header"><span class="career-roadmap-eyebrow">4-Month Career-Ready Roadmap</span><h2 class="career-roadmap-title">From CAD Basics To<br>Job-Ready Design Engineer</h2><p class="career-roadmap-sub">A structured 120-day journey designed to build skills, projects, interview confidence and job direction.</p></div><div class="career-roadmap-stats"><div><strong>120</strong><span>Days</span></div><div><strong>42+</strong><span>Live Sessions</span></div><div><strong>14+</strong><span>Projects</span></div><div><strong>3</strong><span>Mock Interviews</span></div></div><div class="career-road-wrap"><div class="career-road-line"><div class="career-road-fill" id="careerRoadFill"></div></div><div class="career-road-stage active" data-road-stage="0"><div class="road-pin"><span>01</span></div><div class="road-card"><span class="road-days">Days 1–75</span><h3>Core Training & Skill Building</h3><p>Learn CATIA, NX, GD&T, design fundamentals, case studies and hands-on assignments.</p><div class="road-result">Outcome: Strong technical base</div></div></div><div class="career-road-stage" data-road-stage="1"><div class="road-pin"><span>02</span></div><div class="road-card"><span class="road-days">Days 76–85</span><h3>Resume & Interview Preparation</h3><p>Build your resume, prepare self-introduction, technical answers and HR confidence.</p><div class="road-result">Outcome: Interview-ready profile</div></div></div><div class="career-road-stage" data-road-stage="2"><div class="road-pin"><span>03</span></div><div class="road-card"><span class="road-days">From Day 86</span><h3>Genuine Job Sharing Begins</h3><p>Start receiving relevant openings, referral opportunities and placement guidance.</p><div class="road-result">Outcome: Early job exposure</div></div></div><div class="career-road-stage" data-road-stage="3"><div class="road-pin"><span>04</span></div><div class="road-card"><span class="road-days">Days 86–120</span><h3>Real-Time Industry Projects</h3><p>Build portfolio-quality projects using OEM/Tier-1 style workflow and review support.</p><div class="road-result">Outcome: Portfolio + confidence</div></div></div></div><div class="career-roadmap-bottom"><div><h3>By the end, students are not just learning tools.</h3><p>They are building projects, resume confidence, interview readiness and practical design thinking.</p></div><a href="#courses" class="career-roadmap-btn">Start This Roadmap</a></div></div>
 </section>
+
+<footer class="dct-site-footer" id="contact">
+  <div class="dct-footer-inner">
+    <div class="dct-footer-brand">
+      <div class="dct-footer-logo"><span>D</span></div>
+      <div>
+        <h3>Digital CAD Training</h3>
+        <p>Industry-focused CAD and automotive design training since 2018.</p>
+      </div>
+    </div>
+    <div class="dct-footer-grid">
+      <div>
+        <h4>Office Address</h4>
+        <p>413, Jai Ganesh Vision,<br/>Akurdi / Nigdi, PCMC,<br/>Pune, Maharashtra, India.</p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <p>Phone: +91 7977508768<br/>WhatsApp: +91 8591719044<br/>Email: digitalcadtraining@gmail.com</p>
+      </div>
+      <div>
+        <h4>Courses</h4>
+        <p>Plastic Product Design<br/>BIW Product Design<br/>Analysis With Ansys<br/>Mould Design</p>
+      </div>
+    </div>
+    <div class="dct-footer-bottom">© ${new Date().getFullYear()} Digital CAD Training. All rights reserved.</div>
+  </div>
+</footer>
+
 `;
 
 export default function HomePage() {

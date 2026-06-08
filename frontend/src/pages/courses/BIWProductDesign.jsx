@@ -14,8 +14,20 @@ const COURSE = {
   enrolled: "198+",
   duration: "4 Months",
   sessions: "35+",
-  projects: "8",
+  projectCount: "8",
   tools: ["CATIA V5 BIW", "Assembly Design", "Weld Analysis", "GD&T", "DMU Kinematics"],
+  packageRange: "₹3.5–7 LPA",
+  trustYears: "7+",
+  partnerLine: "Digital CAD Training is partner and authorized by CADPOINT for professional CAD training direction.",
+  trustCopy: "Students see the complete syllabus, projects, career path and registration value clearly before joining. The program is positioned around CADPOINT authorization, PAN India MNC/OEM/Tier-1 hiring exposure and placement-focused mentoring.",
+  packageNote: "Package depends on skill, location, interview performance and company requirement. We guide students for fresher to BIW design engineer level roles across PAN India automotive hiring networks.",
+  trustHighlights: ["CADPOINT Authorized Partner", "PAN India MNC/OEM hiring exposure", "7+ years trust connection", "Package guidance ₹3.5–7 LPA"],
+  trustProofs: [
+    { title: "CADPOINT authorized partner", text: "Adds credibility that the training brand is connected with a professional CAD education ecosystem." },
+    { title: "PAN India hiring exposure", text: "Students are prepared for MNC, OEM and Tier-1 supplier interviews across multiple automotive locations." },
+    { title: "2–3 years experience-level learning", text: "Projects, reports, design decisions and interview preparation are structured beyond basic tool commands." },
+    { title: "Placement-focused mentoring", text: "Resume, portfolio, mock interview and job-sharing support are connected with the course journey." },
+  ],
   tutor: { name: "Priya Joshi", exp: "10 Years Experience", companies: "Ex-TATA Motors & Mahindra", initial: "P" },
   outcomes: [
     "Design BIW components used in real automotive production",
@@ -34,22 +46,10 @@ const COURSE = {
     { icon: "♾", label: "Lifetime Access", sub: "All recordings forever" },
   ],
   syllabus: [
-    {
-      phase: "Phase 1 — Automotive Fundamentals (Days 1–30)", sessions: "Sessions 1–9",
-      topics: ["BIW structure & automotive architecture","CATIA V5 BIW workbench tools","Sheet metal fundamentals & standards","Weld joint types and selection","GD&T for automotive components"],
-    },
-    {
-      phase: "Phase 2 — BIW Component Design (Days 31–65)", sessions: "Sessions 10–22",
-      topics: ["Floor pan & side member design","A/B/C-pillar design","Door inner & outer panel design","Roof panel & reinforcement design","Structural analysis for weight optimisation"],
-    },
-    {
-      phase: "Phase 3 — Assembly & Joints (Days 66–90)", sessions: "Sessions 23–30",
-      topics: ["BIW full body assembly","Weld flange and hem design","Sealing & adhesive locations","Hinge design & door movement study","DMU kinematics for door/hood motion"],
-    },
-    {
-      phase: "Phase 4 — Industry Projects (Days 91–120)", sessions: "Sessions 31–35",
-      topics: ["Project 1: Full door assembly BIW","Project 2: Front floor pan with cross-members","Project 3: Tailgate inner structure","5 Practice projects with expert review","Placement preparation & portfolio building"],
-    },
+    { phase: "Phase 1 — Automotive Fundamentals (Days 1–30)", sessions: "Sessions 1–9", topics: ["BIW structure & automotive architecture","CATIA V5 BIW workbench tools","Sheet metal fundamentals & standards","Weld joint types and selection","GD&T for automotive components"] },
+    { phase: "Phase 2 — BIW Component Design (Days 31–65)", sessions: "Sessions 10–22", topics: ["Floor pan & side member design","A/B/C-pillar design","Door inner & outer panel design","Roof panel & reinforcement design","Structural analysis for weight optimisation"] },
+    { phase: "Phase 3 — Assembly & Joints (Days 66–90)", sessions: "Sessions 23–30", topics: ["BIW full body assembly","Weld flange and hem design","Sealing & adhesive locations","Hinge design & door movement study","DMU kinematics for door/hood motion"] },
+    { phase: "Phase 4 — Industry Projects (Days 91–120)", sessions: "Sessions 31–35", topics: ["Project 1: Full door assembly BIW","Project 2: Front floor pan with cross-members","Project 3: Tailgate inner structure","5 Practice projects with expert review","Placement preparation & portfolio building"] },
   ],
   projects: [
     { name: "Front Door Full Assembly", type: "LIVE", difficulty: "Advanced" },

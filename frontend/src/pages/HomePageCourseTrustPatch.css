@@ -1,0 +1,21 @@
+/* Trust-building course card patch. Scoped only to homepage. */
+.dct-home-page .dct-trust-eyebrow{
+  display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;padding:9px 16px;border-radius:999px;background:#fff;border:1px solid #cfe4f2;color:#024981;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(2,73,129,.08)
+}
+.dct-home-page .dct-course-trust-strip-home{
+  max-width:1180px;margin:0 auto 30px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px
+}
+.dct-home-page .dct-course-trust-strip-home div{
+  background:#fff;border:1px solid #cfe4f2;border-radius:16px;padding:16px 14px;text-align:center;box-shadow:0 12px 32px rgba(2,73,129,.08)
+}
+.dct-home-page .dct-course-trust-strip-home strong{display:block;color:#024981;font-size:20px;font-weight:900;line-height:1;margin-bottom:7px}
+.dct-home-page .dct-course-trust-strip-home span{display:block;color:#535457;font-size:12px;font-weight:800;line-height:1.35}
+.dct-home-page .courses-grid-four{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.dct-home-page .dct-card-authority{display:inline-flex;width:max-content;max-width:100%;padding:6px 10px;border-radius:999px;background:#e5f2f9;color:#024981;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.dct-home-page .course-img-ansys{background:radial-gradient(circle at 25% 22%,rgba(255,235,58,.55),transparent 24%),linear-gradient(135deg,#06152c 0%,#0d92db 50%,#024981 100%);position:relative}
+.dct-home-page .course-img-ansys:after{content:"FEA";position:absolute;right:18px;bottom:15px;color:rgba(255,255,255,.9);font-weight:900;font-size:clamp(26px,3vw,40px);letter-spacing:.1em}
+.dct-home-page .course-img-mould{background:radial-gradient(circle at 75% 20%,rgba(255,235,58,.5),transparent 24%),linear-gradient(135deg,#0c0f11 0%,#2f5f7f 45%,#0d92db 100%);position:relative}
+.dct-home-page .course-img-mould:after{content:"MOULD";position:absolute;right:18px;bottom:15px;color:rgba(255,255,255,.9);font-weight:900;font-size:clamp(22px,2.5vw,34px);letter-spacing:.06em}
+.dct-home-page .dct-course-bottom-trust-note{max-width:760px;margin:28px auto 0;text-align:center;color:#535457;font-size:14px;font-weight:800;line-height:1.55}
+@media(max-width:1180px){.dct-home-page .courses-grid-four,.dct-home-page .dct-course-trust-strip-home{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:640px){.dct-home-page .courses-grid-four,.dct-home-page .dct-course-trust-strip-home{grid-template-columns:1fr!important}.dct-home-page .dct-trust-eyebrow{font-size:10px;line-height:1.45;text-align:center}.dct-home-page .courses-section{padding-left:18px;padding-right:18px}}

@@ -4,7 +4,8 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import HomePage from "../pages/HomePage.jsx";
 import PlasticProductDesignPage from "../pages/courses/PlasticProductDesign.jsx";
 import BIWProductDesignPage from "../pages/courses/BIWProductDesign.jsx";
-import UGNXProductDesignPage from "../pages/courses/UGNXProductDesign.jsx";
+import AnalysisWithAnsysPage from "../pages/courses/AnalysisWithAnsys.jsx";
+import MouldDesignPage from "../pages/courses/MouldDesign.jsx";
 
 import AdminLoginPage from "../pages/auth/AdminLoginPage.jsx";
 import LoginPage from "../pages/auth/LoginPage.jsx";
@@ -35,7 +36,8 @@ export default function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/courses/plastic-product-design" element={<PlasticProductDesignPage />} />
       <Route path="/courses/biw-product-design" element={<BIWProductDesignPage />} />
-      <Route path="/courses/ug-nx-product-design" element={<UGNXProductDesignPage />} />
+      <Route path="/courses/analysis-with-ansys" element={<AnalysisWithAnsysPage />} />
+      <Route path="/courses/mould-design" element={<MouldDesignPage />} />
 
       <Route path="/auth/login" element={<LoginPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
