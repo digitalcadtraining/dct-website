@@ -84,12 +84,13 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  enrollments       Enrollment[]
-  tutor_application TutorApplication?
-  tutor_batches     Batch[]                @relation("TutorBatches")
-  submissions       AssignmentSubmission[]
-  queries           Query[]
-  refresh_tokens    RefreshToken[]
+  enrollments           Enrollment[]
+  tutor_application     TutorApplication?
+  tutor_batches         Batch[]                @relation("TutorBatches")
+  submissions           AssignmentSubmission[]
+  queries               Query[]
+  refresh_tokens        RefreshToken[]
+  prerequisite_progress PrerequisiteProgress[]
 
   @@index([role])
   @@index([is_active])
@@ -329,6 +330,110 @@ model Query {
   @@index([status])
   @@index([created_at])
   @@map("queries")
+}
+
+
+model PendingRegistration {
+  id                 String        @id @default(cuid())
+  name               String
+  email              String
+  phone              String
+  password_hash      String
+  course_id          String
+  batch_id           String
+  phone_verified     Boolean       @default(false)
+  payment_status     PaymentStatus @default(PENDING)
+  payment_request_id String?       @unique
+  payment_id         String?
+  created_at         DateTime      @default(now())
+  updated_at         DateTime      @updatedAt
+
+  payments RegistrationPayment[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([course_id])
+  @@index([batch_id])
+  @@index([payment_status])
+  @@map("pending_registrations")
+}
+
+model RegistrationPayment {
+  id                      String              @id @default(cuid())
+  pending_registration_id String
+  pending_registration    PendingRegistration @relation(fields: [pending_registration_id], references: [id], onDelete: Cascade)
+  provider                String              @default("instamojo")
+  amount                  Decimal             @db.Decimal(10, 2)
+  status                  PaymentStatus        @default(PENDING)
+  payment_request_id      String?             @unique
+  payment_id              String?
+  raw_response            Json?
+  created_at              DateTime            @default(now())
+  updated_at              DateTime            @updatedAt
+
+  @@index([pending_registration_id])
+  @@index([status])
+  @@map("registration_payments")
+}
+
+model PrerequisiteCourse {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  subtitle    String?
+  description String
+  icon        String   @default("▶")
+  order_index Int      @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  lessons PrerequisiteLesson[]
+
+  @@index([is_active])
+  @@index([order_index])
+  @@map("prerequisite_courses")
+}
+
+model PrerequisiteLesson {
+  id               String             @id @default(cuid())
+  course_id         String
+  course            PrerequisiteCourse @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  order_number      Int
+  title             String
+  description       String?
+  vimeo_url         String
+  duration_seconds  Int                @default(600)
+  completion_percent Int               @default(90)
+  is_active         Boolean            @default(true)
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+
+  progress PrerequisiteProgress[]
+
+  @@unique([course_id, order_number])
+  @@index([course_id])
+  @@index([is_active])
+  @@map("prerequisite_lessons")
+}
+
+model PrerequisiteProgress {
+  id              String             @id @default(cuid())
+  student_id      String
+  student         User               @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  lesson_id       String
+  lesson          PrerequisiteLesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  watched_seconds Int                @default(0)
+  last_position   Int                @default(0)
+  completed_at    DateTime?
+  updated_at      DateTime           @updatedAt
+  created_at      DateTime           @default(now())
+
+  @@unique([student_id, lesson_id])
+  @@index([student_id])
+  @@index([lesson_id])
+  @@index([completed_at])
+  @@map("prerequisite_progress")
 }
 
 model RefreshToken {

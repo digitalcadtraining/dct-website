@@ -12,6 +12,7 @@ import LoginPage from "../pages/auth/LoginPage.jsx";
 import RegisterPage from "../pages/auth/RegisterPage.jsx";
 import TutorRegisterPage from "../pages/auth/TutorRegisterPage.jsx";
 import TutorRegistrationPage from "../pages/auth/TutorRegistrationPage.jsx";
+import RegisterPaymentSuccessPage from "../pages/auth/RegisterPaymentSuccessPage.jsx";
 
 import { AllSessionsPage, UpcomingSessionsPage, CompletedSessionsPage } from "../pages/student/SessionsPages.jsx";
 import { AllAssignmentsPage, AssignmentFeedbackPage } from "../pages/student/AssignmentsPages.jsx";
@@ -19,6 +20,7 @@ import MyCourses from "../pages/student/MyCourses.jsx";
 import MyQueriesPage from "../pages/student/MyQueriesPage.jsx";
 import SyllabusPage from "../pages/student/SyllabusPage.jsx";
 import StudentDashboard from "../pages/student/StudentDashboard.jsx";
+import PrerequisitesPage from "../pages/student/PrerequisitesPage.jsx";
 
 import MyBatches from "../pages/tutor/MyBatches.jsx";
 import TutorAssignments from "../pages/tutor/TutorAssignments.jsx";
@@ -29,6 +31,7 @@ import AdminTutors from "../pages/admin/AdminTutors.jsx";
 import AdminStudents from "../pages/admin/AdminStudents.jsx";
 import AdminBatches from "../pages/admin/AdminBatches.jsx";
 import AdminQueries from "../pages/admin/AdminQueries.jsx";
+import AdminPrerequisiteProgress from "../pages/admin/AdminPrerequisiteProgress.jsx";
 
 export default function AppRoutes() {
   return (
@@ -43,10 +46,12 @@ export default function AppRoutes() {
       <Route path="/auth/register" element={<RegisterPage />} />
       <Route path="/auth/register/tutor" element={<TutorRegisterPage />} />
       <Route path="/auth/tutor-register" element={<TutorRegistrationPage />} />
+      <Route path="/auth/payment-success" element={<RegisterPaymentSuccessPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
       <Route path="/student/dashboard" element={<ProtectedRoute roles={["student"]}><StudentDashboard /></ProtectedRoute>} />
       <Route path="/student/courses" element={<ProtectedRoute roles={["student"]}><MyCourses /></ProtectedRoute>} />
+      <Route path="/student/prerequisites" element={<ProtectedRoute roles={["student"]}><PrerequisitesPage /></ProtectedRoute>} />
       <Route path="/student/sessions/all" element={<ProtectedRoute roles={["student"]}><AllSessionsPage /></ProtectedRoute>} />
       <Route path="/student/sessions/upcoming" element={<ProtectedRoute roles={["student"]}><UpcomingSessionsPage /></ProtectedRoute>} />
       <Route path="/student/sessions/completed" element={<ProtectedRoute roles={["student"]}><CompletedSessionsPage /></ProtectedRoute>} />
@@ -68,6 +73,7 @@ export default function AppRoutes() {
       <Route path="/admin/students" element={<ProtectedRoute roles={["admin"]}><AdminStudents /></ProtectedRoute>} />
       <Route path="/admin/batches" element={<ProtectedRoute roles={["admin"]}><AdminBatches /></ProtectedRoute>} />
       <Route path="/admin/queries" element={<ProtectedRoute roles={["admin"]}><AdminQueries /></ProtectedRoute>} />
+      <Route path="/admin/prerequisite-progress" element={<ProtectedRoute roles={["admin"]}><AdminPrerequisiteProgress /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

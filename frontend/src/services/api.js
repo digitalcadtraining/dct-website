@@ -3,21 +3,9 @@ const APP_BASE = import.meta.env.BASE_URL || "/dct/";
 const BACKEND = BASE.replace(/\/api\/v1\/?$/, "");
 
 export const ROLE_KEYS = {
-  admin: {
-    userKey: "dct_admin_user",
-    tokenKey: "dct_admin_access_token",
-    loginPath: "/admin/login",
-  },
-  tutor: {
-    userKey: "dct_tutor_user",
-    tokenKey: "dct_tutor_access_token",
-    loginPath: "/auth/login",
-  },
-  student: {
-    userKey: "dct_student_user",
-    tokenKey: "dct_student_access_token",
-    loginPath: "/auth/login",
-  },
+  admin: { userKey: "dct_admin_user", tokenKey: "dct_admin_access_token", loginPath: "/admin/login" },
+  tutor: { userKey: "dct_tutor_user", tokenKey: "dct_tutor_access_token", loginPath: "/auth/login" },
+  student: { userKey: "dct_student_user", tokenKey: "dct_student_access_token", loginPath: "/auth/login" },
 };
 
 function appPath(path) {
@@ -40,7 +28,7 @@ function roleFromBrowserPath() {
 }
 
 function roleFromApiPath(path) {
-  if (path.startsWith("/admin") || path.startsWith("/auth/admin")) return "admin";
+  if (path.startsWith("/admin") || path.startsWith("/auth/admin") || path.includes("/admin/")) return "admin";
   return roleFromBrowserPath();
 }
 
@@ -49,7 +37,8 @@ function isAuthRoute(path) {
     path.startsWith("/auth/admin/login") ||
     path.startsWith("/auth/otp/send") ||
     path.startsWith("/auth/otp/verify") ||
-    path.startsWith("/auth/register");
+    path.startsWith("/auth/register") ||
+    path.startsWith("/registration-payments");
 }
 
 export function getRoleToken(role) {
@@ -62,9 +51,7 @@ export function getRoleUser(role) {
     const key = ROLE_KEYS[normalizeRole(role)]?.userKey;
     const saved = key ? localStorage.getItem(key) : null;
     return saved ? JSON.parse(saved) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 export function saveRoleSession(role, user, token) {
@@ -106,10 +93,7 @@ async function http(path, opts = {}, retry = true) {
 
   if (res.status === 401 && retry && !isAuthRoute(path)) {
     try {
-      const refreshRes = await fetch(`${BASE}/auth/refresh?role=${encodeURIComponent(role)}`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const refreshRes = await fetch(`${BASE}/auth/refresh?role=${encodeURIComponent(role)}`, { method: "POST", credentials: "include" });
       const refreshData = await parseResponse(refreshRes);
       const newToken = refreshData?.data?.access_token || refreshData?.data?.accessToken || refreshData?.access_token || refreshData?.accessToken || "";
       if (refreshRes.ok && newToken) {
@@ -119,7 +103,6 @@ async function http(path, opts = {}, retry = true) {
         return http(path, opts, false);
       }
     } catch {}
-
     clearRoleSession(role);
     window.location.href = appPath(ROLE_KEYS[role].loginPath);
     return null;
@@ -132,9 +115,7 @@ async function http(path, opts = {}, retry = true) {
 
 function toQuery(params = {}) {
   const q = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") q.set(k, v);
-  });
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") q.set(k, v); });
   const s = q.toString();
   return s ? `?${s}` : "";
 }
@@ -153,6 +134,19 @@ export const authApi = {
   adminLogin: (email, password) => http("/auth/admin/login", { method: "POST", role: "admin", body: JSON.stringify({ email, password }) }),
   logout: (role = roleFromBrowserPath()) => http(`/auth/logout?role=${encodeURIComponent(normalizeRole(role))}`, { method: "POST", role: normalizeRole(role) }),
   me: (role = roleFromBrowserPath()) => http("/auth/me", { role: normalizeRole(role) }),
+};
+export const registrationPaymentApi = {
+  start: (data) =>
+    http("/registration-payments/start", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  verify: (data) =>
+    http("/registration-payments/verify", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 export const courseApi = {
@@ -184,9 +178,7 @@ export const assignmentApi = {
   getForBatch: (batchId) => http(`/assignments/batch/${batchId}`),
   create: (data, file) => {
     const fd = new FormData();
-    Object.entries(data || {}).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== "") fd.append(k, v);
-    });
+    Object.entries(data || {}).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "") fd.append(k, v); });
     if (file) fd.append("file", file);
     return http("/assignments", { method: "POST", role: "tutor", body: fd });
   },
@@ -205,6 +197,12 @@ export const queryApi = {
   getBatchQueries: (batchId) => http(`/queries/batch/${batchId}`, { role: "tutor" }),
   batch: (batchId) => http(`/queries/batch/${batchId}`, { role: "tutor" }),
   answer: (id, answer) => http(`/queries/${id}/answer`, { method: "PATCH", role: "tutor", body: JSON.stringify({ answer }) }),
+};
+
+export const prerequisiteApi = {
+  list: () => http("/prerequisites", { role: "student" }),
+  saveProgress: (lessonId, data) => http(`/prerequisites/lessons/${lessonId}/progress`, { method: "POST", role: "student", body: JSON.stringify(data) }),
+  adminProgress: () => http("/prerequisites/admin/progress", { role: "admin" }),
 };
 
 export const adminApi = {

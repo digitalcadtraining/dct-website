@@ -1,11 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, ClipboardList, BookOpen, HelpCircle, ChevronDown, X, Layers, GraduationCap, Users } from "lucide-react";
+import { LayoutDashboard, CalendarDays, ClipboardList, BookOpen, HelpCircle, ChevronDown, X, Layers, GraduationCap, Users, PlayCircle, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const STUDENT_NAV = [
   { label: "My Courses", icon: BookOpen, to: "/student/courses" },
+  { label: "Pre-Requisites", icon: PlayCircle, to: "/student/prerequisites" },
   { label: "Sessions", icon: CalendarDays, children: [
     { label: "All Sessions", to: "/student/sessions/all" },
     { label: "Upcoming Sessions", to: "/student/sessions/upcoming" },
@@ -35,6 +36,7 @@ const ADMIN_NAV = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/admin/dashboard" },
   { label: "Tutors", icon: GraduationCap, to: "/admin/tutors" },
   { label: "Students", icon: Users, to: "/admin/students" },
+  { label: "Pre-Req Progress", icon: BarChart3, to: "/admin/prerequisite-progress" },
   { label: "Batches", icon: Layers, to: "/admin/batches" },
   { label: "Queries", icon: HelpCircle, to: "/admin/queries" },
 ];

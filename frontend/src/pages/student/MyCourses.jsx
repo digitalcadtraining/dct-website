@@ -4,7 +4,7 @@ import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { motion } from "framer-motion";
 import { batchApi } from "../../services/api.js";
-import { BookOpen, ChevronRight } from "lucide-react";
+import { BookOpen, ChevronRight, PlayCircle } from "lucide-react";
 
 const C = { dark:"#1F1A17", blue:"#024981", primary:"#007BBF", gray:"#6A6B6D", lg:"#9ca3af" };
 
@@ -92,12 +92,6 @@ function CourseCard({ enrollment, index }) {
   );
 }
 
-const FREE = [
-  { icon:"⚙", title:"CATIA Tool for Beginners", sessions:10, duration:"2hrs 50mins" },
-  { icon:"🔧", title:"UG NX Tool for Beginners", sessions:10, duration:"2hrs 50mins" },
-  { icon:"🏭", title:"Mould Design Fundamentals", sessions:8, duration:"2hrs 10mins" },
-];
-
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -148,9 +142,17 @@ export default function MyCourses() {
 
         {!loading && !error && enrollments.length > 0 && <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,320px))", gap:16, marginBottom:32 }}>{enrollments.map((e,i)=><CourseCard key={e.enrollment_id||i} enrollment={e} index={i}/>)}</div>}
 
-        <h2 className="text-xl font-bold text-dct-dark mb-4">Explore These Free Courses</h2>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,300px))", gap:16 }}>
-          {FREE.map((c,i)=><motion.div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 relative" initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.3, delay:0.4+i*0.07 }} whileHover={{ y:-2 }} style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.04)" }}><div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}><span style={{ fontSize:28 }}>{c.icon}</span><span style={{ background:"#FFE8EE", color:"#F8285A", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999 }}>Free</span></div><h3 className="font-bold text-sm text-dct-dark mb-3 leading-snug">{c.title}</h3><div className="grid grid-cols-2 gap-3 mb-4"><div><p className="text-sm font-bold text-dct-dark">{c.sessions} Sessions</p><p className="text-xs text-dct-lightgray">No. of Sessions</p></div><div><p className="text-sm font-bold text-dct-dark">{c.duration}</p><p className="text-xs text-dct-lightgray">Duration</p></div></div><button className="w-full bg-dct-primary hover:bg-dct-blue text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">View Course</button></motion.div>)}
+        <div className="rounded-3xl border border-blue-100 bg-white p-5 sm:p-6" style={{ boxShadow:"0 12px 34px rgba(2,73,129,.07)" }}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-dct-primary">Start before batch begins</p>
+              <h2 className="mt-1 text-xl font-bold text-dct-dark">Complete Pre-Requisite Video Courses</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-dct-gray">CATIA basics, UG NX basics and mould design fundamentals are now available in a structured video player. Complete lessons in sequence to build confidence before live domain training starts.</p>
+            </div>
+            <Link to="/student/prerequisites" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-dct-primary px-5 py-3 text-sm font-bold text-white hover:bg-dct-blue">
+              <PlayCircle size={18} /> Open Pre-Requisites
+            </Link>
+          </div>
         </div>
       </PageWrapper>
     </AppShell>

@@ -1,6 +1,7 @@
 /**
  * Auth Controller
  * Separate refresh cookies for Admin, Tutor and Student.
+ * Student self-registration is payment-gated through /registration-payments/start.
  */
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -92,57 +93,12 @@ const verifyOtpHandler = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-const registerStudent = async (req, res, next) => {
-  try {
-    const { name, email, phone, password, course_id, batch_id, phone_token } = req.body;
-    if (!name || !email || !phone || !password || !course_id || !batch_id || !phone_token) {
-      return error(res, 400, "All fields are required.");
-    }
-
-    let decoded;
-    try { decoded = jwt.verify(phone_token, process.env.JWT_ACCESS_SECRET); }
-    catch { return error(res, 400, "Phone verification expired. Please verify OTP again."); }
-
-    const normalizedPhone = normalizePhone(phone);
-    if (decoded.phone !== normalizedPhone || decoded.purpose !== "STUDENT_REGISTER") {
-      return error(res, 400, "Invalid phone verification token.");
-    }
-
-    const [existingEmail, existingPhone] = await Promise.all([
-      prisma.user.findUnique({ where: { email } }),
-      prisma.user.findUnique({ where: { phone: normalizedPhone } }),
-    ]);
-    if (existingEmail) return error(res, 409, "Email already registered.");
-    if (existingPhone) return error(res, 409, "Phone number already registered.");
-
-    const batch = await prisma.batch.findFirst({
-      where: { id: batch_id, course_id, status: { in: ["UPCOMING", "ACTIVE"] } },
-      include: { course: { select: { name: true } } },
-    });
-    if (!batch) return error(res, 404, "Selected batch not found or no longer available.");
-
-    const enrollmentCount = await prisma.enrollment.count({ where: { batch_id } });
-    if (enrollmentCount >= batch.max_students) return error(res, 409, "This batch is full. Please choose another batch.");
-
-    const password_hash = await bcrypt.hash(password, 12);
-    const { user } = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { name, email, phone: normalizedPhone, password_hash, role: ROLES.STUDENT, is_verified: true },
-        select: { id: true, name: true, email: true, phone: true, role: true },
-      });
-      const enrollment = await tx.enrollment.create({ data: { student_id: user.id, batch_id, payment_status: "PENDING" } });
-      return { user, enrollment };
-    });
-
-    const tokens = await generateTokens(user);
-    setRefreshCookie(res, ROLES.STUDENT, tokens.refreshToken);
-
-    return success(res, 201, "Account created successfully.", {
-      user,
-      batch_name: batch.name,
-      access_token: tokens.accessToken,
-    });
-  } catch (err) { next(err); }
+const registerStudent = async (req, res) => {
+  return error(
+    res,
+    403,
+    "Direct registration is disabled. Please verify phone and pay ₹999 registration fee to activate dashboard access."
+  );
 };
 
 const login = async (req, res, next) => {
