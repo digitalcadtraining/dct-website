@@ -1,236 +1,40 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
-import { prerequisiteApi } from "../../services/api.js";
-import { motion } from "framer-motion";
-import { CheckCircle2, Lock, PlayCircle, Clock3, BookOpen, RefreshCw } from "lucide-react";
+import { batchApi, prerequisiteApi } from "../../services/api.js";
+import { CheckCircle2, ChevronRight, Download, ExternalLink, Lock, Monitor, PlayCircle, Wrench, BookOpen, FileArchive, FolderOpen, ShieldCheck, Sparkles } from "lucide-react";
 
-const C = { dark: "#1F1A17", blue: "#024981", primary: "#007BBF", gray: "#6A6B6D", light: "#9ca3af" };
-
-function formatTime(total = 0) {
-  const sec = Math.max(0, Math.floor(total));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function loadVimeoSdk() {
-  if (window.Vimeo?.Player) return Promise.resolve(window.Vimeo.Player);
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector("script[data-vimeo-sdk]");
-    if (existing) {
-      existing.addEventListener("load", () => resolve(window.Vimeo.Player));
-      existing.addEventListener("error", reject);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://player.vimeo.com/api/player.js";
-    script.async = true;
-    script.dataset.vimeoSdk = "true";
-    script.onload = () => resolve(window.Vimeo.Player);
-    script.onerror = reject;
-    document.body.appendChild(script);
-  });
-}
-
-function VimeoLessonPlayer({ lesson, onProgressSaved, locked }) {
-  const iframeRef = useRef(null);
-  const playerRef = useRef(null);
-  const lastSentRef = useRef(0);
-  const [ready, setReady] = useState(false);
-  const [localWatched, setLocalWatched] = useState(lesson?.watched_seconds || 0);
-
-  useEffect(() => {
-    setReady(false);
-    setLocalWatched(lesson?.watched_seconds || 0);
-    lastSentRef.current = 0;
-
-    if (!lesson?.id || locked) return undefined;
-
-    let destroyed = false;
-    let player;
-
-    loadVimeoSdk()
-      .then((Player) => {
-        if (destroyed || !iframeRef.current) return;
-        player = new Player(iframeRef.current);
-        playerRef.current = player;
-
-        player.ready().then(async () => {
-          setReady(true);
-          if (lesson.last_position > 0) {
-            try { await player.setCurrentTime(Math.min(lesson.last_position, lesson.duration_seconds - 2)); } catch {}
-          }
-        });
-
-        player.on("timeupdate", (data) => {
-          const current = Math.floor(data.seconds || 0);
-          const watched = Math.max(current, lesson.watched_seconds || 0);
-          setLocalWatched(watched);
-
-          if (current - lastSentRef.current >= 12) {
-            lastSentRef.current = current;
-            prerequisiteApi.saveProgress(lesson.id, { watched_seconds: watched, last_position: current })
-              .then((res) => onProgressSaved?.(res.data))
-              .catch(() => {});
-          }
-        });
-
-        player.on("ended", () => {
-          prerequisiteApi.saveProgress(lesson.id, { watched_seconds: lesson.duration_seconds, last_position: lesson.duration_seconds })
-            .then((res) => onProgressSaved?.(res.data, true))
-            .catch(() => {});
-        });
-      })
-      .catch(() => setReady(true));
-
-    return () => {
-      destroyed = true;
-      try { playerRef.current?.unload?.(); } catch {}
-      playerRef.current = null;
-    };
-  }, [lesson?.id, locked]);
-
-  if (!lesson) {
-    return <div className="bg-white rounded-3xl border border-gray-100 p-10 text-center text-dct-lightgray">Select a lesson to start.</div>;
-  }
-
-  if (locked) {
-    return (
-      <div className="rounded-3xl border border-blue-100 bg-white p-10 text-center" style={{ boxShadow: "0 18px 48px rgba(2,73,129,.08)" }}>
-        <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-slate-100 text-slate-500"><Lock size={28} /></div>
-        <h3 className="text-xl font-bold text-dct-dark">Lesson Locked</h3>
-        <p className="mt-2 text-sm text-dct-lightgray">Complete the previous video first to unlock this session.</p>
-      </div>
-    );
-  }
-
-  const pct = lesson.duration_seconds ? Math.min(100, Math.round((localWatched / lesson.duration_seconds) * 100)) : 0;
-
-  return (
-    <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white" style={{ boxShadow: "0 18px 54px rgba(2,73,129,.10)" }}>
-      <div className="relative bg-black" style={{ aspectRatio: "16/9" }}>
-        <iframe
-          ref={iframeRef}
-          src={`${lesson.vimeo_url}?title=0&byline=0&portrait=0&badge=0`}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          title={lesson.title}
-          className="absolute inset-0 h-full w-full border-0"
-        />
-        {!ready && <div className="absolute inset-0 grid place-items-center bg-black text-white text-sm">Loading video…</div>}
-      </div>
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-dct-primary">Session {lesson.order_number}</p>
-            <h2 className="mt-1 text-xl font-bold text-dct-dark">{lesson.title}</h2>
-            {lesson.description && <p className="mt-2 max-w-2xl text-sm leading-6 text-dct-gray">{lesson.description}</p>}
-          </div>
-          {lesson.completed ? <span className="rounded-full bg-green-100 px-4 py-2 text-xs font-bold text-green-700">Completed</span> : <span className="rounded-full bg-blue-50 px-4 py-2 text-xs font-bold text-dct-primary">Watch {lesson.completion_percent}% to complete</span>}
-        </div>
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-dct-gray"><span>{formatTime(localWatched)} watched</span><span>{pct}%</span></div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-[#024981] to-[#007BBF] transition-all" style={{ width: `${lesson.completed ? 100 : pct}%` }} /></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LessonRow({ lesson, active, onClick }) {
-  return (
-    <button onClick={onClick} disabled={!lesson.is_unlocked} className={`w-full rounded-2xl border p-4 text-left transition ${active ? "border-dct-primary bg-blue-50" : "border-gray-100 bg-white hover:border-blue-200"} ${!lesson.is_unlocked ? "opacity-60 cursor-not-allowed" : ""}`}>
-      <div className="flex items-center gap-3">
-        <div className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl ${lesson.completed ? "bg-green-100 text-green-700" : lesson.is_unlocked ? "bg-blue-100 text-dct-primary" : "bg-slate-100 text-slate-500"}`}>
-          {lesson.completed ? <CheckCircle2 size={20} /> : lesson.is_unlocked ? <PlayCircle size={20} /> : <Lock size={18} />}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-dct-primary">{String(lesson.order_number).padStart(2, "0")}</p>
-          <h4 className="truncate text-sm font-bold text-dct-dark">{lesson.title}</h4>
-          <div className="mt-1 flex items-center gap-2 text-xs text-dct-lightgray"><Clock3 size={12} /> {formatTime(lesson.duration_seconds)}</div>
-        </div>
-      </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-dct-primary" style={{ width: `${lesson.progress_percent || 0}%` }} /></div>
-    </button>
-  );
-}
-
-export default function PrerequisitesPage() {
-  const [courses, setCourses] = useState([]);
-  const [courseIndex, setCourseIndex] = useState(0);
-  const [lessonId, setLessonId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const load = () => {
-    setLoading(true);
-    setError("");
-    prerequisiteApi.list()
-      .then((res) => {
-        const items = res.data || [];
-        setCourses(items);
-        const firstCourse = items[courseIndex] || items[0];
-        const firstOpen = firstCourse?.lessons?.find((l) => l.is_unlocked && !l.completed) || firstCourse?.lessons?.[0];
-        setLessonId(firstOpen?.id || "");
-      })
-      .catch((e) => setError(e.message || "Failed to load prerequisite courses."))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const selectedCourse = courses[courseIndex] || null;
-  const selectedLesson = useMemo(() => selectedCourse?.lessons?.find((l) => l.id === lessonId) || selectedCourse?.lessons?.[0] || null, [selectedCourse, lessonId]);
-
-  const refreshAfterProgress = (saved, force = false) => {
-    if (saved?.completed || force) load();
-    else {
-      setCourses((prev) => prev.map((course) => ({
-        ...course,
-        lessons: course.lessons.map((lesson) => lesson.id === saved?.lesson_id ? { ...lesson, watched_seconds: saved.watched_seconds, last_position: saved.last_position, completed: saved.completed, progress_percent: saved.completed ? 100 : lesson.progress_percent } : lesson),
-      })));
-    }
-  };
-
-  return (
-    <AppShell>
-      <PageWrapper>
-        <div className="mb-6 rounded-3xl bg-gradient-to-br from-[#024981] to-[#007BBF] p-5 text-white sm:p-7">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">Pre-Requisites</p>
-          <h1 className="mt-2 text-2xl font-black sm:text-3xl">Complete these before your live course starts</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-blue-50">Watch in order. Every session is tracked by watch time, and the next lesson unlocks only after the previous one is completed.</p>
-        </div>
-
-        {loading && <div className="rounded-3xl bg-white p-10 text-center text-dct-lightgray">Loading prerequisite videos…</div>}
-        {!loading && error && <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center"><p className="font-semibold text-red-600">{error}</p><button onClick={load} className="mt-4 rounded-xl bg-red-600 px-5 py-2 text-sm font-bold text-white"><RefreshCw size={14} className="inline mr-2" />Retry</button></div>}
-
-        {!loading && !error && courses.length > 0 && (
-          <>
-            <div className="mb-5 grid gap-3 md:grid-cols-3">
-              {courses.map((course, idx) => (
-                <button key={course.id} onClick={() => { setCourseIndex(idx); const next = course.lessons.find((l) => l.is_unlocked && !l.completed) || course.lessons[0]; setLessonId(next?.id || ""); }} className={`rounded-2xl border bg-white p-4 text-left transition ${idx === courseIndex ? "border-dct-primary shadow-lg" : "border-gray-100 hover:border-blue-200"}`}>
-                  <div className="flex items-center gap-3"><span className="text-2xl">{course.icon}</span><div><h3 className="font-bold text-dct-dark">{course.title}</h3><p className="text-xs text-dct-lightgray">{course.completed_lessons}/{course.total_lessons} completed</p></div></div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-dct-primary" style={{ width: `${course.progress_percent}%` }} /></div>
-                </button>
-              ))}
-            </div>
-
-            <div className="grid gap-5 xl:grid-cols-[1fr_390px]">
-              <motion.div key={selectedLesson?.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                <VimeoLessonPlayer lesson={selectedLesson} locked={!selectedLesson?.is_unlocked} onProgressSaved={refreshAfterProgress} />
-              </motion.div>
-
-              <aside className="rounded-3xl border border-gray-100 bg-white p-4" style={{ boxShadow: "0 14px 42px rgba(2,73,129,.08)" }}>
-                <div className="mb-4 flex items-center justify-between gap-2"><div><h3 className="font-bold text-dct-dark">{selectedCourse?.title}</h3><p className="text-xs text-dct-lightgray">Sequential video sessions</p></div><BookOpen className="text-dct-primary" size={20} /></div>
-                <div className="max-h-[640px] space-y-3 overflow-y-auto pr-1">
-                  {selectedCourse?.lessons?.map((lesson) => <LessonRow key={lesson.id} lesson={lesson} active={lesson.id === selectedLesson?.id} onClick={() => lesson.is_unlocked && setLessonId(lesson.id)} />)}
-                </div>
-              </aside>
-            </div>
-          </>
-        )}
-      </PageWrapper>
-    </AppShell>
-  );
-}
+const C={blue:"#024981",primary:"#007BBF",dark:"#1F1A17"};
+const CATIA_VIDEOS=[
+ {id:"sketcher-01",title:"Sketcher Session 01",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900601730?h=9cd901f4a9"},
+ {id:"sketcher-02",title:"Sketcher Session 02",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900603176?h=649b0064e4"},
+ {id:"sketcher-03",title:"Sketcher Session 03",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900603176?h=649b0064e4"},
+ {id:"sketcher-04",title:"Sketcher Session 04",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"sketcher-05",title:"Sketcher Session 05",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"part-01",title:"Part Design Session 01",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"part-02",title:"Part Design Session 02",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"part-03",title:"Part Design Session 03",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"part-04",title:"Part Design Session 04",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
+ {id:"part-05",title:"Part Design Session 05",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"}
+];
+const OPTIONAL=[{title:"UG NX Tool for Beginners",desc:"Optional software awareness course. Complete after CATIA basics if you want extra CAD confidence.",icon:"🔧"},{title:"GD&T Fundamentals",desc:"Optional drawing and tolerance basics. Helpful before interviews and project discussions.",icon:"📐"}];
+const INSTALL=[
+ {icon:FolderOpen,title:"Request access to setup folder",text:"Open the CATIA R21 Google Drive setup folder and send an access request from your Gmail account.",action:"Open CATIA R21 setup folder",link:"https://drive.google.com/drive/folders/1SAhJrH2afyumlxDVoFSE20CwLJdFwEK8?usp=drive_link"},
+ {icon:Download,title:"Download CATIA_setup.rar",text:"Right click CATIA_setup.rar and download it. Check that the WinRAR file is available in your Downloads folder."},
+ {icon:FileArchive,title:"Copy file to D Drive and extract",text:"Copy CATIA_setup.rar and paste it in D drive. Right click the RAR file and choose Extract All / Extract Here."},
+ {icon:Monitor,title:"Run setup.exe as administrator",text:"Open the extracted folder, search setup.exe, right click and run as administrator. Do not change options. Continue Next → Next until setup completes."},
+ {icon:Wrench,title:"Copy licence DLL file",text:"Close CATIA. Open the extracted folder, go to win32 folder and copy the DLL file."},
+ {icon:ShieldCheck,title:"Paste DLL in CATIA installation folder",text:"Go to desktop, single click CATIA icon, right click → Open file location. Paste the copied DLL file. If replace popup appears, choose Replace."},
+ {icon:CheckCircle2,title:"Open CATIA and close licence warnings",text:"Open CATIA. Close all licence warning popups. If CATIA opens successfully, setup is done."}
+];
+function fmtDate(date){if(!date)return "Flexible";return new Date(date).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}
+function addDays(date,days){const d=new Date(date);d.setDate(d.getDate()+days);return d}
+function safeDate(d){if(!d)return null;const x=new Date(d);return Number.isNaN(x.getTime())?null:x}
+function diffDays(a,b){if(!a||!b)return 0;const aa=new Date(a),bb=new Date(b);aa.setHours(0,0,0,0);bb.setHours(0,0,0,0);return Math.max(0,Math.floor((bb-aa)/(24*60*60*1000)))}
+function buildPlan(enrollment){const enrolled=safeDate(enrollment?.enrolled_at||enrollment?.created_at)||new Date();const start=safeDate(enrollment?.batch?.start_date);const days=diffDays(enrolled,start);let required=10,spacing=2,note="You have enough time. One CATIA basic video every 2 days will complete your foundation before live sessions start.";if(start&&days<=4){required=4;spacing=1;note="Your batch is starting very soon. Focus on only 4 priority basics first: Sketcher 1-2 and Part Design 1-2. Continue remaining videos on alternate non-live days."}else if(start&&days<=10){required=6;spacing=1;note="Your batch is close. Complete the first 6 videos daily, then finish remaining videos on alternate days along with live sessions."}else if(start&&days<=15){required=10;spacing=1;note="You have limited time. Complete one CATIA basic video daily so you are ready before live training starts."}return CATIA_VIDEOS.map((v,i)=>({...v,priority:i<required,targetDate:addDays(enrolled,i*spacing),planLabel:(i<required?"Target: ":"After live starts: ")+fmtDate(addDays(enrolled,i*spacing)),note}))}
+function useEnrollment(){const[enrollment,setEnrollment]=useState(null);useEffect(()=>{batchApi.enrolled().then(r=>setEnrollment((r.data||[])[0]||null)).catch(()=>setEnrollment(null))},[]);return enrollment}
+function useProgress(){const[done,setDone]=useState(()=>{try{return JSON.parse(localStorage.getItem("dct_prereq_catia_done")||"{}")}catch{return {}}});const markDone=id=>setDone(p=>{const n={...p,[id]:true};localStorage.setItem("dct_prereq_catia_done",JSON.stringify(n));prerequisiteApi.markLessonProgress?.(id,{completed:true,watch_seconds:9999}).catch?.(()=>{});return n});return{done,markDone}}
+function InstallationPanel(){return <div className="space-y-5"><div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}><div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-white/10"/><div className="relative"><p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">Step 01</p><h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">Install CATIA R21 before starting basics</h1><p className="mt-3 max-w-2xl text-white/85 text-sm sm:text-base leading-7">Complete this setup first. After CATIA opens successfully, start the CATIA basic video plan.</p><a href="https://drive.google.com/drive/folders/1SAhJrH2afyumlxDVoFSE20CwLJdFwEK8?usp=drive_link" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-5 bg-white text-dct-primary font-black px-5 py-3 rounded-2xl no-underline">Open Setup Folder <ExternalLink size={16}/></a></div></div><div className="grid gap-4">{INSTALL.map((step,index)=>{const Icon=step.icon;return <div key={step.title} className="bg-white rounded-3xl border border-blue-100 p-5 flex gap-4 shadow-sm"><div className="w-12 h-12 rounded-2xl bg-blue-50 text-dct-primary flex items-center justify-center flex-shrink-0"><Icon size={22}/></div><div><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-blue-500 bg-blue-50 rounded-full px-2 py-1">STEP {String(index+1).padStart(2,"0")}</span><h3 className="font-black text-dct-dark">{step.title}</h3></div><p className="mt-2 text-sm text-dct-gray leading-6">{step.text}</p>{step.link&&<a href={step.link} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-sm font-black text-dct-primary">{step.action} <ExternalLink size={14}/></a>}</div></div>})}</div><div className="bg-amber-50 border border-amber-200 rounded-3xl p-5"><h3 className="font-black text-amber-900">Need help?</h3><p className="text-sm text-amber-800 mt-1 leading-6">If you are stuck at any step, send a screenshot in your student WhatsApp support group. Do not reinstall multiple times without guidance.</p></div></div>}
+function CatiaBasicsPanel(){const enrollment=useEnrollment();const{done,markDone}=useProgress();const plan=useMemo(()=>buildPlan(enrollment),[enrollment]);const[activeId,setActiveId]=useState("sketcher-01");const completed=plan.filter(v=>done[v.id]).length;const active=plan.find(v=>v.id===activeId)||plan[0];const isUnlocked=i=>i===0||done[plan[i-1]?.id];return <div className="space-y-5"><div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}><div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-white/10"/><div className="relative"><p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">Step 02</p><h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">CATIA basics video plan</h1><p className="mt-3 max-w-3xl text-white/85 text-sm sm:text-base leading-7">Personalized plan based on your registration date and batch start date. Complete videos in order to unlock the next one.</p><div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{completed}/10</strong><p className="text-xs opacity-80">Videos completed</p></div><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{fmtDate(enrollment?.batch?.start_date)}</strong><p className="text-xs opacity-80">Batch starts</p></div><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">90%</strong><p className="text-xs opacity-80">Watch target</p></div></div></div></div><div className="bg-white rounded-3xl border border-blue-100 p-5 shadow-sm"><div className="flex items-start gap-3"><Sparkles className="text-dct-primary flex-shrink-0" size={22}/><div><h3 className="font-black text-dct-dark">Your recommended plan</h3><p className="text-sm text-dct-gray mt-1 leading-6">{plan[0]?.note}</p></div></div></div><div className="grid gap-5 lg:grid-cols-[1fr_360px]"><section className="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm"><div className="aspect-video bg-slate-950"><iframe key={active?.id} src={active?.vimeo_url} title={active?.title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="w-full h-full border-0"/></div><div className="p-5"><div className="flex flex-wrap gap-2 mb-2"><span className="text-xs font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-full">{active?.group}</span><span className="text-xs font-black text-green-700 bg-green-50 px-3 py-1 rounded-full">{active?.planLabel}</span></div><h2 className="text-xl font-black text-dct-dark">{active?.title}</h2><p className="text-sm text-dct-gray mt-2">Watch the full session, then mark complete to unlock the next video.</p><button onClick={()=>markDone(active?.id)} className="mt-4 inline-flex items-center gap-2 bg-dct-primary hover:bg-dct-blue text-white font-black px-5 py-3 rounded-2xl"><CheckCircle2 size={18}/> Mark Complete</button></div></section><aside className="bg-white rounded-3xl border border-blue-100 p-3 shadow-sm h-fit"><div className="px-2 py-3"><h3 className="font-black text-dct-dark">Video order</h3><p className="text-xs text-dct-gray mt-1">Next video unlocks after previous completion.</p></div><div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">{plan.map((video,index)=>{const unlocked=isUnlocked(index),complete=done[video.id],activeRow=video.id===active?.id;return <button key={video.id} type="button" disabled={!unlocked} onClick={()=>unlocked&&setActiveId(video.id)} className={`w-full text-left rounded-2xl border p-3 transition ${activeRow?"border-dct-primary bg-blue-50":"border-gray-100 bg-white hover:bg-slate-50"} ${!unlocked?"opacity-55 cursor-not-allowed":""}`}><div className="flex items-start gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${complete?"bg-green-100 text-green-700":unlocked?"bg-blue-100 text-dct-primary":"bg-gray-100 text-gray-400"}`}>{complete?<CheckCircle2 size={18}/>:unlocked?<PlayCircle size={18}/>:<Lock size={16}/>}</div><div><p className="font-black text-sm text-dct-dark leading-5">{String(index+1).padStart(2,"0")}. {video.title}</p><p className="text-xs text-dct-gray mt-1">{video.planLabel} • {video.duration}</p></div></div></button>})}</div></aside></div><div className="space-y-3"><h2 className="text-lg font-black text-dct-dark">Optional after CATIA basics</h2>{OPTIONAL.map(c=><div key={c.title} className="bg-white rounded-3xl border border-gray-100 p-5 flex gap-4 items-start"><div className="text-2xl">{c.icon}</div><div><h3 className="font-black text-dct-dark">{c.title}</h3><p className="text-sm text-dct-gray mt-1 leading-6">{c.desc}</p></div></div>)}</div></div>}
+export default function PrerequisitesPage(){const location=useLocation();const navigate=useNavigate();const current=location.pathname.includes("catia-basics")?"catia":"install";return <AppShell><PageWrapper><div className="mb-5"><h1 className="text-2xl sm:text-3xl font-black text-dct-dark">Pre-Requisites</h1><p className="text-sm text-dct-gray mt-1">First install CATIA, then complete CATIA basics before live training starts.</p></div><div className="bg-white rounded-3xl border border-blue-100 p-2 mb-5 grid grid-cols-2 gap-2 shadow-sm"><button onClick={()=>navigate("/student/prerequisites/tool-installation")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current==="install"?"bg-dct-primary text-white":"bg-white text-dct-primary"}`}><Wrench size={17}/> Tool Installation</button><button onClick={()=>navigate("/student/prerequisites/catia-basics")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current==="catia"?"bg-dct-primary text-white":"bg-white text-dct-primary"}`}><BookOpen size={17}/> CATIA Basic Videos</button></div>{current==="install"?<InstallationPanel/>:<CatiaBasicsPanel/>}</PageWrapper></AppShell>}
