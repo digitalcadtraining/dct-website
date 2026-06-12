@@ -12,8 +12,7 @@ const REGISTRATION_AMOUNT = Number(process.env.REGISTRATION_FEE_AMOUNT || 999);
 function frontendBase() {
   const frontend = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
   const appBase = (process.env.FRONTEND_APP_BASE || "/dct").replace(/\/+$/, "");
-  if (frontend.endsWith(appBase)) return frontend;
-  return `${frontend}${appBase}`;
+  return frontend.endsWith(appBase) ? frontend : `${frontend}${appBase}`;
 }
 
 function backendBase(req) {
@@ -33,26 +32,19 @@ async function generateTokens(user) {
   if (!user?.id) throw new Error("User not found for token generation.");
 
   const payload = { userId: user.id, role: user.role };
+
   const accessToken = jwt.sign(
     { ...payload, tokenType: "access" },
     process.env.JWT_ACCESS_SECRET,
-    {
-      expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
-      jwtid: crypto.randomUUID(),
-    }
+    { expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m", jwtid: crypto.randomUUID() }
   );
 
   const rawRefreshToken = jwt.sign(
     { ...payload, tokenType: "refresh" },
     process.env.JWT_REFRESH_SECRET,
-    {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
-      jwtid: crypto.randomUUID(),
-    }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d", jwtid: crypto.randomUUID() }
   );
 
-  // Registration success page may call verify more than once.
-  // Remove older refresh tokens for this student before creating a new one to avoid unique token conflicts.
   await prisma.refreshToken.deleteMany({ where: { user_id: user.id } }).catch(() => {});
 
   await prisma.refreshToken.create({
@@ -69,13 +61,17 @@ async function generateTokens(user) {
 async function startRegistrationPayment(req, res, next) {
   try {
     const { name, email, phone, password, course_id, batch_id, phone_token } = req.body;
+
     if (!name || !email || !phone || !password || !course_id || !batch_id || !phone_token) {
       return error(res, 400, "All fields are required before payment.");
     }
 
     let decoded;
-    try { decoded = jwt.verify(phone_token, process.env.JWT_ACCESS_SECRET); }
-    catch { return error(res, 400, "Phone verification expired. Please verify OTP again."); }
+    try {
+      decoded = jwt.verify(phone_token, process.env.JWT_ACCESS_SECRET);
+    } catch {
+      return error(res, 400, "Phone verification expired. Please verify OTP again.");
+    }
 
     const normalizedPhone = normalizePhone(phone);
     const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -88,6 +84,7 @@ async function startRegistrationPayment(req, res, next) {
       prisma.user.findUnique({ where: { email: normalizedEmail } }),
       prisma.user.findUnique({ where: { phone: normalizedPhone } }),
     ]);
+
     if (existingEmail) return error(res, 409, "Email already registered. Please login instead.");
     if (existingPhone) return error(res, 409, "Phone number already registered. Please login instead.");
 
@@ -95,15 +92,17 @@ async function startRegistrationPayment(req, res, next) {
       where: { id: batch_id, course_id, status: { in: ["UPCOMING", "ACTIVE"] } },
       include: { course: { select: { name: true, slug: true } } },
     });
+
     if (!batch) return error(res, 404, "Selected batch not found or no longer available.");
 
     const enrollmentCount = await prisma.enrollment.count({ where: { batch_id } });
-    if (enrollmentCount >= batch.max_students) return error(res, 409, "This batch is full. Please choose another batch.");
+    if (enrollmentCount >= batch.max_students) {
+      return error(res, 409, "This batch is full. Please choose another batch.");
+    }
 
     const password_hash = await bcrypt.hash(password, 12);
 
-    // Reuse a recent pending registration for the same phone/course/batch where possible.
-    // This avoids multiple duplicate pending rows when the user clicks Pay again during testing.
+    // Current PendingRegistration schema has no amount, status, or user_id.
     let pending = await prisma.pendingRegistration.findFirst({
       where: {
         phone: normalizedPhone,
@@ -111,7 +110,6 @@ async function startRegistrationPayment(req, res, next) {
         course_id,
         batch_id,
         payment_status: { in: ["PENDING", "FAILED"] },
-        user_id: null,
       },
       orderBy: { created_at: "desc" },
     });
@@ -122,8 +120,6 @@ async function startRegistrationPayment(req, res, next) {
         data: {
           name: name.trim(),
           password_hash,
-          amount: REGISTRATION_AMOUNT,
-          status: "PAYMENT_CREATED",
           payment_status: "PENDING",
         },
       });
@@ -136,8 +132,6 @@ async function startRegistrationPayment(req, res, next) {
           password_hash,
           course_id,
           batch_id,
-          amount: REGISTRATION_AMOUNT,
-          status: "PAYMENT_CREATED",
           payment_status: "PENDING",
         },
       });
@@ -177,19 +171,39 @@ async function startRegistrationPayment(req, res, next) {
       payment_request_id: payment.payment_request_id,
       payment_url: payment.payment_url,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getExistingPaidUserForPending(pending) {
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ email: pending.email }, { phone: pending.phone }] },
+    select: { id: true, name: true, email: true, phone: true, role: true },
+  });
+
+  if (!user) return null;
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: {
+      student_id_batch_id: {
+        student_id: user.id,
+        batch_id: pending.batch_id,
+      },
+    },
+  });
+
+  return enrollment?.payment_status === "PAID" ? user : null;
 }
 
 async function finalizePaidRegistration(pending, paymentRequestId, paymentId, rawResponse, res) {
-  if (pending.payment_status === "PAID" && pending.user_id) {
-    const existingUser = await prisma.user.findUnique({
-      where: { id: pending.user_id },
-      select: { id: true, name: true, email: true, phone: true, role: true },
-    });
-    if (!existingUser) throw new Error("Paid registration exists but user account was not found. Contact support.");
-    const tokens = await generateTokens(existingUser);
-    setStudentRefreshCookie(res, tokens.refreshToken);
-    return { user: existingUser, access_token: tokens.accessToken, already_created: true };
+  if (pending.payment_status === "PAID") {
+    const existingUser = await getExistingPaidUserForPending(pending);
+    if (existingUser) {
+      const tokens = await generateTokens(existingUser);
+      setStudentRefreshCookie(res, tokens.refreshToken);
+      return { user: existingUser, access_token: tokens.accessToken, already_created: true };
+    }
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -197,6 +211,7 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
       where: { id: pending.batch_id, course_id: pending.course_id, status: { in: ["UPCOMING", "ACTIVE"] } },
       include: { course: { select: { name: true } } },
     });
+
     if (!batch) throw new Error("Selected batch is no longer available.");
 
     let user = await tx.user.findFirst({
@@ -206,7 +221,9 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
 
     if (!user) {
       const count = await tx.enrollment.count({ where: { batch_id: pending.batch_id } });
-      if (count >= batch.max_students) throw new Error("This batch is full. Contact DCT support for manual confirmation.");
+      if (count >= batch.max_students) {
+        throw new Error("This batch is full. Contact DCT support for manual confirmation.");
+      }
 
       user = await tx.user.create({
         data: {
@@ -223,16 +240,18 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
     }
 
     const existingEnrollment = await tx.enrollment.findUnique({
-      where: { student_id_batch_id: { student_id: user.id, batch_id: pending.batch_id } },
+      where: {
+        student_id_batch_id: {
+          student_id: user.id,
+          batch_id: pending.batch_id,
+        },
+      },
     });
 
     if (existingEnrollment) {
       await tx.enrollment.update({
         where: { id: existingEnrollment.id },
-        data: {
-          payment_status: "PAID",
-          payment_ref: paymentId || paymentRequestId,
-        },
+        data: { payment_status: "PAID", payment_ref: paymentId || paymentRequestId },
       });
     } else {
       await tx.enrollment.create({
@@ -247,12 +266,7 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
 
     await tx.pendingRegistration.update({
       where: { id: pending.id },
-      data: {
-        status: "ACCOUNT_CREATED",
-        payment_status: "PAID",
-        payment_id: paymentId || null,
-        user_id: user.id,
-      },
+      data: { payment_status: "PAID", payment_id: paymentId || null },
     });
 
     await tx.registrationPayment.updateMany({
@@ -277,6 +291,7 @@ async function verifyRegistrationPayment(req, res, next) {
     const registrationId = req.body.registration_id || req.query.registration_id;
     const paymentRequestId = req.body.payment_request_id || req.query.payment_request_id;
     const paymentId = req.body.payment_id || req.query.payment_id;
+
     if (!registrationId) return error(res, 400, "Registration ID is required.");
 
     const pending = await prisma.pendingRegistration.findUnique({ where: { id: registrationId } });
@@ -286,11 +301,13 @@ async function verifyRegistrationPayment(req, res, next) {
     if (!requestId) return error(res, 400, "Payment request ID missing.");
 
     const paymentData = await getPaymentRequest(requestId);
+
     if (!isPaymentSuccessful(paymentData, paymentId)) {
       await prisma.registrationPayment.updateMany({
         where: { pending_registration_id: pending.id },
         data: { raw_response: paymentData || {} },
       });
+
       return error(res, 402, "Payment is not successful yet. Please complete payment or try again.");
     }
 
@@ -308,24 +325,37 @@ async function instamojoWebhook(req, res, next) {
   try {
     const paymentRequestId = req.body.payment_request_id || req.body.payment_request;
     const paymentId = req.body.payment_id || req.body.payment;
+
     if (!paymentRequestId) return res.status(200).json({ success: true, ignored: true });
 
-    const pending = await prisma.pendingRegistration.findFirst({ where: { payment_request_id: paymentRequestId } });
+    const pending = await prisma.pendingRegistration.findFirst({
+      where: { payment_request_id: paymentRequestId },
+    });
+
     if (!pending) return res.status(200).json({ success: true, ignored: true });
 
     const paymentData = await getPaymentRequest(paymentRequestId);
+
     if (isPaymentSuccessful(paymentData, paymentId)) {
       await prisma.pendingRegistration.update({
         where: { id: pending.id },
-        data: { payment_status: "PAID", payment_id: paymentId || null, status: pending.user_id ? "ACCOUNT_CREATED" : "PAYMENT_VERIFIED" },
+        data: { payment_status: "PAID", payment_id: paymentId || null },
       });
+
       await prisma.registrationPayment.updateMany({
         where: { pending_registration_id: pending.id },
-        data: { status: "PAID", payment_id: paymentId || null, raw_response: paymentData || {} },
+        data: {
+          status: "PAID",
+          payment_id: paymentId || null,
+          raw_response: paymentData || {},
+        },
       });
     }
+
     return res.status(200).json({ success: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { startRegistrationPayment, verifyRegistrationPayment, instamojoWebhook };

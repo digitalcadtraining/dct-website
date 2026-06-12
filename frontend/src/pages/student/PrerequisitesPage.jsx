@@ -3,38 +3,246 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { batchApi, prerequisiteApi } from "../../services/api.js";
-import { CheckCircle2, ChevronRight, Download, ExternalLink, Lock, Monitor, PlayCircle, Wrench, BookOpen, FileArchive, FolderOpen, ShieldCheck, Sparkles } from "lucide-react";
 
-const C={blue:"#024981",primary:"#007BBF",dark:"#1F1A17"};
-const CATIA_VIDEOS=[
- {id:"sketcher-01",title:"Sketcher Session 01",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900601730?h=9cd901f4a9"},
- {id:"sketcher-02",title:"Sketcher Session 02",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900603176?h=649b0064e4"},
- {id:"sketcher-03",title:"Sketcher Session 03",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/900603176?h=649b0064e4"},
- {id:"sketcher-04",title:"Sketcher Session 04",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"sketcher-05",title:"Sketcher Session 05",group:"Sketcher",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"part-01",title:"Part Design Session 01",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"part-02",title:"Part Design Session 02",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"part-03",title:"Part Design Session 03",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"part-04",title:"Part Design Session 04",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"},
- {id:"part-05",title:"Part Design Session 05",group:"Part Design",duration:"25-35 min",vimeo_url:"https://player.vimeo.com/video/76979871"}
+const C = { blue:"#024981", primary:"#007BBF", dark:"#1F1A17", gray:"#6A6B6D" };
+
+function fmtDate(date) {
+  if (!date) return "Flexible";
+  return new Date(date).toLocaleDateString("en-IN", { day:"numeric", month:"short" });
+}
+
+function safeDate(d) {
+  if (!d) return null;
+  const x = new Date(d);
+  return Number.isNaN(x.getTime()) ? null : x;
+}
+
+function diffDays(from, to) {
+  if (!from || !to) return 0;
+  const one = 24 * 60 * 60 * 1000;
+  const a = new Date(from); a.setHours(0,0,0,0);
+  const b = new Date(to); b.setHours(0,0,0,0);
+  return Math.floor((b-a)/one);
+}
+
+function addDays(date, days) {
+  const d = new Date(date || new Date());
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function getPlanMessage(enrollment) {
+  const now = new Date();
+  const start = safeDate(enrollment?.batch?.start_date);
+  if (start && diffDays(now, start) < 0) {
+    return "Your batch has recently started. First complete only 4 priority basics: Sketcher Session 01-02 and Part Design Session 01-02. Continue remaining videos on alternate non-live days so you stay on track confidently.";
+  }
+  if (start && diffDays(now, start) <= 4) {
+    return "Your batch is starting very soon. Focus on 4 priority basics first: Sketcher Session 01-02 and Part Design Session 01-02.";
+  }
+  return "Complete 1 CATIA basic video every 2 days. This keeps momentum without last-minute pressure.";
+}
+
+function targetDateFor(index, enrollment) {
+  const now = new Date();
+  const start = safeDate(enrollment?.batch?.start_date);
+  const enrolled = safeDate(enrollment?.enrolled_at || enrollment?.created_at) || now;
+  const afterStart = start && diffDays(now, start) < 0;
+  const spacing = afterStart ? 2 : 2;
+  return addDays(afterStart ? now : enrolled, index * spacing);
+}
+
+const INSTALL_STEPS = [
+  ["📂", "Request access to CATIA setup folder", "Open the CATIA R21 setup folder and send an access request from your Gmail account.", "https://drive.google.com/drive/folders/1SAhJrH2afyumlxDVoFSE20CwLJdFwEK8?usp=drive_link"],
+  ["⬇️", "Download CATIA_setup.rar", "Right click on CATIA_setup.rar and download it. Check the WinRAR file in Downloads folder."],
+  ["📦", "Copy file to D Drive and extract", "Copy CATIA_setup.rar to D drive. Right click and choose Extract All / Extract Here."],
+  ["🖥️", "Run setup.exe as administrator", "Open extracted folder, search setup.exe, right click and run as administrator. Keep clicking Next until setup completes."],
+  ["🔧", "Copy licence DLL file", "Close CATIA. Open extracted folder, go to win32 folder and copy the DLL file."],
+  ["📌", "Paste DLL in CATIA installation folder", "Single click CATIA icon on desktop → right click → Open file location. Paste DLL and replace if popup appears."],
+  ["✅", "Open CATIA and verify", "Open CATIA. Close licence warning popups. If CATIA opens, setup is done."],
 ];
-const OPTIONAL=[{title:"UG NX Tool for Beginners",desc:"Optional software awareness course. Complete after CATIA basics if you want extra CAD confidence.",icon:"🔧"},{title:"GD&T Fundamentals",desc:"Optional drawing and tolerance basics. Helpful before interviews and project discussions.",icon:"📐"}];
-const INSTALL=[
- {icon:FolderOpen,title:"Request access to setup folder",text:"Open the CATIA R21 Google Drive setup folder and send an access request from your Gmail account.",action:"Open CATIA R21 setup folder",link:"https://drive.google.com/drive/folders/1SAhJrH2afyumlxDVoFSE20CwLJdFwEK8?usp=drive_link"},
- {icon:Download,title:"Download CATIA_setup.rar",text:"Right click CATIA_setup.rar and download it. Check that the WinRAR file is available in your Downloads folder."},
- {icon:FileArchive,title:"Copy file to D Drive and extract",text:"Copy CATIA_setup.rar and paste it in D drive. Right click the RAR file and choose Extract All / Extract Here."},
- {icon:Monitor,title:"Run setup.exe as administrator",text:"Open the extracted folder, search setup.exe, right click and run as administrator. Do not change options. Continue Next → Next until setup completes."},
- {icon:Wrench,title:"Copy licence DLL file",text:"Close CATIA. Open the extracted folder, go to win32 folder and copy the DLL file."},
- {icon:ShieldCheck,title:"Paste DLL in CATIA installation folder",text:"Go to desktop, single click CATIA icon, right click → Open file location. Paste the copied DLL file. If replace popup appears, choose Replace."},
- {icon:CheckCircle2,title:"Open CATIA and close licence warnings",text:"Open CATIA. Close all licence warning popups. If CATIA opens successfully, setup is done."}
-];
-function fmtDate(date){if(!date)return "Flexible";return new Date(date).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}
-function addDays(date,days){const d=new Date(date);d.setDate(d.getDate()+days);return d}
-function safeDate(d){if(!d)return null;const x=new Date(d);return Number.isNaN(x.getTime())?null:x}
-function diffDays(a,b){if(!a||!b)return 0;const aa=new Date(a),bb=new Date(b);aa.setHours(0,0,0,0);bb.setHours(0,0,0,0);return Math.max(0,Math.floor((bb-aa)/(24*60*60*1000)))}
-function buildPlan(enrollment){const enrolled=safeDate(enrollment?.enrolled_at||enrollment?.created_at)||new Date();const start=safeDate(enrollment?.batch?.start_date);const days=diffDays(enrolled,start);let required=10,spacing=2,note="You have enough time. One CATIA basic video every 2 days will complete your foundation before live sessions start.";if(start&&days<=4){required=4;spacing=1;note="Your batch is starting very soon. Focus on only 4 priority basics first: Sketcher 1-2 and Part Design 1-2. Continue remaining videos on alternate non-live days."}else if(start&&days<=10){required=6;spacing=1;note="Your batch is close. Complete the first 6 videos daily, then finish remaining videos on alternate days along with live sessions."}else if(start&&days<=15){required=10;spacing=1;note="You have limited time. Complete one CATIA basic video daily so you are ready before live training starts."}return CATIA_VIDEOS.map((v,i)=>({...v,priority:i<required,targetDate:addDays(enrolled,i*spacing),planLabel:(i<required?"Target: ":"After live starts: ")+fmtDate(addDays(enrolled,i*spacing)),note}))}
-function useEnrollment(){const[enrollment,setEnrollment]=useState(null);useEffect(()=>{batchApi.enrolled().then(r=>setEnrollment((r.data||[])[0]||null)).catch(()=>setEnrollment(null))},[]);return enrollment}
-function useProgress(){const[done,setDone]=useState(()=>{try{return JSON.parse(localStorage.getItem("dct_prereq_catia_done")||"{}")}catch{return {}}});const markDone=id=>setDone(p=>{const n={...p,[id]:true};localStorage.setItem("dct_prereq_catia_done",JSON.stringify(n));prerequisiteApi.markLessonProgress?.(id,{completed:true,watch_seconds:9999}).catch?.(()=>{});return n});return{done,markDone}}
-function InstallationPanel(){return <div className="space-y-5"><div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}><div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-white/10"/><div className="relative"><p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">Step 01</p><h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">Install CATIA R21 before starting basics</h1><p className="mt-3 max-w-2xl text-white/85 text-sm sm:text-base leading-7">Complete this setup first. After CATIA opens successfully, start the CATIA basic video plan.</p><a href="https://drive.google.com/drive/folders/1SAhJrH2afyumlxDVoFSE20CwLJdFwEK8?usp=drive_link" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-5 bg-white text-dct-primary font-black px-5 py-3 rounded-2xl no-underline">Open Setup Folder <ExternalLink size={16}/></a></div></div><div className="grid gap-4">{INSTALL.map((step,index)=>{const Icon=step.icon;return <div key={step.title} className="bg-white rounded-3xl border border-blue-100 p-5 flex gap-4 shadow-sm"><div className="w-12 h-12 rounded-2xl bg-blue-50 text-dct-primary flex items-center justify-center flex-shrink-0"><Icon size={22}/></div><div><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-blue-500 bg-blue-50 rounded-full px-2 py-1">STEP {String(index+1).padStart(2,"0")}</span><h3 className="font-black text-dct-dark">{step.title}</h3></div><p className="mt-2 text-sm text-dct-gray leading-6">{step.text}</p>{step.link&&<a href={step.link} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-sm font-black text-dct-primary">{step.action} <ExternalLink size={14}/></a>}</div></div>})}</div><div className="bg-amber-50 border border-amber-200 rounded-3xl p-5"><h3 className="font-black text-amber-900">Need help?</h3><p className="text-sm text-amber-800 mt-1 leading-6">If you are stuck at any step, send a screenshot in your student WhatsApp support group. Do not reinstall multiple times without guidance.</p></div></div>}
-function CatiaBasicsPanel(){const enrollment=useEnrollment();const{done,markDone}=useProgress();const plan=useMemo(()=>buildPlan(enrollment),[enrollment]);const[activeId,setActiveId]=useState("sketcher-01");const completed=plan.filter(v=>done[v.id]).length;const active=plan.find(v=>v.id===activeId)||plan[0];const isUnlocked=i=>i===0||done[plan[i-1]?.id];return <div className="space-y-5"><div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}><div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-white/10"/><div className="relative"><p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">Step 02</p><h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">CATIA basics video plan</h1><p className="mt-3 max-w-3xl text-white/85 text-sm sm:text-base leading-7">Personalized plan based on your registration date and batch start date. Complete videos in order to unlock the next one.</p><div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{completed}/10</strong><p className="text-xs opacity-80">Videos completed</p></div><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{fmtDate(enrollment?.batch?.start_date)}</strong><p className="text-xs opacity-80">Batch starts</p></div><div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">90%</strong><p className="text-xs opacity-80">Watch target</p></div></div></div></div><div className="bg-white rounded-3xl border border-blue-100 p-5 shadow-sm"><div className="flex items-start gap-3"><Sparkles className="text-dct-primary flex-shrink-0" size={22}/><div><h3 className="font-black text-dct-dark">Your recommended plan</h3><p className="text-sm text-dct-gray mt-1 leading-6">{plan[0]?.note}</p></div></div></div><div className="grid gap-5 lg:grid-cols-[1fr_360px]"><section className="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm"><div className="aspect-video bg-slate-950"><iframe key={active?.id} src={active?.vimeo_url} title={active?.title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="w-full h-full border-0"/></div><div className="p-5"><div className="flex flex-wrap gap-2 mb-2"><span className="text-xs font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-full">{active?.group}</span><span className="text-xs font-black text-green-700 bg-green-50 px-3 py-1 rounded-full">{active?.planLabel}</span></div><h2 className="text-xl font-black text-dct-dark">{active?.title}</h2><p className="text-sm text-dct-gray mt-2">Watch the full session, then mark complete to unlock the next video.</p><button onClick={()=>markDone(active?.id)} className="mt-4 inline-flex items-center gap-2 bg-dct-primary hover:bg-dct-blue text-white font-black px-5 py-3 rounded-2xl"><CheckCircle2 size={18}/> Mark Complete</button></div></section><aside className="bg-white rounded-3xl border border-blue-100 p-3 shadow-sm h-fit"><div className="px-2 py-3"><h3 className="font-black text-dct-dark">Video order</h3><p className="text-xs text-dct-gray mt-1">Next video unlocks after previous completion.</p></div><div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">{plan.map((video,index)=>{const unlocked=isUnlocked(index),complete=done[video.id],activeRow=video.id===active?.id;return <button key={video.id} type="button" disabled={!unlocked} onClick={()=>unlocked&&setActiveId(video.id)} className={`w-full text-left rounded-2xl border p-3 transition ${activeRow?"border-dct-primary bg-blue-50":"border-gray-100 bg-white hover:bg-slate-50"} ${!unlocked?"opacity-55 cursor-not-allowed":""}`}><div className="flex items-start gap-3"><div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${complete?"bg-green-100 text-green-700":unlocked?"bg-blue-100 text-dct-primary":"bg-gray-100 text-gray-400"}`}>{complete?<CheckCircle2 size={18}/>:unlocked?<PlayCircle size={18}/>:<Lock size={16}/>}</div><div><p className="font-black text-sm text-dct-dark leading-5">{String(index+1).padStart(2,"0")}. {video.title}</p><p className="text-xs text-dct-gray mt-1">{video.planLabel} • {video.duration}</p></div></div></button>})}</div></aside></div><div className="space-y-3"><h2 className="text-lg font-black text-dct-dark">Optional after CATIA basics</h2>{OPTIONAL.map(c=><div key={c.title} className="bg-white rounded-3xl border border-gray-100 p-5 flex gap-4 items-start"><div className="text-2xl">{c.icon}</div><div><h3 className="font-black text-dct-dark">{c.title}</h3><p className="text-sm text-dct-gray mt-1 leading-6">{c.desc}</p></div></div>)}</div></div>}
-export default function PrerequisitesPage(){const location=useLocation();const navigate=useNavigate();const current=location.pathname.includes("catia-basics")?"catia":"install";return <AppShell><PageWrapper><div className="mb-5"><h1 className="text-2xl sm:text-3xl font-black text-dct-dark">Pre-Requisites</h1><p className="text-sm text-dct-gray mt-1">First install CATIA, then complete CATIA basics before live training starts.</p></div><div className="bg-white rounded-3xl border border-blue-100 p-2 mb-5 grid grid-cols-2 gap-2 shadow-sm"><button onClick={()=>navigate("/student/prerequisites/tool-installation")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current==="install"?"bg-dct-primary text-white":"bg-white text-dct-primary"}`}><Wrench size={17}/> Tool Installation</button><button onClick={()=>navigate("/student/prerequisites/catia-basics")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current==="catia"?"bg-dct-primary text-white":"bg-white text-dct-primary"}`}><BookOpen size={17}/> CATIA Basic Videos</button></div>{current==="install"?<InstallationPanel/>:<CatiaBasicsPanel/>}</PageWrapper></AppShell>}
+
+function InstallationPanel() {
+  return (
+    <div className="space-y-5">
+      <div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>
+        <p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">First Step</p>
+        <h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">Install CATIA R21 before starting basics</h1>
+        <p className="mt-3 max-w-2xl text-white/85 text-sm sm:text-base leading-7">Complete setup first. After CATIA opens successfully, start the CATIA basic videos.</p>
+        <a href={INSTALL_STEPS[0][3]} target="_blank" rel="noreferrer" className="inline-flex mt-5 bg-white text-dct-primary font-black px-5 py-3 rounded-2xl no-underline">Open Setup Folder ↗</a>
+      </div>
+
+      {INSTALL_STEPS.map(([icon, title, text, link], index) => (
+        <div key={title} className="bg-white rounded-3xl border border-blue-100 p-5 flex gap-4 shadow-sm">
+          <div className="text-2xl w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0">{icon}</div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-blue-500 bg-blue-50 rounded-full px-2 py-1">STEP {String(index+1).padStart(2,"0")}</span>
+              <h3 className="font-black text-dct-dark">{title}</h3>
+            </div>
+            <p className="mt-2 text-sm text-dct-gray leading-6">{text}</p>
+            {link && <a href={link} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-black text-dct-primary">Open CATIA setup folder ↗</a>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CatiaBasicsPanel() {
+  const [courses, setCourses] = useState([]);
+  const [enrollment, setEnrollment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [activeLessonId, setActiveLessonId] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    setErr("");
+    try {
+      const [preReqRes, enrollRes] = await Promise.all([prerequisiteApi.list(), batchApi.enrolled()]);
+      const data = preReqRes.data || [];
+      setCourses(data);
+      setEnrollment((enrollRes.data || [])[0] || null);
+      const catia = data.find((c) => c.slug === "catia-tool-for-beginners") || data[0];
+      setActiveLessonId((prev) => prev || catia?.lessons?.[0]?.id || "");
+    } catch (e) {
+      setErr(e.message || "Failed to load prerequisite videos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const catia = courses.find((c) => c.slug === "catia-tool-for-beginners") || courses[0];
+  const optional = courses.filter((c) => c.slug !== "catia-tool-for-beginners");
+  const lessons = catia?.lessons || [];
+  const active = lessons.find((l) => l.id === activeLessonId) || lessons[0];
+
+  const complete = async () => {
+    if (!active?.id) return;
+    try {
+      await prerequisiteApi.saveProgress(active.id, {
+        completed: true,
+        watched_seconds: active.duration_seconds || 1800,
+        last_position: active.duration_seconds || 1800,
+      });
+      await load();
+      const idx = lessons.findIndex((l) => l.id === active.id);
+      const next = lessons[idx + 1];
+      if (next) setActiveLessonId(next.id);
+    } catch (e) {
+      alert(e.message || "Failed to save progress.");
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-[28px] p-6 sm:p-8 text-white relative overflow-hidden" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>
+        <p className="text-xs font-black tracking-[0.25em] uppercase opacity-90">Second Step</p>
+        <h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">CATIA basics video plan</h1>
+        <p className="mt-3 max-w-3xl text-white/85 text-sm sm:text-base leading-7">Complete videos in order. Each completion is saved and visible to admin.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{catia?.completed_lessons || 0}/{catia?.total_lessons || 10}</strong><p className="text-xs opacity-80">Videos completed</p></div>
+          <div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">{fmtDate(enrollment?.batch?.start_date)}</strong><p className="text-xs opacity-80">Batch starts</p></div>
+          <div className="rounded-2xl bg-white/12 p-4"><strong className="text-2xl">90%</strong><p className="text-xs opacity-80">Watch target</p></div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-3xl border border-blue-100 p-5 shadow-sm">
+        <h3 className="font-black text-dct-dark">Your recommended plan</h3>
+        <p className="text-sm text-dct-gray mt-1 leading-6">{getPlanMessage(enrollment)}</p>
+      </div>
+
+      {err && <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-600 font-semibold text-sm">{err}</div>}
+      {loading && <div className="bg-white rounded-3xl p-10 text-center">Loading videos...</div>}
+
+      {!loading && !err && active && (
+        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+          <section className="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
+            <div className="aspect-video bg-slate-950">
+              <iframe key={active.id} src={active.vimeo_url} title={active.title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen className="w-full h-full border-0" />
+            </div>
+            <div className="p-5">
+              <div className="flex flex-wrap gap-2 mb-2">
+                <span className="text-xs font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-full">CATIA Basics</span>
+                <span className="text-xs font-black text-green-700 bg-green-50 px-3 py-1 rounded-full">Target: {fmtDate(targetDateFor((active.order_number || 1)-1, enrollment))}</span>
+              </div>
+              <h2 className="text-xl font-black text-dct-dark">{active.title}</h2>
+              <p className="text-sm text-dct-gray mt-2">{active.description}</p>
+              <button onClick={complete} className="mt-4 inline-flex items-center gap-2 bg-dct-primary hover:bg-dct-blue text-white font-black px-5 py-3 rounded-2xl">
+                ✅ Mark Complete
+              </button>
+            </div>
+          </section>
+
+          <aside className="bg-white rounded-3xl border border-blue-100 p-3 shadow-sm h-fit">
+            <div className="px-2 py-3">
+              <h3 className="font-black text-dct-dark">Video order</h3>
+              <p className="text-xs text-dct-gray mt-1">Next video unlocks after previous completion.</p>
+            </div>
+            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
+              {lessons.map((video, index) => {
+                const activeRow = video.id === active.id;
+                return (
+                  <button key={video.id} disabled={!video.is_unlocked} onClick={() => video.is_unlocked && setActiveLessonId(video.id)} className={`w-full text-left rounded-2xl border p-3 transition ${activeRow ? "border-dct-primary bg-blue-50" : "border-gray-100 bg-white hover:bg-slate-50"} ${!video.is_unlocked ? "opacity-55 cursor-not-allowed" : ""}`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${video.completed ? "bg-green-100 text-green-700" : video.is_unlocked ? "bg-blue-100 text-dct-primary" : "bg-gray-100 text-gray-400"}`}>
+                        {video.completed ? "✅" : video.is_unlocked ? "▶" : "🔒"}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-black text-sm text-dct-dark leading-5">{String(video.order_number || index + 1).padStart(2,"0")}. {video.title}</p>
+                        <p className="text-xs text-dct-gray mt-1">Target: {fmtDate(targetDateFor(index, enrollment))} • {video.progress_percent || 0}%</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {optional.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-black text-dct-dark">Optional after CATIA basics</h2>
+          {optional.map((c) => (
+            <div key={c.id} className="bg-white rounded-3xl border border-gray-100 p-5 flex gap-4 items-start opacity-95">
+              <div className="text-2xl">{c.icon}</div>
+              <div>
+                <h3 className="font-black text-dct-dark">{c.title}</h3>
+                <p className="text-sm text-dct-gray mt-1 leading-6">{c.description}</p>
+                <p className="text-xs font-bold mt-2 text-dct-primary">{c.completed_lessons}/{c.total_lessons} completed</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PrerequisitesPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const current = location.pathname.includes("catia-basics") ? "catia" : "install";
+
+  return (
+    <AppShell>
+      <PageWrapper>
+        <div className="mb-5">
+          <h1 className="text-2xl sm:text-3xl font-black text-dct-dark">Pre-Requisites</h1>
+          <p className="text-sm text-dct-gray mt-1">First install CATIA, then complete CATIA basics before or along with your early live sessions.</p>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-blue-100 p-2 mb-5 grid grid-cols-2 gap-2 shadow-sm">
+          <button onClick={() => navigate("/student/prerequisites/tool-installation")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current === "install" ? "bg-dct-primary text-white" : "bg-white text-dct-primary"}`}>🔧 Tool Installation</button>
+          <button onClick={() => navigate("/student/prerequisites/catia-basics")} className={`rounded-2xl px-4 py-4 font-black text-sm flex items-center justify-center gap-2 ${current === "catia" ? "bg-dct-primary text-white" : "bg-white text-dct-primary"}`}>📘 CATIA Basic Videos</button>
+        </div>
+
+        {current === "install" ? <InstallationPanel /> : <CatiaBasicsPanel />}
+      </PageWrapper>
+    </AppShell>
+  );
+}

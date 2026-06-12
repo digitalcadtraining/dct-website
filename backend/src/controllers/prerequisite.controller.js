@@ -7,43 +7,51 @@ const DEFAULT_COURSES = [
   {
     slug: "catia-tool-for-beginners",
     title: "CATIA Tool for Beginners",
-    subtitle: "Start here before live Plastic / BIW sessions",
-    description: "Build the basic CATIA confidence required before the domain course begins.",
+    subtitle: "Required before live Plastic / BIW sessions",
+    description: "Complete CATIA basics before live training starts or during the first non-live days.",
     icon: "⚙",
+    order_index: 1,
     lessons: [
-      [1, "CATIA Interface & Workbench Overview", "Understand CATIA screen, workbenches, tree structure and navigation."],
-      [2, "Sketcher Basics & Constraints", "Create clean sketches with dimensions and constraints."],
-      [3, "Part Design Core Commands", "Pad, pocket, shaft, groove, fillet, chamfer and reference features."],
-      [4, "Assembly Basics", "Product structure, components, constraints and simple assembly workflow."],
-      [5, "Drafting & Drawing Basics", "Basic views, dimensions and manufacturing drawing awareness."],
+      [1, "Sketcher Session 01", "CATIA sketcher introduction and basic sketch workflow."],
+      [2, "Sketcher Session 02", "Profile creation, constraints and clean sketching practice."],
+      [3, "Sketcher Session 03", "Advanced profile creation and sketch correction practice."],
+      [4, "Sketcher Session 04", "Sketcher tools, trim, mirror, offset and reference use."],
+      [5, "Sketcher Session 05", "Sketcher practice and common mistakes correction."],
+      [6, "Part Design Session 01", "Part Design interface, pad, pocket and basic solid workflow."],
+      [7, "Part Design Session 02", "Fillet, chamfer, hole, shell and feature order thinking."],
+      [8, "Part Design Session 03", "Reference elements, planes, axis and design intent."],
+      [9, "Part Design Session 04", "Practice model creation and tree structure discipline."],
+      [10, "Part Design Session 05", "Final basic practice before live domain sessions."],
     ],
   },
   {
     slug: "ug-nx-tool-for-beginners",
     title: "UG NX Tool for Beginners",
-    subtitle: "Useful for NX based automotive projects",
-    description: "Learn NX basics so you can understand project conversion and common industry workflows.",
+    subtitle: "Optional after CATIA basics",
+    description: "NX awareness course for students who want extra CAD confidence.",
     icon: "🔧",
+    order_index: 2,
     lessons: [
       [1, "NX Interface & File Workflow", "Open, save, navigate and understand the NX part environment."],
       [2, "NX Sketching Fundamentals", "Use sketch tools, constraints, dimensions and references."],
-      [3, "NX 3D Modeling Commands", "Extrude, revolve, hole, shell, edge blend and design intent."],
+      [3, "NX 3D Modeling Commands", "Extrude, revolve, hole, shell and edge blend basics."],
       [4, "Synchronous Modeling Basics", "Understand direct edit workflow used in industry corrections."],
       [5, "NX Assembly & Drafting Basics", "Assembly positioning and drawing basics for mechanical parts."],
     ],
   },
   {
-    slug: "mould-design-fundamentals",
-    title: "Mould Design Fundamentals",
-    subtitle: "Prerequisite for plastic product design thinking",
-    description: "Understand basic mould terminology, tooling direction and manufacturing feasibility.",
-    icon: "🏭",
+    slug: "gdt-fundamentals",
+    title: "GD&T Fundamentals",
+    subtitle: "Optional for interview and drawing confidence",
+    description: "Drawing, tolerance and manufacturing communication basics.",
+    icon: "📐",
+    order_index: 3,
     lessons: [
-      [1, "Injection Moulding Process Overview", "Understand machine, mould, material, filling, cooling and ejection basics."],
-      [2, "Tooling Direction & Draft", "Learn how tooling direction, draft and undercuts affect plastic part design."],
-      [3, "Core, Cavity, Slider & Lifter", "Understand mould side decisions and side core actions."],
-      [4, "Gate, Runner, Cooling & Ejection", "Basic mould systems every product designer should know."],
-      [5, "Common Plastic Defects", "Sink mark, weld line, warpage, flash and basic prevention thinking."],
+      [1, "Drawing Reading Basics", "Understand basic views, dimensions, notes and title block."],
+      [2, "Datum Concept", "Understand datum feature, datum reference and locating intent."],
+      [3, "Form Controls", "Flatness, straightness, circularity and cylindricity overview."],
+      [4, "Orientation & Location Controls", "Parallelism, perpendicularity, position and profile basics."],
+      [5, "Practical GD&T Review", "How designers use GD&T in automotive product design discussions."],
     ],
   },
 ];
@@ -52,13 +60,15 @@ function toVimeoEmbed(url) {
   const raw = String(url || "").trim();
   if (!raw) return DEMO_VIMEO;
   if (raw.includes("player.vimeo.com/video/")) return raw;
+  const privateMatch = raw.match(/vimeo\.com\/(?:manage\/videos\/)?(\d+)\/([a-zA-Z0-9]+)/i);
+  if (privateMatch) return `https://player.vimeo.com/video/${privateMatch[1]}?h=${privateMatch[2]}`;
   const match = raw.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
   if (match) return `https://player.vimeo.com/video/${match[1]}`;
   return raw;
 }
 
 async function ensureDefaultPrerequisites() {
-  for (const [courseIndex, item] of DEFAULT_COURSES.entries()) {
+  for (const item of DEFAULT_COURSES) {
     const course = await prisma.prerequisiteCourse.upsert({
       where: { slug: item.slug },
       update: {
@@ -66,7 +76,7 @@ async function ensureDefaultPrerequisites() {
         subtitle: item.subtitle,
         description: item.description,
         icon: item.icon,
-        order_index: courseIndex + 1,
+        order_index: item.order_index,
         is_active: true,
       },
       create: {
@@ -75,7 +85,7 @@ async function ensureDefaultPrerequisites() {
         subtitle: item.subtitle,
         description: item.description,
         icon: item.icon,
-        order_index: courseIndex + 1,
+        order_index: item.order_index,
         is_active: true,
       },
     });
@@ -87,8 +97,7 @@ async function ensureDefaultPrerequisites() {
         update: {
           title,
           description,
-          vimeo_url: DEMO_VIMEO,
-          duration_seconds: 600,
+          duration_seconds: 1800,
           completion_percent: 90,
           is_active: true,
         },
@@ -98,7 +107,7 @@ async function ensureDefaultPrerequisites() {
           title,
           description,
           vimeo_url: DEMO_VIMEO,
-          duration_seconds: 600,
+          duration_seconds: 1800,
           completion_percent: 90,
           is_active: true,
         },
@@ -169,12 +178,7 @@ const listPrerequisitesForStudent = async (req, res, next) => {
       prisma.prerequisiteCourse.findMany({
         where: { is_active: true },
         orderBy: [{ order_index: "asc" }, { created_at: "asc" }],
-        include: {
-          lessons: {
-            where: { is_active: true },
-            orderBy: { order_number: "asc" },
-          },
-        },
+        include: { lessons: { where: { is_active: true }, orderBy: { order_number: "asc" } } },
       }),
       prisma.prerequisiteProgress.findMany({ where: { student_id: req.user.id } }),
     ]);
@@ -190,14 +194,13 @@ const listPrerequisitesForStudent = async (req, res, next) => {
 const updateLessonProgress = async (req, res, next) => {
   try {
     const { lessonId } = req.params;
+    const completedFromClient = Boolean(req.body?.completed);
     const watched = Math.max(0, Math.floor(Number(req.body?.watched_seconds || 0)));
     const position = Math.max(0, Math.floor(Number(req.body?.last_position || watched || 0)));
 
     const lesson = await prisma.prerequisiteLesson.findUnique({
       where: { id: lessonId },
-      include: {
-        course: true,
-      },
+      include: { course: true },
     });
 
     if (!lesson || !lesson.is_active || !lesson.course?.is_active) {
@@ -215,39 +218,37 @@ const updateLessonProgress = async (req, res, next) => {
     }
 
     const requiredSeconds = Math.ceil((lesson.duration_seconds * lesson.completion_percent) / 100);
-    const cappedWatched = Math.min(Math.max(watched, position), lesson.duration_seconds);
-    const isNowComplete = cappedWatched >= requiredSeconds;
+    const cappedWatched = completedFromClient
+      ? lesson.duration_seconds
+      : Math.min(Math.max(watched, position), lesson.duration_seconds);
+    const isNowComplete = cappedWatched >= requiredSeconds || completedFromClient;
+
+    const existing = await prisma.prerequisiteProgress.findUnique({
+      where: { student_id_lesson_id: { student_id: req.user.id, lesson_id: lesson.id } },
+    });
 
     const progress = await prisma.prerequisiteProgress.upsert({
       where: { student_id_lesson_id: { student_id: req.user.id, lesson_id: lesson.id } },
       update: {
-        watched_seconds: { increment: 0 },
-        last_position: Math.min(position, lesson.duration_seconds),
+        watched_seconds: Math.max(Number(existing?.watched_seconds || 0), cappedWatched),
+        last_position: Math.min(position || cappedWatched, lesson.duration_seconds),
+        ...(isNowComplete && !existing?.completed_at ? { completed_at: new Date() } : {}),
       },
       create: {
         student_id: req.user.id,
         lesson_id: lesson.id,
-        watched_seconds: 0,
-        last_position: Math.min(position, lesson.duration_seconds),
-      },
-    });
-
-    const nextWatched = Math.max(progress.watched_seconds, cappedWatched);
-    const updated = await prisma.prerequisiteProgress.update({
-      where: { id: progress.id },
-      data: {
-        watched_seconds: nextWatched,
-        last_position: Math.min(position, lesson.duration_seconds),
-        ...(isNowComplete && !progress.completed_at ? { completed_at: new Date() } : {}),
+        watched_seconds: cappedWatched,
+        last_position: Math.min(position || cappedWatched, lesson.duration_seconds),
+        ...(isNowComplete ? { completed_at: new Date() } : {}),
       },
     });
 
     return success(res, 200, isNowComplete ? "Lesson completed." : "Progress saved.", {
       lesson_id: lesson.id,
-      watched_seconds: updated.watched_seconds,
-      last_position: updated.last_position,
-      completed: Boolean(updated.completed_at),
-      completed_at: updated.completed_at,
+      watched_seconds: progress.watched_seconds,
+      last_position: progress.last_position,
+      completed: Boolean(progress.completed_at),
+      completed_at: progress.completed_at,
     });
   } catch (err) {
     next(err);
@@ -274,9 +275,7 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
           phone: true,
           is_active: true,
           prerequisite_progress: true,
-          enrollments: {
-            include: { batch: { include: { course: { select: { name: true } } } } },
-          },
+          enrollments: { include: { batch: { include: { course: { select: { name: true } } } } } },
         },
       }),
     ]);
@@ -288,6 +287,7 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
         const completed = course.lessons.filter((lesson) => isComplete(progressByLessonId.get(lesson.id), lesson)).length;
         return {
           course_id: course.id,
+          slug: course.slug,
           title: course.title,
           total_lessons: total,
           completed_lessons: completed,
@@ -295,6 +295,7 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
         };
       });
 
+      const catia = courseRows.find((c) => c.slug === "catia-tool-for-beginners") || courseRows[0];
       const allTotal = courseRows.reduce((n, c) => n + c.total_lessons, 0);
       const allDone = courseRows.reduce((n, c) => n + c.completed_lessons, 0);
 
@@ -305,6 +306,9 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
         phone: student.phone,
         is_active: student.is_active,
         enrolled_courses: student.enrollments.map((e) => e.batch?.course?.name).filter(Boolean),
+        catia_completed_lessons: catia?.completed_lessons || 0,
+        catia_total_lessons: catia?.total_lessons || 10,
+        catia_progress_percent: catia?.progress_percent || 0,
         total_lessons: allTotal,
         completed_lessons: allDone,
         progress_percent: allTotal ? Math.round((allDone / allTotal) * 100) : 0,
