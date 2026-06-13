@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, XCircle, Clock, Users, BookOpen } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Users, BookOpen, Pencil, Save } from "lucide-react";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
-import { adminApi } from "../../services/api.js";
+import { adminApi, api } from "../../services/api.js";
 
 const C = { dark:"#1F1A17", blue:"#024981", primary:"#007BBF", gray:"#6A6B6D", lg:"#7E7F81" };
 
@@ -14,10 +14,16 @@ const STATUS_STYLE = {
   COMPLETED:        { bg:"bg-gray-100",   text:"text-gray-500",   label:"Completed"        },
 };
 
+function rupee(value) {
+  return Number(value || 0).toLocaleString("en-IN");
+}
+
 export default function AdminBatches() {
-  const [batches, setBatches]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [filter, setFilter]     = useState("PENDING_APPROVAL");
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("PENDING_APPROVAL");
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -45,6 +51,36 @@ export default function AdminBatches() {
     } catch (e) { alert("Error: " + e.message); }
   };
 
+  const startEdit = (batch) => {
+    setEditing({
+      id: batch.id,
+      name: batch.name,
+      offer_name: batch.offer_name || "Limited Batch Offer",
+      original_price: batch.original_price || batch.course?.price || "",
+      offer_price: batch.offer_price || batch.course?.price || "",
+    });
+  };
+
+  const savePricing = async () => {
+    if (!editing?.id) return;
+    setSaving(true);
+    try {
+      const res = await api.patch(`/admin/batches/${editing.id}/pricing`, {
+        offer_name: editing.offer_name,
+        original_price: editing.original_price,
+        offer_price: editing.offer_price,
+      }, "admin");
+      const updated = res.data || {};
+      setBatches((items) => items.map((b) => b.id === editing.id ? { ...b, ...updated } : b));
+      setEditing(null);
+      alert("✅ Batch pricing updated.");
+    } catch (e) {
+      alert("Error: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const filtered = filter === "ALL" ? batches : batches.filter(b => b.status === filter);
   const pendingCount = batches.filter(b => b.status === "PENDING_APPROVAL").length;
 
@@ -61,15 +97,11 @@ export default function AdminBatches() {
           </div>
         </div>
 
-        {/* Filter tabs */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
           {["PENDING_APPROVAL","ALL","UPCOMING","ACTIVE","COMPLETED"].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{
-                background: filter === f ? `linear-gradient(135deg,${C.blue},${C.primary})` : "#f3f4f6",
-                color:      filter === f ? "white" : C.gray,
-              }}>
+              style={{ background: filter === f ? `linear-gradient(135deg,${C.blue},${C.primary})` : "#f3f4f6", color: filter === f ? "white" : C.gray }}>
               {f === "PENDING_APPROVAL" ? `Pending (${pendingCount})` : f}
             </button>
           ))}
@@ -86,14 +118,12 @@ export default function AdminBatches() {
 
         <div className="space-y-4">
           {filtered.map((batch, i) => {
-            const st    = STATUS_STYLE[batch.status] || STATUS_STYLE.UPCOMING;
+            const st = STATUS_STYLE[batch.status] || STATUS_STYLE.UPCOMING;
             const slots = batch.time_slots || [];
+            const original = batch.original_price || batch.course?.price || 0;
+            const offer = batch.offer_price || batch.course?.price || 0;
             return (
-              <motion.div key={batch.id} className="bg-white rounded-2xl border border-gray-100 p-5"
-                style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}
-                initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }}
-                transition={{ delay: i * 0.05 }}>
-
+              <motion.div key={batch.id} className="bg-white rounded-2xl border border-gray-100 p-5" style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay: i * 0.05 }}>
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -118,12 +148,24 @@ export default function AdminBatches() {
                       </span>
                     </div>
 
-                    {/* Time slots */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="text-xs px-3 py-1.5 rounded-full bg-blue-50 font-bold" style={{ color:C.blue }}>
+                        Offer: {batch.offer_name || "Limited Batch Offer"}
+                      </span>
+                      <span className="text-xs px-3 py-1.5 rounded-full bg-green-50 font-bold text-green-700">
+                        Price ₹{rupee(offer)}
+                      </span>
+                      {Number(original) > Number(offer) && (
+                        <span className="text-xs px-3 py-1.5 rounded-full bg-red-50 font-bold text-red-700">
+                          Original ₹{rupee(original)}
+                        </span>
+                      )}
+                    </div>
+
                     {slots.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {slots.map(s => (
-                          <span key={s} className="flex items-center gap-1 bg-blue-50 text-xs font-semibold px-2.5 py-1 rounded-full"
-                            style={{ color:C.primary }}>
+                          <span key={s} className="flex items-center gap-1 bg-blue-50 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ color:C.primary }}>
                             <Clock size={10}/> {s}
                           </span>
                         ))}
@@ -131,26 +173,58 @@ export default function AdminBatches() {
                     )}
                   </div>
 
-                  {/* Approve/Reject only for pending */}
-                  {batch.status === "PENDING_APPROVAL" && (
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      <button onClick={() => handleApprove(batch.id)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:-translate-y-0.5"
-                        style={{ background:"linear-gradient(135deg,#16a34a,#22c55e)" }}>
-                        <CheckCircle2 size={13}/> Approve
-                      </button>
-                      <button onClick={() => handleReject(batch.id)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all hover:bg-red-50"
-                        style={{ borderColor:"#fca5a5", color:"#dc2626" }}>
-                        <XCircle size={13}/> Reject
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-2 flex-shrink-0">
+                    <button onClick={() => startEdit(batch)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all hover:bg-blue-50" style={{ borderColor:"#bfdbfe", color:C.blue }}>
+                      <Pencil size={13}/> Edit Price
+                    </button>
+
+                    {batch.status === "PENDING_APPROVAL" && (
+                      <>
+                        <button onClick={() => handleApprove(batch.id)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:-translate-y-0.5" style={{ background:"linear-gradient(135deg,#16a34a,#22c55e)" }}>
+                          <CheckCircle2 size={13}/> Approve
+                        </button>
+                        <button onClick={() => handleReject(batch.id)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all hover:bg-red-50" style={{ borderColor:"#fca5a5", color:"#dc2626" }}>
+                          <XCircle size={13}/> Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
           })}
         </div>
+
+        {editing && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+              <h2 className="text-xl font-extrabold mb-1" style={{ color:C.dark }}>Edit Batch Offer Pricing</h2>
+              <p className="text-xs mb-5" style={{ color:C.gray }}>{editing.name}</p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Name</label>
+                  <input value={editing.offer_name} onChange={(e) => setEditing({ ...editing, offer_name:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="Limited Batch Offer" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Original Price / Strike Price</label>
+                  <input type="number" value={editing.original_price} onChange={(e) => setEditing({ ...editing, original_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="24000" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Price</label>
+                  <input type="number" value={editing.offer_price} onChange={(e) => setEditing({ ...editing, offer_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="18000" />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setEditing(null)} className="flex-1 px-4 py-3 rounded-xl font-bold bg-gray-100" style={{ color:C.gray }}>Cancel</button>
+                <button onClick={savePricing} disabled={saving} className="flex-1 px-4 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>
+                  <Save size={15}/>{saving ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </PageWrapper>
     </AppShell>
   );

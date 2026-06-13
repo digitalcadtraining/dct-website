@@ -14,6 +14,30 @@ function safePct(part, total) {
   return Math.max(0, Math.min(100, Math.round((part / total) * 100)));
 }
 
+function normalizeMoney(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+async function attachBatchPricing(batches = []) {
+  if (!batches.length) return batches;
+  const ids = batches.map((b) => b.id);
+  try {
+    const rows = await prisma.$queryRaw`
+      SELECT id, offer_name, original_price, offer_price
+      FROM batches
+      WHERE id = ANY(${ids})
+    `;
+    const map = new Map(rows.map((r) => [r.id, r]));
+    return batches.map((batch) => ({ ...batch, ...(map.get(batch.id) || {}) }));
+  } catch (err) {
+    // Safe fallback if migration has not been applied yet.
+    return batches;
+  }
+}
+
 async function calculateRevenue(where = {}) {
   const paidEnrollments = await prisma.enrollment.findMany({
     where: { payment_status: "PAID", ...where },
@@ -181,9 +205,40 @@ const listAllBatches = async (req, res, next) => {
     const { status } = req.query;
     const batches = await prisma.batch.findMany({
       where: status ? { status } : {}, orderBy: { start_date: "desc" },
-      include: { course: { select: { name: true } }, tutor: { select: { name: true, email: true } }, _count: { select: { enrollments: true, scheduled_sessions: true, assignments: true } } },
+      include: { course: { select: { name: true, price: true } }, tutor: { select: { name: true, email: true } }, _count: { select: { enrollments: true, scheduled_sessions: true, assignments: true } } },
     });
-    return success(res, 200, "All batches.", batches);
+    const withPricing = await attachBatchPricing(batches);
+    return success(res, 200, "All batches.", withPricing);
+  } catch (err) { next(err); }
+};
+
+const updateBatchPricing = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const batch = await prisma.batch.findUnique({ where: { id }, include: { course: true } });
+    if (!batch) return error(res, 404, "Batch not found.");
+
+    const offer_name = String(req.body.offer_name || "").trim() || "Limited Batch Offer";
+    const original_price = normalizeMoney(req.body.original_price);
+    const offer_price = normalizeMoney(req.body.offer_price);
+
+    if (!original_price || !offer_price) return error(res, 400, "Original price and offer price are required.");
+    if (offer_price > original_price) return error(res, 400, "Offer price cannot be greater than original price.");
+
+    await prisma.$executeRaw`
+      UPDATE batches
+      SET offer_name = ${offer_name}, original_price = ${original_price}, offer_price = ${offer_price}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    const rows = await prisma.$queryRaw`
+      SELECT id, offer_name, original_price, offer_price
+      FROM batches
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+
+    return success(res, 200, "Batch pricing updated.", { ...batch, ...(rows[0] || {}) });
   } catch (err) { next(err); }
 };
 
@@ -227,8 +282,9 @@ const toggleUserStatus = async (req, res, next) => {
 
 const listPendingBatches = async (req, res, next) => {
   try {
-    const batches = await prisma.batch.findMany({ where: { status: "PENDING_APPROVAL" }, orderBy: { created_at: "desc" }, include: { course: { select: { name: true } }, tutor: { select: { name: true, email: true } }, _count: { select: { scheduled_sessions: true, enrollments: true } } } });
-    return success(res, 200, "Pending batches.", batches);
+    const batches = await prisma.batch.findMany({ where: { status: "PENDING_APPROVAL" }, orderBy: { created_at: "desc" }, include: { course: { select: { name: true, price: true } }, tutor: { select: { name: true, email: true } }, _count: { select: { scheduled_sessions: true, enrollments: true } } } });
+    const withPricing = await attachBatchPricing(batches);
+    return success(res, 200, "Pending batches.", withPricing);
   } catch (err) { next(err); }
 };
 
@@ -246,4 +302,9 @@ const rejectBatch = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getStats, listApplications, approveApplication, rejectApplication, listStudents, listTutors, listAllBatches, listAllQueries, resolveQuery, toggleUserStatus, listPendingBatches, approveBatch, rejectBatch };
+module.exports = {
+  getStats, listApplications, approveApplication, rejectApplication,
+  listStudents, listTutors, listAllBatches, updateBatchPricing,
+  listAllQueries, resolveQuery, toggleUserStatus,
+  listPendingBatches, approveBatch, rejectBatch,
+};

@@ -65,9 +65,964 @@ const PAGE_CSS = `
 .dct-course-trust-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:stretch}.dct-course-trust-panel{padding:clamp(24px,3vw,42px);border-radius:28px;background:linear-gradient(135deg,${C.navy} 0%,${C.blueDark} 62%,${C.blue2} 100%);color:#fff;box-shadow:0 26px 70px rgba(2,73,129,.22)}.dct-course-trust-eyebrow{display:inline-flex;padding:8px 12px;border-radius:999px;background:${C.yellow};color:${C.dark};font-size:12px;font-weight:900;text-transform:uppercase;margin-bottom:18px}.dct-course-trust-panel h2{margin:0 0 16px;font-size:clamp(30px,4vw,56px);line-height:1.02;font-weight:900}.dct-course-trust-panel p{margin:0;color:rgba(255,255,255,.78);font-size:16px;line-height:1.75;font-weight:650}.dct-course-trust-mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}.dct-course-trust-mini-stats div{padding:16px;border-radius:18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14)}.dct-course-trust-mini-stats strong{display:block;color:#fff;font-size:22px;font-weight:900}.dct-course-trust-mini-stats span{color:rgba(255,255,255,.72);font-size:12px;font-weight:800}.dct-course-proof-list{display:grid;gap:14px}.dct-course-proof-card{padding:20px;border-radius:22px;background:#fff;border:1px solid ${C.border};box-shadow:0 14px 36px rgba(2,73,129,.08)}.dct-course-proof-card strong{display:block;color:${C.dark};font-size:17px;font-weight:900;margin-bottom:7px}.dct-course-proof-card p{margin:0;color:${C.muted};line-height:1.62;font-size:14px;font-weight:650}
 .dct-course-package-band{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin-top:26px;padding:24px;border-radius:24px;background:${C.lightBg};border:1px solid ${C.border}}.dct-course-package-band h3{margin:0 0 6px;color:${C.dark};font-size:22px;font-weight:900}.dct-course-package-band p{margin:0;color:${C.muted};font-size:14px;font-weight:700;line-height:1.6}
 .dct-course-bottom-cta{position:fixed;left:16px;right:16px;bottom:14px;z-index:120;display:none;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.96);box-shadow:0 18px 50px rgba(0,0,0,.2);border:1px solid ${C.border};backdrop-filter:blur(12px)}.dct-course-bottom-cta strong{display:block;color:${C.dark};font-size:14px}.dct-course-bottom-cta span{display:block;color:${C.muted};font-size:12px;font-weight:700}
+
+/* =========================================================
+   PREMIUM SYLLABUS MODULE UI - DESKTOP + MOBILE
+   ========================================================= */
+.dct-syllabus-showcase {
+  background: linear-gradient(180deg, #f8fcff 0%, #e5f2f9 100%);
+}
+
+.dct-syllabus-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0 0 24px;
+}
+
+.dct-syllabus-stat {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid ${C.border};
+  box-shadow: 0 12px 34px rgba(2,73,129,.06);
+}
+
+.dct-syllabus-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(13,146,219,.1);
+  color: ${C.blueDark};
+  font-weight: 900;
+  font-size: 18px;
+  flex: 0 0 auto;
+}
+
+.dct-syllabus-stat strong {
+  display: block;
+  color: ${C.dark};
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -.035em;
+}
+
+.dct-syllabus-stat span {
+  display: block;
+  margin-top: 5px;
+  color: ${C.muted};
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dct-syllabus-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.dct-syllabus-sidebar {
+  position: sticky;
+  top: 92px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid ${C.border};
+  box-shadow: 0 18px 48px rgba(2,73,129,.08);
+}
+
+.dct-syllabus-tab {
+  width: 100%;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: ${C.dark};
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.dct-syllabus-tab:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 35px;
+  bottom: -9px;
+  width: 2px;
+  height: 18px;
+  border-left: 2px dashed #d9e6ef;
+}
+
+.dct-syllabus-tab.active {
+  background: linear-gradient(135deg, ${C.blueDark}, ${C.blue2});
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(3,126,196,.20);
+}
+
+.dct-syllabus-tab.active::before {
+  content: "";
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 14px solid ${C.blue2};
+}
+
+.dct-syllabus-no {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #f4f8fb;
+  border: 1px solid ${C.border};
+  color: ${C.blueDark};
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.dct-syllabus-tab.active .dct-syllabus-no {
+  background: #fff;
+  border-color: rgba(255,255,255,.7);
+  color: ${C.blueDark};
+}
+
+.dct-syllabus-tab-title {
+  display: block;
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.dct-syllabus-tab-count {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: ${C.muted};
+  font-weight: 800;
+}
+
+.dct-syllabus-tab.active .dct-syllabus-tab-count {
+  color: rgba(255,255,255,.78);
+}
+
+.dct-syllabus-panel {
+  min-height: 540px;
+  padding: clamp(22px, 3vw, 36px);
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid ${C.border};
+  box-shadow: 0 18px 48px rgba(2,73,129,.08);
+}
+
+.dct-syllabus-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.dct-syllabus-panel-head h3 {
+  margin: 0 0 8px;
+  color: ${C.dark};
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1.12;
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.dct-syllabus-panel-head p {
+  max-width: 620px;
+  margin: 0;
+  color: ${C.muted};
+  font-size: 15px;
+  line-height: 1.7;
+  font-weight: 650;
+}
+
+.dct-syllabus-topic-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #eef7ff;
+  color: ${C.blueDark};
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dct-syllabus-topic-list {
+  display: grid;
+  gap: 13px;
+}
+
+.dct-syllabus-topic {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid transparent;
+  color: ${C.text};
+  font-size: 15px;
+  font-weight: 750;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.dct-syllabus-topic:hover {
+  background: #f8fcff;
+  border-color: ${C.border};
+  transform: translateX(3px);
+}
+
+.dct-syllabus-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #eaf4ff;
+  color: ${C.blueDark};
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dct-syllabus-session-tag {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #e5f2f9;
+  color: ${C.blueDark};
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dct-syllabus-more-note {
+  margin-top: 16px;
+  color: ${C.blueDark};
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.dct-syllabus-view-btn {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 18px;
+  border-radius: 14px;
+  border: 2px solid rgba(13,146,219,.28);
+  background: #fff;
+  color: ${C.blueDark};
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.dct-syllabus-view-btn:hover {
+  background: #eef7ff;
+  transform: translateY(-1px);
+}
+
+.dct-syllabus-download-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.dct-syllabus-download-btn {
+  min-height: 54px;
+  padding: 0 26px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: ${C.blueDark};
+  text-decoration: none;
+  font-weight: 900;
+  border: 2px solid rgba(13,146,219,.28);
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(2,73,129,.05);
+}
+
+.dct-syllabus-mobile {
+  display: none;
+}
+
+.dct-syllabus-mobile-item {
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid ${C.border};
+  box-shadow: 0 12px 30px rgba(2,73,129,.06);
+}
+
+.dct-syllabus-mobile-btn {
+  width: 100%;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 44px 1fr 28px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px;
+  border: 0;
+  background: #fff;
+  color: ${C.dark};
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dct-syllabus-mobile-item.active .dct-syllabus-mobile-btn {
+  background: linear-gradient(135deg, ${C.blueDark}, ${C.blue2});
+  color: #fff;
+}
+
+.dct-syllabus-mobile-btn strong {
+  display: block;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.dct-syllabus-mobile-btn span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: ${C.muted};
+  font-weight: 800;
+}
+
+.dct-syllabus-mobile-item.active .dct-syllabus-mobile-btn span {
+  color: rgba(255,255,255,.8);
+}
+
+.dct-syllabus-mobile-item.active .dct-syllabus-no {
+  background: #fff;
+}
+
+.dct-syllabus-mobile-plus {
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dct-syllabus-mobile-content {
+  padding: 15px;
+  display: grid;
+  gap: 10px;
+}
+
+.dct-syllabus-mobile-content .dct-syllabus-topic {
+  grid-template-columns: 26px 1fr;
+}
+
+.dct-syllabus-mobile-content .dct-syllabus-session-tag {
+  display: none;
+}
+
+@media(max-width: 980px) {
+  .dct-syllabus-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dct-syllabus-layout {
+    display: none;
+  }
+
+  .dct-syllabus-mobile {
+    display: grid;
+    gap: 12px;
+  }
+}
+
+@media(max-width: 640px) {
+  .dct-syllabus-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dct-syllabus-stat {
+    min-height: 76px;
+  }
+
+  .dct-syllabus-download-btn {
+    width: 100%;
+    padding: 0 16px;
+  }
+}
+
 @media(max-width:1180px){.dct-course-hero-inner{grid-template-columns:1fr;min-height:auto}.dct-course-offer-card{justify-self:start;max-width:620px}.dct-course-join-grid{grid-template-columns:repeat(3,1fr)}.dct-course-company-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:980px){.dct-course-nav-links a{display:none}.dct-course-stats-grid,.dct-course-outcome-grid,.dct-course-include-grid{grid-template-columns:repeat(2,1fr)}.dct-course-project-grid{grid-auto-columns:minmax(320px,78vw)}.dct-course-company-grid{grid-template-columns:repeat(2,1fr)}.dct-course-range-tabs{grid-template-columns:repeat(3,1fr)}.dct-course-video-frame{border-radius:22px}}
 @media(max-width:720px){.dct-course-page{--course-pad:16px}.dct-course-nav{height:64px}.dct-course-nav-inner{height:64px}.dct-course-logo-mark{width:40px;height:40px}.dct-course-logo-text span{display:none}.dct-course-nav-cta{min-height:40px;padding:0 16px;font-size:13px}.dct-course-hero-inner{padding-block:34px 42px}.dct-course-title{font-size:clamp(42px,15vw,64px)}.dct-course-actions{display:grid}.dct-course-btn{width:100%}.dct-course-trust-grid,.dct-course-stats-grid,.dct-course-join-grid,.dct-course-outcome-grid,.dct-course-include-grid{grid-template-columns:1fr}.dct-course-project-grid{grid-auto-columns:minmax(290px,88vw)}.dct-course-project-dual{grid-template-columns:1fr}.dct-course-company-grid{grid-template-columns:1fr}.dct-course-range-tabs{grid-template-columns:repeat(2,1fr)}.dct-course-session-row{grid-template-columns:48px 1fr}.dct-course-session-chip{grid-column:2;justify-self:start}.dct-course-trust-mini-stats{grid-template-columns:1fr}.dct-course-package-band{grid-template-columns:1fr}.dct-course-company-toolbar{flex-direction:column;align-items:stretch}.dct-course-video-frame{border-radius:20px}.dct-course-bottom-cta{display:grid}}
+
+
+/* =========================================================
+   FINAL MOBILE RESPONSIVE REDESIGN
+   Targets common phone widths: 390–430px and 360–375px.
+   Keeps desktop untouched, improves mobile reading and flow.
+   ========================================================= */
+@media (max-width: 768px) {
+  .dct-course-page {
+    --course-pad: 14px;
+    background: #f8fcff;
+  }
+
+  .dct-course-nav {
+    height: 62px;
+  }
+
+  .dct-course-nav-inner {
+    height: 62px;
+    width: calc(100% - 24px);
+  }
+
+  .dct-course-logo-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+
+  .dct-course-logo-text strong {
+    font-size: 11px;
+    letter-spacing: .12em;
+  }
+
+  .dct-course-nav-links {
+    gap: 8px;
+  }
+
+  .dct-course-nav-links a,
+  .dct-course-nav-links button:not(.dct-course-nav-cta) {
+    display: none;
+  }
+
+  .dct-course-nav-cta {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+
+  .dct-course-hero-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-block: 34px 32px;
+  }
+
+  .dct-course-kicker {
+    font-size: 11px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+
+  .dct-course-eyebrow {
+    font-size: 10px;
+    letter-spacing: .18em;
+    margin-bottom: 12px;
+  }
+
+  .dct-course-title {
+    font-size: clamp(38px, 12vw, 52px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -0.046em !important;
+    margin-bottom: 14px;
+  }
+
+  .dct-course-tagline {
+    font-size: clamp(21px, 6.2vw, 28px);
+    line-height: 1.2;
+    margin-bottom: 14px;
+  }
+
+  .dct-course-desc {
+    font-size: 15px;
+    line-height: 1.62;
+    margin-bottom: 20px;
+  }
+
+  .dct-course-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .dct-course-btn {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  .dct-course-pills,
+  .dct-course-trust-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dct-course-pill,
+  .dct-course-trust-chip {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .dct-course-offer-card {
+    width: 100%;
+    max-width: none;
+    border-radius: 24px;
+    padding: 22px;
+  }
+
+  .dct-course-offer-label {
+    font-size: 11px;
+    letter-spacing: .14em;
+  }
+
+  .dct-course-save {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .dct-course-price {
+    font-size: clamp(38px, 12vw, 50px);
+  }
+
+  .dct-course-slash {
+    font-size: 16px;
+  }
+
+  .dct-course-saving {
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  .dct-course-info-panel {
+    gap: 10px;
+  }
+
+  .dct-course-info-item {
+    padding: 13px 14px;
+    border-radius: 15px;
+  }
+
+  .dct-course-info-item strong {
+    font-size: 13px;
+  }
+
+  .dct-course-info-item span {
+    font-size: 13px;
+    line-height: 1.48;
+  }
+
+  .dct-course-checks {
+    gap: 9px;
+    font-size: 14px;
+  }
+
+  .dct-course-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  .dct-course-stat {
+    min-height: 82px;
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .dct-course-stat strong {
+    font-size: 25px;
+  }
+
+  .dct-course-stat span {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .dct-course-section {
+    padding: 46px 0;
+  }
+
+  .dct-course-section-title,
+  .dct-course-demo-head h2,
+  .dct-course-trust-panel h2 {
+    font-size: clamp(30px, 8.4vw, 42px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .dct-course-section-copy,
+  .dct-course-demo-head p {
+    font-size: 14px;
+    line-height: 1.62;
+  }
+
+  .dct-course-trust-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .dct-course-trust-panel {
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .dct-course-trust-mini-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dct-course-proof-list {
+    gap: 10px;
+  }
+
+  .dct-course-proof-card {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .dct-course-package-band {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .dct-course-join-grid,
+  .dct-course-outcome-grid,
+  .dct-course-include-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dct-course-card {
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .dct-course-card h3,
+  .dct-course-card h4 {
+    font-size: 17px;
+  }
+
+  .dct-course-card p {
+    font-size: 14px;
+    line-height: 1.58;
+  }
+
+  /* Syllabus mobile as premium accordion */
+  .dct-syllabus-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dct-syllabus-stat {
+    min-height: 78px;
+    padding: 13px;
+    gap: 10px;
+    border-radius: 16px;
+  }
+
+  .dct-syllabus-stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .dct-syllabus-stat strong {
+    font-size: 21px;
+  }
+
+  .dct-syllabus-stat span {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .dct-syllabus-layout {
+    display: none;
+  }
+
+  .dct-syllabus-mobile {
+    display: grid;
+    gap: 12px;
+  }
+
+  .dct-syllabus-mobile-item {
+    border-radius: 18px;
+  }
+
+  .dct-syllabus-mobile-btn {
+    min-height: 66px;
+    grid-template-columns: 40px 1fr 24px;
+    padding: 12px;
+  }
+
+  .dct-syllabus-no {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
+  }
+
+  .dct-syllabus-mobile-btn strong {
+    font-size: 14px;
+    line-height: 1.26;
+  }
+
+  .dct-syllabus-mobile-btn span span {
+    font-size: 11px;
+  }
+
+  .dct-syllabus-mobile-content {
+    padding: 12px;
+  }
+
+  .dct-syllabus-topic {
+    grid-template-columns: 24px 1fr;
+    gap: 10px;
+    padding: 11px 12px;
+    font-size: 13px;
+    line-height: 1.42;
+  }
+
+  .dct-syllabus-check {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+
+  .dct-syllabus-more-note {
+    font-size: 13px;
+  }
+
+  .dct-syllabus-view-btn {
+    min-height: 48px;
+    font-size: 13px;
+    border-radius: 13px;
+  }
+
+  .dct-syllabus-download-wrap {
+    margin-top: 18px;
+  }
+
+  .dct-syllabus-download-btn {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 13px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* Projects */
+  .dct-course-project-grid {
+    grid-auto-columns: minmax(286px, 88vw);
+    gap: 14px;
+    padding-bottom: 14px;
+  }
+
+  .dct-course-project-card {
+    border-radius: 20px;
+  }
+
+  .dct-course-project-dual {
+    grid-template-columns: 1fr;
+  }
+
+  .dct-course-project-body {
+    padding: 16px;
+  }
+
+  .dct-course-project-body h3 {
+    font-size: 18px;
+  }
+
+  .dct-course-project-body p {
+    font-size: 13px;
+  }
+
+  /* Demo video */
+  .dct-course-demo-head {
+    margin-bottom: 20px;
+  }
+
+  .dct-course-video-frame {
+    border-radius: 18px;
+  }
+
+  .dct-course-demo-open a {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 13px;
+    font-size: 14px;
+  }
+
+  /* Companies */
+  .dct-course-company-toolbar {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .dct-course-company-toolbar span {
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .dct-course-company-next {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 13px;
+    font-size: 13px;
+  }
+
+  .dct-course-company-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .dct-course-company {
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  /* FAQ */
+  .dct-course-faq-list {
+    gap: 10px;
+  }
+
+  .dct-course-faq-item {
+    border-radius: 16px;
+  }
+
+  .dct-course-faq-btn {
+    padding: 16px;
+    font-size: 14px;
+    align-items: flex-start;
+  }
+
+  .dct-course-faq-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+  }
+
+  .dct-course-faq-answer {
+    padding: 0 16px 16px;
+    font-size: 13px;
+    line-height: 1.62;
+  }
+
+  .dct-course-bottom-cta {
+    display: grid;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 10px;
+    border-radius: 16px;
+    grid-template-columns: 1fr auto;
+  }
+
+  .dct-course-bottom-cta .dct-course-btn {
+    width: auto;
+    min-height: 42px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+}
+
+/* 390px–430px common Android/iPhone large screens */
+@media (min-width: 390px) and (max-width: 430px) {
+  .dct-course-title {
+    font-size: 48px !important;
+  }
+
+  .dct-course-tagline {
+    font-size: 25px !important;
+  }
+
+  .dct-course-offer-card {
+    padding: 24px;
+  }
+
+  .dct-course-company-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dct-course-company {
+    min-height: 56px;
+  }
+}
+
+/* 360px–375px common compact Android/iPhone screens */
+@media (max-width: 375px) {
+  .dct-course-page {
+    --course-pad: 12px;
+  }
+
+  .dct-course-title {
+    font-size: 40px !important;
+  }
+
+  .dct-course-tagline {
+    font-size: 22px !important;
+  }
+
+  .dct-course-desc {
+    font-size: 14px;
+  }
+
+  .dct-course-offer-card {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .dct-course-price {
+    font-size: 38px;
+  }
+
+  .dct-syllabus-stats,
+  .dct-course-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dct-course-bottom-cta {
+    grid-template-columns: 1fr;
+  }
+
+  .dct-course-bottom-cta .dct-course-btn {
+    width: 100%;
+  }
+}
+
 `;
 
 function asset(path = "") {
@@ -114,8 +1069,31 @@ function getYoutubeEmbedUrl(url = "") {
 }
 
 function getNearestBatch(batches = []) {
-  const active = batches.filter((b) => !b.is_full).sort((a, b) => new Date(a.start_date || 0) - new Date(b.start_date || 0));
-  return active[0] || batches[0] || null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const validFutureBatches = batches
+    .filter((batch) => {
+      if (!batch || batch.is_full) return false;
+
+      const status = String(batch.status || "").toUpperCase();
+      const isAllowedStatus = ["UPCOMING", "ACTIVE", ""].includes(status);
+      if (!isAllowedStatus) return false;
+
+      if (!batch.start_date) return true;
+
+      const startDate = new Date(batch.start_date);
+      startDate.setHours(0, 0, 0, 0);
+
+      return startDate >= today;
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.start_date || 8640000000000000) -
+        new Date(b.start_date || 8640000000000000)
+    );
+
+  return validFutureBatches[0] || null;
 }
 
 function makeProjectPracticeSessions(projectLibrary = []) {
@@ -131,6 +1109,32 @@ function makeProjectPracticeSessions(projectLibrary = []) {
     title: topic.toLowerCase().includes("project") ? topic : `${topic} Project`,
     trainer: "Project Practice",
     category: "Project",
+  }));
+}
+
+
+function getSyllabusModules(sessionRanges = []) {
+  const moduleNames = [
+    "Product Design Fundamentals",
+    "Plastic Product Design",
+    "Tooling Design Concepts",
+    "Design for Manufacturing",
+    "Industry Standards & Guidelines",
+    "Advanced Design & Detailing",
+    "Real-Time Projects & Case Studies",
+  ];
+
+  return sessionRanges.map((range, index) => ({
+    no: String(index + 1).padStart(2, "0"),
+    title: moduleNames[index] || range.label || `Module ${index + 1}`,
+    count: range.items.length,
+    description:
+      index === 0
+        ? "Build a strong foundation in automotive industry, product development process, materials and design methodology."
+        : index === sessionRanges.length - 1
+          ? "Complete focused project practice sessions to build portfolio and interview confidence."
+          : "Learn practical design concepts with session-wise topics and guided implementation.",
+    items: range.items,
   }));
 }
 
@@ -153,9 +1157,42 @@ export default function CoursePage({ course }) {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(0);
   const [activeRange, setActiveRange] = useState(0);
+  const [expandedModule, setExpandedModule] = useState(0);
+  const [showAllTopics, setShowAllTopics] = useState(false);
   const [companyPage, setCompanyPage] = useState(0);
   const [liveCourse, setLiveCourse] = useState(null);
   const [liveBatches, setLiveBatches] = useState([]);
+
+
+
+  useEffect(() => {
+    const shouldScrollToDemo =
+      window.location.hash === "#demo" || sessionStorage.getItem("dctScrollToDemo") === "1";
+
+    if (!shouldScrollToDemo) return;
+
+    sessionStorage.removeItem("dctScrollToDemo");
+
+    const scrollToDemo = () => {
+      const demo = document.getElementById("demo");
+      if (!demo) return;
+
+      const offset = 82;
+      const y = demo.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    };
+
+    const timerOne = window.setTimeout(scrollToDemo, 180);
+    const timerTwo = window.setTimeout(scrollToDemo, 700);
+    const timerThree = window.setTimeout(scrollToDemo, 1200);
+
+    return () => {
+      window.clearTimeout(timerOne);
+      window.clearTimeout(timerTwo);
+      window.clearTimeout(timerThree);
+    };
+  }, []);
+
 
   useEffect(() => {
     let mounted = true;
@@ -191,6 +1228,10 @@ export default function CoursePage({ course }) {
 
     return ranges;
   }, [sessions, projectLibrary]);
+
+  const syllabusModules = useMemo(() => getSyllabusModules(sessionRanges), [sessionRanges]);
+  const activeModule = syllabusModules[activeRange] || syllabusModules[0];
+  const visibleDesktopTopics = showAllTopics ? activeModule?.items || [] : (activeModule?.items || []).slice(0, 10);
 
   const faqs = course.courseFaqs || course.faqs || [];
   const placements = course.placements || [];
@@ -270,11 +1311,16 @@ export default function CoursePage({ course }) {
               <button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register / Enroll Now</button>
             </div>
             <div className="dct-course-info-panel">
-              <div className="dct-course-info-item"><strong>✓Learn in both software</strong><span>CATIA V5 + UG NX workflow included in the training.</span></div>
-              <div className="dct-course-info-item"><strong>✓Complete practical syllabus</strong><span>42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.</span></div>
-              <div className="dct-course-info-item"><strong>✓Live + lifetime recording</strong><span>100% live Zoom sessions with recording access for lifetime revision.</span></div>
+              <div className="dct-course-info-item"><strong>Learn in both software</strong><span>CATIA V5 + UG NX workflow included in the training.</span></div>
+              <div className="dct-course-info-item"><strong>Complete practical syllabus</strong><span>42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.</span></div>
+              <div className="dct-course-info-item"><strong>Live + lifetime recording</strong><span>100% live Zoom sessions with recording access for lifetime revision.</span></div>
               <div className="dct-course-info-item"><strong>New Batch Starts</strong><span>{batchStartText}</span></div>
             </div>
+            <ul className="dct-course-checks">
+              <li>✓ Live + recorded sessions</li>
+              <li>✓ CATIA + NX project workflow</li>
+              <li>✓ Placement support</li>
+            </ul>
           </aside>
         </div>
       </section>
@@ -332,44 +1378,146 @@ export default function CoursePage({ course }) {
         </div>
       </section>
 
-      {/* <section className="dct-course-section alt">
-        <div className="dct-course-shell">
-          <SectionHead eyebrow="Learning outcome" title="What you will be able to" highlight="do confidently" />
-          <div className="dct-course-outcome-grid">
-            {(course.outcomes || []).map((outcome) => (
-              <div className="dct-course-card" key={outcome}><div className="dct-course-card-icon">✓</div><h3>{outcome}</h3><p>{course.outcomeSub || "Every topic is connected with practical CAD and automotive interview expectations."}</p></div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-
       {sessionRanges.length > 0 && (
-        <section id="roadmap" className="dct-course-section">
+        <section id="roadmap" className="dct-course-section dct-syllabus-showcase">
           <div className="dct-course-shell">
-            <SectionHead center eyebrow="Complete syllabus" title={`${sessions.length || 85}-session training`} highlight="roadmap" copy="Sessions 51–85 now focus on selected complete project practice topics." />
-            {course.syllabusPdf && <div className="dct-course-syllabus-action"><a className="dct-course-download-btn" href={asset(course.syllabusPdf)} download>Download Complete Detailed Syllabus PDF</a></div>}
-            <div className="dct-course-roadmap">
-              <div className="dct-course-range-tabs">
-                {sessionRanges.map((range, i) => (
-                  <button key={range.short} className={`dct-course-range-tab ${activeRange === i ? "active" : ""}`} onClick={() => setActiveRange(i)} type="button">{range.short}</button>
+            <SectionHead
+              center
+              eyebrow="Course Curriculum"
+              title="What You’ll Learn"
+              highlight="in This Program"
+              copy="Industry-driven curriculum designed by experts with session-wise topics and real-time projects."
+            />
+
+            <div className="dct-syllabus-stats">
+              <div className="dct-syllabus-stat"><span className="dct-syllabus-stat-icon">☷</span><div><strong>{sessions.length || 80}+</strong><span>Industry Topics</span></div></div>
+              <div className="dct-syllabus-stat"><span className="dct-syllabus-stat-icon">▦</span><div><strong>{syllabusModules.length}</strong><span>Modules</span></div></div>
+              <div className="dct-syllabus-stat"><span className="dct-syllabus-stat-icon">⚙</span><div><strong>{course.projectCount || projects.length || 12}+</strong><span>Real-Time Projects</span></div></div>
+              <div className="dct-syllabus-stat"><span className="dct-syllabus-stat-icon">♢</span><div><strong>100%</strong><span>Job Oriented</span></div></div>
+            </div>
+
+            <div className="dct-syllabus-layout">
+              <div className="dct-syllabus-sidebar">
+                {syllabusModules.map((module, index) => (
+                  <button
+                    key={`${module.no}-${module.title}`}
+                    type="button"
+                    className={`dct-syllabus-tab ${activeRange === index ? "active" : ""}`}
+                    onClick={() => {
+                      setActiveRange(index);
+                      setExpandedModule(index);
+                      setShowAllTopics(false);
+                    }}
+                  >
+                    <span className="dct-syllabus-no">{module.no}</span>
+                    <span>
+                      <span className="dct-syllabus-tab-title">{module.title}</span>
+                      <span className="dct-syllabus-tab-count">{module.count} Topics</span>
+                    </span>
+                  </button>
                 ))}
               </div>
-              <div className="dct-course-session-list">
-                {sessionRanges[activeRange]?.items.map((session) => (
-                  <div className="dct-course-session-row" key={`${session.no}-${session.title}`}>
-                    <div className="dct-course-session-no">{session.no}</div>
-                    <div><h4>{session.title}</h4><p>{session.trainer || "Industry Expert"}</p></div>
-                    <span className="dct-course-session-chip">{session.category}</span>
+
+              <div className="dct-syllabus-panel">
+                <div className="dct-syllabus-panel-head">
+                  <div>
+                    <h3>Module {Number(activeModule?.no || 1)}: {activeModule?.title}</h3>
+                    <p>{activeModule?.description}</p>
                   </div>
-                ))}
+                  <span className="dct-syllabus-topic-pill">{activeModule?.count || 0} Topics</span>
+                </div>
+
+                <div className="dct-syllabus-topic-list">
+                  {visibleDesktopTopics.map((session) => (
+                    <div className="dct-syllabus-topic" key={`${session.no}-${session.title}`}>
+                      <span className="dct-syllabus-check">✓</span>
+                      <span>{session.title}</span>
+                      <span className="dct-syllabus-session-tag">Session {session.no}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {!showAllTopics && activeModule?.items?.length > 10 && (
+                  <div className="dct-syllabus-more-note">+ {activeModule.items.length - 10} More Topics</div>
+                )}
+
+                {activeModule?.items?.length > 10 && (
+                  <button
+                    type="button"
+                    className="dct-syllabus-view-btn"
+                    onClick={() => setShowAllTopics((value) => !value)}
+                  >
+                    {showAllTopics ? "Show Less Topics" : "View All Topics in This Module"}
+                  </button>
+                )}
               </div>
             </div>
+
+            <div className="dct-syllabus-mobile">
+              {syllabusModules.map((module, index) => {
+                const isOpen = expandedModule === index;
+                const visibleTopics = isOpen ? module.items.slice(0, 5) : [];
+
+                return (
+                  <div className={`dct-syllabus-mobile-item ${isOpen ? "active" : ""}`} key={`${module.no}-${module.title}`}>
+                    <button
+                      type="button"
+                      className="dct-syllabus-mobile-btn"
+                      onClick={() => setExpandedModule(isOpen ? -1 : index)}
+                    >
+                      <span className="dct-syllabus-no">{module.no}</span>
+                      <span>
+                        <strong>{module.title}</strong>
+                        <span>{module.count} Topics</span>
+                      </span>
+                      <span className="dct-syllabus-mobile-plus">{isOpen ? "−" : "+"}</span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="dct-syllabus-mobile-content">
+                        {visibleTopics.map((session) => (
+                          <div className="dct-syllabus-topic" key={`${session.no}-${session.title}`}>
+                            <span className="dct-syllabus-check">✓</span>
+                            <span>{session.title}</span>
+                          </div>
+                        ))}
+
+                        {module.items.length > 5 && (
+                          <div className="dct-syllabus-more-note">+ {module.items.length - 5} More Topics</div>
+                        )}
+
+                        {module.items.length > 5 && (
+                          <button
+                            type="button"
+                            className="dct-syllabus-view-btn"
+                            onClick={() => {
+                              setActiveRange(index);
+                              setShowAllTopics(true);
+                              document.getElementById("roadmap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                          >
+                            View All Topics
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {course.syllabusPdf && (
+              <div className="dct-syllabus-download-wrap">
+                <a className="dct-syllabus-download-btn" href={asset(course.syllabusPdf)} download>
+                  View Full Syllabus ({sessions.length || 80}+ Topics)
+                </a>
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {projects.length > 0 && (
-        <section id="projects" className="dct-course-section dark">
+      <section id="projects" className="dct-course-section dark">
           <div className="dct-course-shell">
             <SectionHead eyebrow="Portfolio projects" title="Project proof students can" highlight="show in interviews" copy="Real project practice helps students explain design thinking, CAD steps and project logic clearly." />
             <div className="dct-course-project-grid">

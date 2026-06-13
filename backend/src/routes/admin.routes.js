@@ -12,6 +12,7 @@ router.get("/students", admin.listStudents);
 router.get("/tutors", admin.listTutors);
 router.get("/batches/pending", admin.listPendingBatches);
 router.get("/batches", admin.listAllBatches);
+router.patch("/batches/:id/pricing", admin.updateBatchPricing);
 router.post("/batches/:id/approve", admin.approveBatch);
 router.post("/batches/:id/reject", admin.rejectBatch);
 router.get("/queries", admin.listAllQueries);

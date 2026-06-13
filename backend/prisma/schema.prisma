@@ -375,6 +375,8 @@ model RegistrationPayment {
   @@index([status])
   @@map("registration_payments")
 }
+model PhoneOtp { 
+  id String @id @default(cuid()) phone String otp_hash String purpose String expires_at DateTime verified_at DateTime? attempts Int @default(0) created_at DateTime @default(now()) @@index([phone]) @@index([purpose]) @@map("phone_otps") }
 
 model PrerequisiteCourse {
   id          String   @id @default(cuid())
