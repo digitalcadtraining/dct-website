@@ -73,6 +73,43 @@ const homepageHtml = `
   <div class="dct-course-bottom-trust-note">Students can review complete syllabus, projects, package guidance and hiring direction before registration.</div>
 </section>
 
+
+<section class="cad-software-home-section" id="cad-software-tools">
+  <div class="cad-software-home-inner">
+    <div class="cad-software-home-head">
+      <div class="cad-software-home-kicker">Software Tools Training</div>
+      <h2 class="cad-software-home-title">CAD Software <span>Tools Courses</span></h2>
+      <p class="cad-software-home-sub">Focused beginner software training for freshers who want strong command on CATIA V5, UG NX and SolidWorks.</p>
+    </div>
+    <div class="cad-software-home-grid">
+      <article class="cad-software-card">
+        <div class="cad-software-visual catia"><span>Best First Tool</span><strong>CATIA</strong></div>
+        <div class="cad-software-body">
+          <h3>CATIA V5 Basic Software Training</h3>
+          <p>Learn CATIA V5 interface, Sketcher, Part Design, Assembly and Drafting workflow with structured practice.</p>
+          <div class="cad-software-actions"><a href="/courses/catia-basic">View Course</a><a class="secondary" href="/downloads/catia-v5-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+        </div>
+      </article>
+      <article class="cad-software-card">
+        <div class="cad-software-visual nx"><span>Second Tool Advantage</span><strong>NX</strong></div>
+        <div class="cad-software-body">
+          <h3>UG NX Basic Software Training</h3>
+          <p>Learn NX sketching, modeling, synchronous edits, assembly and drafting basics with practice tasks.</p>
+          <div class="cad-software-actions"><a href="/courses/nx-basic">View Course</a><a class="secondary" href="/downloads/ug-nx-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+        </div>
+      </article>
+      <article class="cad-software-card">
+        <div class="cad-software-visual solidworks"><span>Mechanical CAD Starter</span><strong>SW</strong></div>
+        <div class="cad-software-body">
+          <h3>SolidWorks Basic Software Training</h3>
+          <p>Learn SolidWorks sketching, parametric modeling, assemblies and drawing creation from basics.</p>
+          <div class="cad-software-actions"><a href="/courses/solidworks-basic">View Course</a><a class="secondary" href="/downloads/solidworks-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
 <section class="dashboard-section">
   <div class="dash-left">
     <h2 class="dash-section-title">Smartly Designed Student<br>Learning Dashboard</h2>
@@ -162,18 +199,10 @@ const homepageHtml = `
 </section>
 
 
-<section class="project-swipe-section">
-  <div class="project-showcase-layout">
-    <div class="project-showcase-left"><h2 class="project-swipe-title">Advanced Mechanical Engineering<br>Project Showcase</h2><div class="project-value-list"><div class="project-value-item active" data-project="0"><h3>Real-Time Projects Help You Switch</h3><p>Practical CAD projects help freshers and production / quality engineers understand real design workflow.</p></div><div class="project-value-item" data-project="1"><h3>Hands-On Design Experience</h3><p>Students learn by creating actual parts, assemblies, B-side features, tooling logic and reports.</p></div><div class="project-value-item" data-project="2"><h3>3–4 Years Level Project Exposure</h3><p>Projects are designed to build professional confidence similar to real automotive design work.</p></div><div class="project-value-item" data-project="3"><h3>Strong Portfolio For Interviews</h3><p>Every completed project becomes proof of skill for resume, LinkedIn and technical discussions.</p></div></div></div>
-    <div class="project-showcase-right"><div class="project-swipe-shell"><div class="project-card-stack" id="projectCardStack"><article class="project-swipe-card active" data-index="0"><div class="project-card-bg bumper-bg"></div><div class="project-card-glow"></div><div class="project-card-content"><div class="project-card-top"><span>CATIA V5 Project</span><strong>01</strong></div><h3>Plastic Bumper Design & Mould Analysis</h3><p>Class-A analysis, tooling direction, draft check, mounting strategy and manufacturable plastic design logic.</p><div class="project-tags"><span>Class A/B/C</span><span>Tooling</span><span>Draft</span></div></div></article><article class="project-swipe-card next" data-index="1"><div class="project-card-bg biw-bg"></div><div class="project-card-glow"></div><div class="project-card-content"><div class="project-card-top"><span>BIW Project</span><strong>02</strong></div><h3>Body-in-White Door Panel Structural Design</h3><p>Automotive sheet metal design, master sections, reinforcements, joining strategy and assembly thinking.</p><div class="project-tags"><span>BIW</span><span>Door Panel</span><span>Assembly</span></div></div></article><article class="project-swipe-card behind" data-index="2"><div class="project-card-bg sheet-bg"></div><div class="project-card-glow"></div><div class="project-card-content"><div class="project-card-top"><span>SolidWorks Project</span><strong>03</strong></div><h3>Advanced Sheet Metal Enclosure Design</h3><p>Bend allowance, flange design, cut-outs, manufacturability and production-ready sheet metal modelling.</p><div class="project-tags"><span>Sheet Metal</span><span>Bend</span><span>DFM</span></div></div></article><article class="project-swipe-card hidden-card" data-index="3"><div class="project-card-bg nx-bg"></div><div class="project-card-glow"></div><div class="project-card-content"><div class="project-card-top"><span>UG NX Project</span><strong>04</strong></div><h3>Automotive Instrument Panel Full Assembly</h3><p>Interior trim assembly, packaging logic, locator strategy, B-side features and professional product design workflow.</p><div class="project-tags"><span>UG NX</span><span>IP Trim</span><span>B-Side</span></div></div></article></div><div class="project-arrow-controls"><button class="project-arrow-btn" id="projectPrevBtn" aria-label="Previous project">←</button><button class="project-arrow-btn" id="projectNextBtn" aria-label="Next project">→</button></div><div class="project-swipe-dots" id="projectSwipeDots"><button class="active" data-dot="0"></button><button data-dot="1"></button><button data-dot="2"></button><button data-dot="3"></button></div></div></div>
-  </div>
-</section>
-
-
 <section class="trust-verified-section" id="trust-verified">
   <div class="trust-verified-inner">
     <div class="trust-verified-head">
-      <span class="trust-verified-eyebrow">GET TRUST VERIFIED</span>
+      <span class="trust-verified-eyebrow">TRUSTED LEARNING COMMUNITY</span>
       <h2 class="trust-verified-title">Trusted Digital CAD Training Community</h2>
       <p class="trust-verified-sub">Since 2018, students have followed Digital CAD Training across social platforms, WhatsApp groups and professional communities for CAD, automotive design and placement-oriented guidance.</p>
     </div>
@@ -205,17 +234,11 @@ const homepageHtml = `
       </div>
     </div>
 
-    <div class="trust-verified-bottom">
-      <div><strong>Trusted since 2018</strong><span>7+ years of training, guidance and career-support relationship.</span></div>
-      <div><strong>CADPOINT Authorized Partner</strong><span>Professional CAD training direction with recognized branding support.</span></div>
-      <div><strong>PAN India Hiring Direction</strong><span>MNC, OEM and Tier-1 opportunities shared through genuine connections.</span></div>
-    </div>
-  </div>
-</section>
+    </section>
 
 
 <section class="home-stories-section">
-  <div class="home-stories-inner"><div class="home-stories-header"><h2 class="home-stories-title">Real Student <span>Success Stories</span></h2><p class="home-stories-sub">Freshers, quality engineers, drafters and CAD users who moved towards better design careers.</p></div><div class="home-stories-stats"><div><strong>12+</strong><span>Verified Stories</span></div><div><strong>₹16 LPA</strong><span>Highest Package</span></div><div><strong>Design</strong><span>Career Switches</span></div></div><div class="home-company-marquee-section"><p class="home-company-marquee-title">Our Students Are Placed In</p><div class="home-company-marquee-row"><div class="home-company-marquee-track toRight" id="companyMarqueeRow1"></div></div><div class="home-company-marquee-row"><div class="home-company-marquee-track toLeft" id="companyMarqueeRow2"></div></div></div><div class="home-stories-grid" id="homeTestimonialsGrid"></div><div class="home-stories-action"><button class="home-stories-btn" id="homeTestimonialsMoreBtn">Show more students</button></div></div>
+  <div class="home-stories-inner"><div class="home-stories-header"><h2 class="home-stories-title">Real Student <span>Success Stories</span></h2><p class="home-stories-sub">Freshers, quality engineers, drafters and CAD users who moved towards better design careers.</p></div><div class="home-stories-stats"><div><strong>12+</strong><span>Verified Stories</span></div><div><strong>₹16 LPA</strong><span>Highest Package</span></div><div><strong>3000+</strong><span>Careers Built</span></div></div><div class="home-company-marquee-section"><p class="home-company-marquee-title">Our Students Are Placed In</p><div class="home-company-marquee-row"><div class="home-company-marquee-track toRight" id="companyMarqueeRow1"></div></div><div class="home-company-marquee-row"><div class="home-company-marquee-track toLeft" id="companyMarqueeRow2"></div></div></div><div class="home-stories-grid" id="homeTestimonialsGrid"></div><div class="home-stories-action"><button class="home-stories-btn" id="homeTestimonialsMoreBtn">Show more students</button></div></div>
 </section>
 
 <section class="career-roadmap-section">
@@ -257,6 +280,23 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => initHomePageScripts({ navigate }), [navigate]);
+
+  useEffect(() => {
+    let index = 0;
+    const timer = window.setInterval(() => {
+      const stages = Array.from(document.querySelectorAll(".career-road-stage"));
+      const fill = document.getElementById("careerRoadFill");
+      if (!stages.length) return;
+      index = (index + 1) % stages.length;
+      stages.forEach((stage, i) => stage.classList.toggle("active", i === index));
+      if (fill) fill.style.width = `${((index + 1) / stages.length) * 100}%`;
+      if (window.innerWidth <= 768) {
+        stages[index]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }, 2600);
+    return () => window.clearInterval(timer);
+  }, []);
+
 
   const dashLink = !user
     ? "/auth/login"

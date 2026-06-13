@@ -123,7 +123,7 @@ const COURSE_FAQS = [
 
 const COURSE = {
   slug: "plastic-product-design",
-  name: "Plastic Product Design",
+  name: "Automotive Plastic Product Design",
   tagline: "From Zero to Industry-Ready in 4 Months",
   eyebrow: "Automotive Plastic Trims Career Program",
   badge: "🏆 Most Popular",

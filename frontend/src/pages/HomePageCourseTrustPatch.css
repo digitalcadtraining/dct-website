@@ -1,13 +1,7 @@
-/* Trust-building course card patch. Scoped only to homepage. */
-.dct-home-page .dct-trust-eyebrow{
-  display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;padding:9px 16px;border-radius:999px;background:#fff;border:1px solid #cfe4f2;color:#024981;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(2,73,129,.08)
-}
-.dct-home-page .dct-course-trust-strip-home{
-  max-width:1180px;margin:0 auto 30px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px
-}
-.dct-home-page .dct-course-trust-strip-home div{
-  background:#fff;border:1px solid #cfe4f2;border-radius:16px;padding:16px 14px;text-align:center;box-shadow:0 12px 32px rgba(2,73,129,.08)
-}
+/* Home course/trust and CAD software tools styling - original project safe */
+.dct-home-page .dct-trust-eyebrow{display:inline-flex;align-items:center;justify-content:center;margin:0 auto 14px;padding:9px 16px;border-radius:999px;background:#fff;border:1px solid #cfe4f2;color:#024981;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 10px 28px rgba(2,73,129,.08)}
+.dct-home-page .dct-course-trust-strip-home{max-width:1180px;margin:0 auto 30px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.dct-home-page .dct-course-trust-strip-home div{background:#fff;border:1px solid #cfe4f2;border-radius:16px;padding:16px 14px;text-align:center;box-shadow:0 12px 32px rgba(2,73,129,.08)}
 .dct-home-page .dct-course-trust-strip-home strong{display:block;color:#024981;font-size:20px;font-weight:900;line-height:1;margin-bottom:7px}
 .dct-home-page .dct-course-trust-strip-home span{display:block;color:#535457;font-size:12px;font-weight:800;line-height:1.35}
 .dct-home-page .courses-grid-four{grid-template-columns:repeat(4,minmax(0,1fr))!important}
@@ -17,5 +11,46 @@
 .dct-home-page .course-img-mould{background:radial-gradient(circle at 75% 20%,rgba(255,235,58,.5),transparent 24%),linear-gradient(135deg,#0c0f11 0%,#2f5f7f 45%,#0d92db 100%);position:relative}
 .dct-home-page .course-img-mould:after{content:"MOULD";position:absolute;right:18px;bottom:15px;color:rgba(255,255,255,.9);font-weight:900;font-size:clamp(22px,2.5vw,34px);letter-spacing:.06em}
 .dct-home-page .dct-course-bottom-trust-note{max-width:760px;margin:28px auto 0;text-align:center;color:#535457;font-size:14px;font-weight:800;line-height:1.55}
+
+/* title size safety */
+.dct-home-page .courses-title{max-width:980px!important;margin-left:auto!important;margin-right:auto!important;font-size:clamp(38px,4.3vw,62px)!important;line-height:1.1!important;letter-spacing:-.052em!important;font-weight:950!important;color:#07111f!important}
+.dct-home-page .dash-section-title,.dct-home-page .home-stories-title,.dct-home-page .career-roadmap-title,.dct-home-page .trust-verified-title{font-size:clamp(36px,4vw,58px)!important;line-height:1.08!important;letter-spacing:-.052em!important;font-weight:950!important;color:#07111f!important}
+.dct-home-page .courses-sub,.dct-home-page .home-stories-sub,.dct-home-page .career-roadmap-sub,.dct-home-page .trust-verified-sub{max-width:820px!important;font-size:clamp(15px,1.25vw,19px)!important;line-height:1.68!important;font-weight:750!important;color:#4b5666!important}
+
+/* CAD software home */
+.dct-home-page .cad-software-home-section{background:linear-gradient(180deg,#e5f2f9 0%,#f8fcff 100%);padding:clamp(60px,7vw,96px) clamp(18px,4vw,42px);overflow:hidden}
+.dct-home-page .cad-software-home-inner{max-width:1380px;margin:0 auto}
+.dct-home-page .cad-software-home-head{text-align:center;max-width:850px;margin:0 auto 38px}
+.dct-home-page .cad-software-home-kicker{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:999px;background:#fff;border:1px solid #cfe4f2;color:#024981;box-shadow:0 14px 34px rgba(2,73,129,.08);font-size:12px;font-weight:950;letter-spacing:.16em;text-transform:uppercase}
+.dct-home-page .cad-software-home-title{margin:22px 0 0;font-size:clamp(38px,4.2vw,60px);line-height:1.08;letter-spacing:-.052em;font-weight:950;color:#07111f}
+.dct-home-page .cad-software-home-title span{color:#037ec4}
+.dct-home-page .cad-software-home-sub{max-width:820px;margin:16px auto 0;color:#4b5666;font-size:clamp(15px,1.25vw,19px);line-height:1.68;font-weight:750}
+.dct-home-page .cad-software-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.dct-home-page .cad-software-card{overflow:hidden;border-radius:28px;background:#fff;border:1px solid #d8e7f1;box-shadow:0 22px 60px rgba(2,73,129,.1);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+.dct-home-page .cad-software-card:hover{transform:translateY(-8px);border-color:rgba(3,126,196,.35);box-shadow:0 34px 86px rgba(2,73,129,.16)}
+.dct-home-page .cad-software-visual{min-height:165px;padding:24px;position:relative;color:#fff}
+.dct-home-page .cad-software-visual.catia{background:radial-gradient(circle at 84% 18%,rgba(255,235,58,.28),transparent 24%),linear-gradient(135deg,#024981,#0d92db)}
+.dct-home-page .cad-software-visual.nx{background:radial-gradient(circle at 84% 18%,rgba(255,235,58,.28),transparent 24%),linear-gradient(135deg,#243f4f,#1688b8)}
+.dct-home-page .cad-software-visual.solidworks{background:radial-gradient(circle at 84% 18%,rgba(255,235,58,.28),transparent 24%),linear-gradient(135deg,#172333,#037ec4)}
+.dct-home-page .cad-software-visual span{display:inline-flex;padding:8px 12px;border-radius:999px;background:#ffeb3a;color:#1f1a17;font-size:12px;font-weight:950}
+.dct-home-page .cad-software-visual strong{position:absolute;right:24px;bottom:20px;font-size:clamp(46px,5vw,68px);letter-spacing:-.07em;font-weight:950}
+.dct-home-page .cad-software-body{padding:24px}
+.dct-home-page .cad-software-body h3{margin:0 0 10px;color:#1f1a17;font-size:24px;line-height:1.16;letter-spacing:-.04em;font-weight:950}
+.dct-home-page .cad-software-body p{margin:0 0 20px;color:#4b5666;font-size:15px;line-height:1.7;font-weight:700}
+.dct-home-page .cad-software-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dct-home-page .cad-software-actions a{min-height:48px;display:flex;align-items:center;justify-content:center;text-decoration:none;border-radius:15px;background:linear-gradient(135deg,#024981,#037ec4);color:#fff;font-weight:950;font-size:14px;box-shadow:0 14px 30px rgba(3,126,196,.2)}
+.dct-home-page .cad-software-actions a.secondary{background:#e5f2f9;color:#024981;box-shadow:none;border:1px solid #cfe4f2}
+
+/* trust and roadmap */
+.dct-home-page .trust-verified-section{background:radial-gradient(circle at 12% 12%,rgba(3,126,196,.13),transparent 28%),radial-gradient(circle at 88% 20%,rgba(255,235,58,.18),transparent 28%),linear-gradient(180deg,#f8fcff 0%,#e5f2f9 100%)}
+.dct-home-page .trust-verified-card{position:relative;overflow:hidden;border:1px solid rgba(3,126,196,.18)!important;box-shadow:0 20px 60px rgba(2,73,129,.09)!important;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease!important}
+.dct-home-page .trust-verified-card:hover{transform:translateY(-8px);border-color:rgba(3,126,196,.35)!important;box-shadow:0 34px 90px rgba(2,73,129,.15)!important}
+.dct-home-page .trust-icon-wrap{animation:dctTrustFloat 3s ease-in-out infinite}
+@keyframes dctTrustFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.dct-home-page .career-road-stage{transition:transform .35s ease,opacity .35s ease,filter .35s ease}
+.dct-home-page .career-road-stage.active{transform:translateY(-8px) scale(1.02)}
+.dct-home-page .career-road-fill{transition:width .6s cubic-bezier(.2,.8,.2,1)}
+
 @media(max-width:1180px){.dct-home-page .courses-grid-four,.dct-home-page .dct-course-trust-strip-home{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:640px){.dct-home-page .courses-grid-four,.dct-home-page .dct-course-trust-strip-home{grid-template-columns:1fr!important}.dct-home-page .dct-trust-eyebrow{font-size:10px;line-height:1.45;text-align:center}.dct-home-page .courses-section{padding-left:18px;padding-right:18px}}
+@media(max-width:980px){.dct-home-page .cad-software-home-grid{grid-template-columns:1fr}.dct-home-page .cad-software-card{max-width:640px;margin:0 auto;width:100%}}
+@media(max-width:640px){.dct-home-page .courses-grid-four,.dct-home-page .dct-course-trust-strip-home{grid-template-columns:1fr!important}.dct-home-page .courses-title,.dct-home-page .dash-section-title,.dct-home-page .home-stories-title,.dct-home-page .career-roadmap-title,.dct-home-page .trust-verified-title,.dct-home-page .cad-software-home-title{font-size:clamp(32px,9.5vw,46px)!important;line-height:1.08!important}.dct-home-page .cad-software-actions{grid-template-columns:1fr}}
