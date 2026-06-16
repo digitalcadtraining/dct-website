@@ -1,65 +1,154 @@
 /**
  * OTP Service
- * Uses MSG91 in production (popular, India-based SMS provider)
- * Falls back to console.log in development so you can test without SMS credits
+ * WhatsApp OTP via AiSensy + safe development fallback.
  *
- * MSG91 Setup:
- * 1. Sign up at msg91.com
- * 2. Create a template with variable {otp}
- * 3. Set MSG91_AUTH_KEY, MSG91_SENDER_ID, MSG91_TEMPLATE_ID in .env
+ * Required .env:
+ * OTP_DEV_MODE=true
+ * AISENSY_API_KEY=your_api_key
+ * AISENSY_CAMPAIGN_NAME=dct_login_otp
+ * AISENSY_API_URL=https://backend.aisensy.com/campaign/t1/api/v2
  */
 
-const { prisma }        = require("../config/db");
-const { generateOtp, hashString, normalizePhone } = require("../utils/helpers");
-const { OTP_LENGTH, OTP_EXPIRES_MINUTES, OTP_MAX_ATTEMPTS } = require("../config/constants");
+const { prisma } = require("../config/db");
+const { hashString, normalizePhone } = require("../utils/helpers");
+const {
+  OTP_LENGTH,
+  OTP_EXPIRES_MINUTES,
+  OTP_MAX_ATTEMPTS,
+} = require("../config/constants");
 
-/**
- * Send OTP to a phone number
- * Stores hashed OTP in DB, sends raw OTP via SMS
- * Returns { success, otp (dev only) }
- */
-const sendOtp = async (phone, purpose) => {
+function isDevOtpMode() {
+  return String(process.env.OTP_DEV_MODE || "").toLowerCase() === "true";
+}
+
+function getAiSensyDestination(phone) {
   const normalizedPhone = normalizePhone(phone);
-  const otp             = generateOtp(OTP_LENGTH);
-  const expiresAt       = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
+  return `91${normalizedPhone}`;
+}
 
-  // Invalidate any existing unused OTPs for this phone+purpose
-  await prisma.otpVerification.updateMany({
-    where: { phone: normalizedPhone, purpose, is_used: false },
-    data:  { is_used: true },
+async function sendViaAiSensy(phone, otp) {
+  const apiKey = process.env.AISENSY_API_KEY;
+  const campaignName = process.env.AISENSY_CAMPAIGN_NAME;
+  const apiUrl =
+    process.env.AISENSY_API_URL ||
+    "https://backend.aisensy.com/campaign/t1/api/v2";
+
+  if (!apiKey) {
+    throw new Error("AISENSY_API_KEY is missing in backend .env");
+  }
+
+  if (!campaignName) {
+    throw new Error("AISENSY_CAMPAIGN_NAME is missing in backend .env");
+  }
+
+  const destination = getAiSensyDestination(phone);
+
+  const body = {
+    apiKey,
+    campaignName,
+    destination,
+    userName: "Digital CAD Training and Services",
+
+    // Body OTP parameter
+    templateParams: [String(otp)],
+
+    source: process.env.AISENSY_SOURCE || "new-landing-page form",
+    media: {},
+
+    // AiSensy generated curl uses this button structure for Copy Code.
+    // Keep sub_type as "url" because this is what AiSensy generated for your campaign.
+    buttons: [
+      {
+        type: "button",
+        sub_type: "url",
+        index: 0,
+        parameters: [
+          {
+            type: "text",
+            text: String(otp),
+          },
+        ],
+      },
+    ],
+
+    carouselCards: [],
+    location: {},
+    attributes: {},
+    paramsFallbackValue: {
+      FirstName: String(otp),
+    },
+  };
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 
-  // Store hashed OTP (never store raw OTP in DB)
+  const text = await response.text();
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `AiSensy OTP error (${response.status}): ${data?.message || data?.error || text || "Request failed"}`
+    );
+  }
+
+  const statusText = String(data?.status || data?.success || data?.message || "").toLowerCase();
+  if (
+    data?.success === false ||
+    statusText.includes("failed") ||
+    statusText.includes("error")
+  ) {
+    throw new Error(`AiSensy OTP failed: ${data?.message || data?.error || text}`);
+  }
+
+  console.log("AiSensy OTP response:", JSON.stringify(data, null, 2));
+  return data;
+}
+
+const sendOtp = async (phone, purpose) => {
+  const normalizedPhone = normalizePhone(phone);
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + OTP_EXPIRES_MINUTES * 60 * 1000);
+
+  await prisma.otpVerification.updateMany({
+    where: { phone: normalizedPhone, purpose, is_used: false },
+    data: { is_used: true },
+  });
+
   await prisma.otpVerification.create({
     data: {
-      phone:      normalizedPhone,
-      otp:        hashString(otp),
+      phone: normalizedPhone,
+      otp: hashString(otp),
       purpose,
       expires_at: expiresAt,
     },
   });
 
-  // Send SMS
-  if (process.env.NODE_ENV === "production") {
-    await sendViaMSG91(normalizedPhone, otp);
-    return { success: true };
-  } else {
-    // ── Development: print OTP to console ────────────────
-    console.log(`\n📱 OTP for ${normalizedPhone} [${purpose}]: \x1b[33m${otp}\x1b[0m (expires in ${OTP_EXPIRES_MINUTES} min)\n`);
-    return { success: true, otp }; // Return OTP in dev for easy testing
+  if (isDevOtpMode()) {
+    console.log(
+      `\n📱 DCT OTP for ${normalizedPhone} [${purpose}]: \x1b[33m${otp}\x1b[0m (expires in ${OTP_EXPIRES_MINUTES} min)\n`
+    );
+    return { success: true, otp };
   }
+
+  await sendViaAiSensy(normalizedPhone, otp);
+  return { success: true };
 };
 
-/**
- * Verify OTP entered by user
- * Returns { valid: true } or { valid: false, message: "..." }
- */
 const verifyOtp = async (phone, otp, purpose) => {
   const normalizedPhone = normalizePhone(phone);
 
   const record = await prisma.otpVerification.findFirst({
     where: {
-      phone:   normalizedPhone,
+      phone: normalizedPhone,
       purpose,
       is_used: false,
       expires_at: { gt: new Date() },
@@ -68,63 +157,45 @@ const verifyOtp = async (phone, otp, purpose) => {
   });
 
   if (!record) {
-    return { valid: false, message: "OTP expired or not found. Please request a new one." };
+    return {
+      valid: false,
+      message: "OTP expired or not found. Please request a new one.",
+    };
   }
 
-  // Increment attempt count
+  const attemptsAfterThisTry = Number(record.attempts || 0) + 1;
+
   await prisma.otpVerification.update({
     where: { id: record.id },
-    data:  { attempts: { increment: 1 } },
+    data: { attempts: { increment: 1 } },
   });
 
-  if (record.attempts + 1 >= OTP_MAX_ATTEMPTS) {
-    await prisma.otpVerification.update({
-      where: { id: record.id },
-      data:  { is_used: true },
-    });
-    return { valid: false, message: `Too many wrong attempts. Please request a new OTP.` };
+  if (record.otp !== hashString(String(otp))) {
+    if (attemptsAfterThisTry >= OTP_MAX_ATTEMPTS) {
+      await prisma.otpVerification.update({
+        where: { id: record.id },
+        data: { is_used: true },
+      });
+
+      return {
+        valid: false,
+        message: "Too many wrong attempts. Please request a new OTP.",
+      };
+    }
+
+    const remaining = OTP_MAX_ATTEMPTS - attemptsAfterThisTry;
+    return {
+      valid: false,
+      message: `Incorrect OTP. ${remaining} attempt(s) remaining.`,
+    };
   }
 
-  // Compare hashed OTP
-  if (record.otp !== hashString(otp)) {
-    const remaining = OTP_MAX_ATTEMPTS - record.attempts - 1;
-    return { valid: false, message: `Incorrect OTP. ${remaining} attempt(s) remaining.` };
-  }
-
-  // Mark as used
   await prisma.otpVerification.update({
     where: { id: record.id },
-    data:  { is_used: true },
+    data: { is_used: true },
   });
 
   return { valid: true };
-};
-
-/**
- * Send SMS via MSG91 API
- * Docs: https://docs.msg91.com/reference/send-otp
- */
-const sendViaMSG91 = async (phone, otp) => {
-  const url  = "https://control.msg91.com/api/v5/otp";
-  const body = JSON.stringify({
-    template_id: process.env.MSG91_TEMPLATE_ID,
-    mobile:      `91${phone}`,
-    authkey:     process.env.MSG91_AUTH_KEY,
-    otp,
-  });
-
-  const response = await fetch(url, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`MSG91 error: ${text}`);
-  }
-
-  return response.json();
 };
 
 module.exports = { sendOtp, verifyOtp };
