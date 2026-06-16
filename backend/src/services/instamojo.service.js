@@ -94,6 +94,7 @@ async function createPaymentRequest({
   form.set("send_email", "True");
   form.set("send_sms", "False");
 
+  console.log("Instamojo prefill payload:", Object.fromEntries(form.entries()));
   const response = await fetch(`${baseUrl()}/payment-requests/`, {
     method: "POST",
     headers: { ...headers(), "Content-Type": "application/x-www-form-urlencoded" },
