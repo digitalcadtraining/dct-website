@@ -1,85 +1,633 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { authApi, tutorApi, courseApi } from "../../services/api.js";
-import { User, Briefcase, Clock, Plus, Trash2, ChevronRight, ChevronLeft, CheckCircle2, BookOpen, Shield, Check, AlertCircle } from "lucide-react";
+import {
+  User, Briefcase, Clock, Plus, Trash2, ChevronRight, ChevronLeft,
+  CheckCircle2, BookOpen, Shield, Check, AlertCircle
+} from "lucide-react";
 
 const C = { dark:"#1F1A17", navy:"#003C6E", blue:"#024981", primary:"#007BBF", gray:"#6A6B6D", lg:"#7E7F81" };
-const STEPS = [{id:1,label:"Personal",icon:User},{id:2,label:"Professional",icon:Briefcase},{id:3,label:"Syllabus",icon:BookOpen},{id:4,label:"Availability",icon:Clock},{id:5,label:"Submit",icon:Shield}];
-const SESSION_TYPES = [{id:"THEORY",label:"Theory"},{id:"CAD",label:"CAD"},{id:"BOTH",label:"Theory + CAD"}];
+
+const STEPS = [
+  { id:1, label:"Personal", icon:User },
+  { id:2, label:"Professional", icon:Briefcase },
+  { id:3, label:"Syllabus", icon:BookOpen },
+  { id:4, label:"Availability", icon:Clock },
+  { id:5, label:"Submit", icon:Shield },
+];
+
+const SESSION_TYPES = [
+  { id:"THEORY", label:"Theory" },
+  { id:"CAD", label:"CAD" },
+  { id:"BOTH", label:"Theory + CAD" },
+];
+
 const OCCUPATION = ["Full-time Tutor","Working Professional","Freelancer","Retired Expert","Student (Post-grad)"];
 
+const SHIFT_OPTIONS = [
+  { id:"morning", label:"Morning" },
+  { id:"afternoon", label:"Afternoon" },
+  { id:"evening", label:"Evening" },
+];
+
+function uid() {
+  return crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+}
+
+function makeSession() {
+  return { id: uid(), name: "", type: "BOTH" };
+}
+
+function makeProject() {
+  return { id: uid(), name: "", highlights: [""] };
+}
+
+function addMinutes(time, mins = 60) {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h || 0, m || 0, 0, 0);
+  d.setMinutes(d.getMinutes() + mins);
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function to12(time) {
+  if (!time) return "";
+  const [h, m] = time.split(":").map(Number);
+  const p = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${String(m || 0).padStart(2,"0")} ${p}`;
+}
+
 function Field({ label, required, children, hint }) {
-  return <div><label className="block text-sm font-semibold mb-1.5" style={{ color:C.dark }}>{label}{required && <span className="text-red-500 ml-1">*</span>}</label>{children}{hint && <p className="text-xs mt-1.5" style={{ color:C.lg }}>{hint}</p>}</div>;
+  return (
+    <div>
+      <label className="block text-sm font-semibold mb-1.5" style={{ color:C.dark }}>
+        {label}{required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      {children}
+      {hint && <p className="text-xs mt-1.5" style={{ color:C.lg }}>{hint}</p>}
+    </div>
+  );
 }
+
 function Input({ value, onChange, placeholder, type="text" }) {
-  return <input type={type} value={value} onChange={onChange} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border text-sm transition-colors outline-none" style={{ borderColor:"#e5e7eb", color:C.dark }} />;
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full px-4 py-3 rounded-xl border text-sm transition-colors outline-none"
+      style={{ borderColor:"#e5e7eb", color:C.dark }}
+    />
+  );
 }
+
 function Textarea({ value, onChange, placeholder, rows=4 }) {
-  return <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows} className="w-full px-4 py-3 rounded-xl border text-sm resize-none transition-colors outline-none" style={{ borderColor:"#e5e7eb", color:C.dark }} />;
+  return (
+    <textarea
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows={rows}
+      className="w-full px-4 py-3 rounded-xl border text-sm resize-none transition-colors outline-none"
+      style={{ borderColor:"#e5e7eb", color:C.dark }}
+    />
+  );
 }
+
 function Select({ value, onChange, options, placeholder }) {
-  return <select value={value} onChange={onChange} className="w-full px-4 py-3 rounded-xl border text-sm outline-none bg-white" style={{ borderColor:"#e5e7eb", color:value ? C.dark : C.lg }}><option value="">{placeholder}</option>{options.map(o => typeof o === "string" ? <option key={o} value={o}>{o}</option> : <option key={o.value} value={o.value}>{o.label}</option>)}</select>;
+  return (
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full px-4 py-3 rounded-xl border text-sm outline-none bg-white"
+      style={{ borderColor:"#e5e7eb", color:value ? C.dark : C.lg }}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => typeof o === "string"
+        ? <option key={o} value={o}>{o}</option>
+        : <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
 }
+
 function StepBar({ current }) {
-  return <div className="flex items-center gap-1 mb-8">{STEPS.map((s,i)=>{const done=i+1<current,active=i+1===current;return <div key={s.id} className="flex items-center gap-1 flex-1 min-w-0"><div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{background:done?C.primary:active?`linear-gradient(135deg,${C.blue},${C.primary})`:"#f3f4f6",color:done||active?"white":C.lg}}>{done?<Check size={12}/>:s.id}</div>{active&&<span className="text-xs font-bold hidden sm:block whitespace-nowrap" style={{color:C.primary}}>{s.label}</span>}{i<STEPS.length-1&&<div className="flex-1 h-1 rounded-full min-w-[6px]" style={{background:done?C.primary:"#e5e7eb"}}/>}</div>})}</div>;
+  return (
+    <div className="flex items-center gap-1 mb-8">
+      {STEPS.map((s, i) => {
+        const done = i + 1 < current;
+        const active = i + 1 === current;
+        return (
+          <div key={s.id} className="flex items-center gap-1 flex-1 min-w-0">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+              style={{
+                background: done ? C.primary : active ? `linear-gradient(135deg,${C.blue},${C.primary})` : "#f3f4f6",
+                color: done || active ? "white" : C.lg,
+              }}
+            >
+              {done ? <Check size={12}/> : s.id}
+            </div>
+            {active && <span className="text-xs font-bold hidden sm:block whitespace-nowrap" style={{ color:C.primary }}>{s.label}</span>}
+            {i < STEPS.length - 1 && <div className="flex-1 h-1 rounded-full min-w-[6px]" style={{ background:done ? C.primary : "#e5e7eb" }}/>}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
-function makeSession(){return {id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,name:"",type:"BOTH"}}
-function makeProject(){return {id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,name:"",highlights:[""]}}
+
+function OtpBox({ form, phoneToken, onVerified }) {
+  const [otp,setOtp] = useState("");
+  const [sending,setSending] = useState(false);
+  const [verifying,setVerifying] = useState(false);
+  const [sent,setSent] = useState(false);
+  const [err,setErr] = useState("");
+
+  const sendOtp = async () => {
+    if (!form.phone) return setErr("Enter phone number first.");
+    setSending(true);
+    setErr("");
+    try {
+      await authApi.sendOtp(form.phone, "TUTOR_REGISTER");
+      setSent(true);
+    } catch (e) {
+      setErr(e.message || "Failed to send OTP.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const verify = async () => {
+    if (otp.length < 6) return setErr("Enter complete 6 digit OTP.");
+    setVerifying(true);
+    setErr("");
+    try {
+      const res = await authApi.verifyOtp(form.phone, otp, "TUTOR_REGISTER");
+      onVerified(res.data.phone_token);
+    } catch (e) {
+      setErr(e.message || "Invalid OTP.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border p-4" style={{ borderColor:"#bfdbfe", background:"#eff8ff" }}>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <p className="text-sm font-bold" style={{ color:C.dark }}>Phone Verification</p>
+          <p className="text-xs" style={{ color:C.gray }}>Verify WhatsApp OTP before continuing.</p>
+        </div>
+        {phoneToken ? (
+          <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-green-700 bg-green-100">
+            <CheckCircle2 size={14}/> Verified
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={sendOtp}
+            disabled={sending}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white"
+            style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}
+          >
+            {sending ? "Sending..." : sent ? "Resend OTP" : "Send OTP"}
+          </button>
+        )}
+      </div>
+
+      {sent && !phoneToken && (
+        <div className="flex gap-2">
+          <input
+            value={otp}
+            onChange={(e)=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))}
+            placeholder="Enter OTP"
+            className="flex-1 px-4 py-3 rounded-xl border text-sm outline-none"
+            style={{ borderColor:"#bfdbfe" }}
+          />
+          <button
+            type="button"
+            onClick={verify}
+            disabled={verifying}
+            className="px-4 py-3 rounded-xl text-xs font-bold text-white"
+            style={{ background:"#16a34a" }}
+          >
+            {verifying ? "..." : "Verify"}
+          </button>
+        </div>
+      )}
+
+      {err && <p className="text-xs text-red-600 font-semibold mt-2">{err}</p>}
+    </div>
+  );
+}
 
 function SyllabusBuilder({ sessions, setSessions, projects, setProjects }) {
-  const addSession = () => {
-    setSessions(prev => [...prev, makeSession()]);
-    // Fixed: no scrollTo bottom here.
+  const updateSession = (id,key,val) => setSessions((prev)=>prev.map((s)=>s.id===id ? { ...s, [key]:val } : s));
+  const removeSession = (id) => setSessions((prev)=>prev.length <= 1 ? prev : prev.filter((s)=>s.id !== id));
+  const updateProject = (id,key,val) => setProjects((prev)=>prev.map((p)=>p.id===id ? { ...p, [key]:val } : p));
+  const removeProject = (id) => setProjects((prev)=>prev.filter((p)=>p.id !== id));
+  const updateHighlight = (id,i,val) => setProjects((prev)=>prev.map((p)=>{
+    if (p.id !== id) return p;
+    const h = [...p.highlights];
+    h[i] = val;
+    return { ...p, highlights:h };
+  }));
+  const addHighlight = (id) => setProjects((prev)=>prev.map((p)=>p.id===id ? { ...p, highlights:[...p.highlights,""] } : p));
+
+  return (
+    <div className="space-y-7">
+      <div>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-base font-extrabold" style={{ color:C.dark }}>Course Sessions</h3>
+            <p className="text-xs" style={{ color:C.gray }}>Add every session in sequence.</p>
+          </div>
+          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background:"#eff8ff", color:C.primary }}>{sessions.length} sessions</span>
+        </div>
+
+        <div className="space-y-3">
+          {sessions.map((s,idx)=>(
+            <motion.div key={s.id} className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor:"#e5e7eb" }} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>
+              <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor:"#f0f0f0", background:"#fafbff" }}>
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background:`linear-gradient(135deg,${C.navy},${C.primary})` }}>{idx+1}</span>
+                <span className="text-xs font-bold flex-1" style={{ color:C.gray }}>Session {idx+1}</span>
+                {sessions.length > 1 && <button type="button" onClick={()=>removeSession(s.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button>}
+              </div>
+
+              <div className="p-4 space-y-3">
+                <Input value={s.name} onChange={(e)=>updateSession(s.id,"name",e.target.value)} placeholder={`e.g. CATIA Surfacing Basics - Session ${idx+1}`}/>
+                <div className="grid grid-cols-3 gap-2">
+                  {SESSION_TYPES.map((t)=>{
+                    const sel = s.type === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={()=>updateSession(s.id,"type",t.id)}
+                        className="px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+                        style={{ borderColor:sel ? C.primary : "#e5e7eb", background:sel ? "#eff8ff" : "white", color:sel ? C.primary : C.gray }}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <button type="button" onClick={()=>setSessions((prev)=>[...prev, makeSession()])} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold" style={{ borderColor:C.primary, color:C.primary, background:"#f0f8ff" }}>
+          <Plus size={15}/> Add Next Session
+        </button>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-base font-extrabold" style={{ color:C.dark }}>Projects</h3>
+            <p className="text-xs" style={{ color:C.gray }}>Optional project list shown to admin during review.</p>
+          </div>
+          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background:"#f5f3ff", color:"#8b5cf6" }}>{projects.length} projects</span>
+        </div>
+
+        <div className="space-y-3">
+          {projects.map((p,idx)=>(
+            <div key={p.id} className="rounded-2xl border p-4 bg-white" style={{ borderColor:"#ede9fe" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background:"linear-gradient(135deg,#7c3aed,#a78bfa)" }}>{idx+1}</span>
+                <div className="flex-1"><Input value={p.name} onChange={(e)=>updateProject(p.id,"name",e.target.value)} placeholder="Project name"/></div>
+                <button type="button" onClick={()=>removeProject(p.id)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button>
+              </div>
+              <div className="space-y-2">
+                {p.highlights.map((h,i)=><Input key={i} value={h} onChange={(e)=>updateHighlight(p.id,i,e.target.value)} placeholder={`Highlight ${i+1}`}/>)}
+              </div>
+              <button type="button" onClick={()=>addHighlight(p.id)} className="mt-2 text-xs font-bold" style={{ color:"#8b5cf6" }}>+ Add Highlight</button>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" onClick={()=>setProjects((prev)=>[...prev,makeProject()])} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold" style={{ borderColor:"#8b5cf6", color:"#8b5cf6", background:"#f5f3ff" }}>
+          <Plus size={15}/> Add Project
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AvailabilityStep({
+  slots, setSlots, draftStart, setDraftStart, draftEnd, setDraftEnd,
+  form, setField, shiftPrefs, setShiftPrefs, availabilityErr, setAvailabilityErr
+}) {
+  const onStartChange = (value) => {
+    setDraftStart(value);
+    setDraftEnd(value ? addMinutes(value, 60) : "");
+    setAvailabilityErr("");
   };
-  const updateSession=(id,key,val)=>setSessions(prev=>prev.map(s=>s.id===id?{...s,[key]:val}:s));
-  const removeSession=id=>setSessions(prev=>prev.length<=1?prev:prev.filter(s=>s.id!==id));
-  const addProject=()=>setProjects(prev=>[...prev,makeProject()]);
-  const updateProject=(id,key,val)=>setProjects(prev=>prev.map(p=>p.id===id?{...p,[key]:val}:p));
-  const removeProject=id=>setProjects(prev=>prev.filter(p=>p.id!==id));
-  const updateHighlight=(id,i,val)=>setProjects(prev=>prev.map(p=>{if(p.id!==id)return p;const h=[...p.highlights];h[i]=val;return {...p,highlights:h}}));
-  const addHighlight=id=>setProjects(prev=>prev.map(p=>p.id===id?{...p,highlights:[...p.highlights,""]}:p));
 
-  return <div className="space-y-7">
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3"><div><h3 className="text-base font-extrabold" style={{color:C.dark}}>Course Sessions</h3><p className="text-xs" style={{color:C.gray}}>Add every session in sequence. Add Next Session will not jump to bottom.</p></div><span className="text-xs font-bold px-3 py-1 rounded-full" style={{background:"#eff8ff",color:C.primary}}>{sessions.length} sessions</span></div>
-      <div className="space-y-3">{sessions.map((s,idx)=><motion.div key={s.id} className="rounded-2xl border bg-white overflow-hidden" style={{borderColor:"#e5e7eb"}} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>
-        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{borderColor:"#f0f0f0",background:"#fafbff"}}><span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{background:`linear-gradient(135deg,${C.navy},${C.primary})`}}>{idx+1}</span><span className="text-xs font-bold flex-1" style={{color:C.gray}}>Session {idx+1}</span>{sessions.length>1&&<button type="button" onClick={()=>removeSession(s.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button>}</div>
-        <div className="p-4 space-y-3"><Input value={s.name} onChange={e=>updateSession(s.id,"name",e.target.value)} placeholder={`e.g. CATIA Surfacing Basics - Session ${idx+1}`}/><div className="grid grid-cols-3 gap-2">{SESSION_TYPES.map(t=>{const sel=s.type===t.id;return <button key={t.id} type="button" onClick={()=>updateSession(s.id,"type",t.id)} className="px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all" style={{borderColor:sel?C.primary:"#e5e7eb",background:sel?"#eff8ff":"white",color:sel?C.primary:C.gray}}>{t.label}</button>})}</div></div>
-      </motion.div>)}</div>
-      <button type="button" onClick={addSession} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold transition-all hover:opacity-90 active:scale-[0.99]" style={{borderColor:C.primary,color:C.primary,background:"#f0f8ff"}}><Plus size={15}/> Add Next Session</button>
-    </div>
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3"><div><h3 className="text-base font-extrabold" style={{color:C.dark}}>Projects</h3><p className="text-xs" style={{color:C.gray}}>Optional project list shown to admin during review.</p></div><span className="text-xs font-bold px-3 py-1 rounded-full" style={{background:"#f5f3ff",color:"#8b5cf6"}}>{projects.length} projects</span></div>
-      <div className="space-y-3">{projects.map((p,idx)=><div key={p.id} className="rounded-2xl border p-4 bg-white" style={{borderColor:"#ede9fe"}}><div className="flex items-center gap-2 mb-3"><span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{background:"linear-gradient(135deg,#7c3aed,#a78bfa)"}}>{idx+1}</span><div className="flex-1"><Input value={p.name} onChange={e=>updateProject(p.id,"name",e.target.value)} placeholder="Project name"/></div><button type="button" onClick={()=>removeProject(p.id)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button></div><div className="space-y-2">{p.highlights.map((h,i)=><Input key={i} value={h} onChange={e=>updateHighlight(p.id,i,e.target.value)} placeholder={`Highlight ${i+1}`}/>)}</div><button type="button" onClick={()=>addHighlight(p.id)} className="mt-2 text-xs font-bold" style={{color:"#8b5cf6"}}>+ Add Highlight</button></div>)}</div>
-      <button type="button" onClick={addProject} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold" style={{borderColor:"#8b5cf6",color:"#8b5cf6",background:"#f5f3ff"}}><Plus size={15}/> Add Project</button>
-    </div>
-  </div>;
+  const addSlot = () => {
+    if (!draftStart || !draftEnd) {
+      setAvailabilityErr("Please select start time first.");
+      return;
+    }
+    if (draftStart >= draftEnd) {
+      setAvailabilityErr("End time must be after start time.");
+      return;
+    }
+
+    setSlots((prev)=>[
+      ...prev,
+      { id:uid(), start:draftStart, end:draftEnd, label:`${to12(draftStart)} – ${to12(draftEnd)}` },
+    ]);
+
+    setDraftStart("");
+    setDraftEnd("");
+    setAvailabilityErr("");
+  };
+
+  const toggleShift = (id) => setShiftPrefs((prev)=>prev.includes(id) ? prev.filter((x)=>x !== id) : [...prev, id]);
+
+  return (
+    <motion.div key="step4" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5">
+      <h2 className="text-2xl font-extrabold" style={{ color:C.dark }}>Availability</h2>
+
+      <Field label="Available Class Slots" required hint="Select start time. End time will automatically become 60 minutes later. You can add multiple slots.">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3">
+          <Input type="time" value={draftStart} onChange={(e)=>onStartChange(e.target.value)}/>
+          <Input type="time" value={draftEnd} onChange={(e)=>setDraftEnd(e.target.value)}/>
+          <button type="button" onClick={addSlot} className="px-5 py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>
+            <Plus size={15}/> Add Slot
+          </button>
+        </div>
+
+        {slots.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {slots.map((slot,index)=>(
+              <div key={slot.id} className="flex items-center gap-3 justify-between rounded-xl border bg-white px-4 py-3" style={{ borderColor:"#dbeafe" }}>
+                <div>
+                  <p className="text-sm font-bold" style={{ color:C.dark }}>Slot {index + 1}</p>
+                  <p className="text-xs" style={{ color:C.gray }}>{slot.label}</p>
+                </div>
+                <button type="button" onClick={()=>setSlots((prev)=>prev.filter((x)=>x.id !== slot.id))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50">
+                  <Trash2 size={14} className="text-red-500"/>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Field>
+
+      <Field label="Location" required>
+        <Input value={form.location} onChange={(e)=>setField("location", e.target.value)} placeholder="Pune / Mumbai / Remote"/>
+      </Field>
+
+      <Field label="Languages">
+        <Input value={form.languages} onChange={(e)=>setField("languages", e.target.value)} placeholder="Hindi, English, Marathi"/>
+      </Field>
+
+      <Field label="Are you working in shifts?">
+        <Select value={form.workingInShifts} onChange={(e)=>{setField("workingInShifts", e.target.value); if (e.target.value !== "yes") setShiftPrefs([]);}} options={[{value:"no",label:"No"},{value:"yes",label:"Yes"}]} placeholder="Select yes or no"/>
+      </Field>
+
+      {form.workingInShifts === "yes" && (
+        <Field label="Which shifts can you manage?" required>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {SHIFT_OPTIONS.map((shift)=>{
+              const checked = shiftPrefs.includes(shift.id);
+              return (
+                <button key={shift.id} type="button" onClick={()=>toggleShift(shift.id)} className="px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all" style={{ borderColor:checked ? C.primary : "#e5e7eb", background:checked ? "#eff8ff" : "white", color:checked ? C.primary : C.gray }}>
+                  {checked ? "✓ " : ""}{shift.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+
+      <Field label="Hide Identity?">
+        <Select value={form.hideIdentity} onChange={(e)=>setField("hideIdentity", e.target.value)} options={[{value:"no",label:"No, show my identity"},{value:"yes",label:"Yes, hide company identity"}]} placeholder="Select preference"/>
+      </Field>
+
+      {availabilityErr && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm font-semibold"><AlertCircle size={15}/>{availabilityErr}</div>}
+    </motion.div>
+  );
 }
 
-function OtpBox({ form, onVerified }) {
-  const [otp,setOtp]=useState(""),[sending,setSending]=useState(false),[verifying,setVerifying]=useState(false),[sent,setSent]=useState(false),[err,setErr]=useState("");
-  const sendOtp=async()=>{if(!form.phone)return setErr("Enter phone number first.");setSending(true);setErr("");try{await authApi.sendOtp(form.phone,"TUTOR_REGISTER");setSent(true)}catch(e){setErr(e.message||"Failed to send OTP.")}finally{setSending(false)}};
-  const verify=async()=>{if(otp.length<6)return setErr("Enter complete 6 digit OTP.");setVerifying(true);setErr("");try{const res=await authApi.verifyOtp(form.phone,otp,"TUTOR_REGISTER");onVerified(res.data.phone_token)}catch(e){setErr(e.message||"Invalid OTP.")}finally{setVerifying(false)}};
-  return <div className="rounded-2xl border p-4" style={{borderColor:"#bfdbfe",background:"#eff8ff"}}><div className="flex items-center justify-between gap-3 mb-3"><div><p className="text-sm font-bold" style={{color:C.dark}}>Phone Verification</p><p className="text-xs" style={{color:C.gray}}>Check backend terminal for OTP in development.</p></div><button type="button" onClick={sendOtp} disabled={sending} className="px-4 py-2 rounded-xl text-xs font-bold text-white" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}>{sending?"Sending...":sent?"Resend OTP":"Send OTP"}</button></div>{sent&&<div className="flex gap-2"><input value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="Enter OTP" className="flex-1 px-4 py-3 rounded-xl border text-sm outline-none" style={{borderColor:"#bfdbfe"}}/><button type="button" onClick={verify} disabled={verifying} className="px-4 py-3 rounded-xl text-xs font-bold text-white" style={{background:"#16a34a"}}>{verifying?"...":"Verify"}</button></div>}{err&&<p className="text-xs text-red-600 font-semibold mt-2">{err}</p>}</div>;
-}
+export default function TutorRegistrationPage() {
+  const [step,setStep] = useState(1);
+  const [submitted,setSubmitted] = useState(false);
+  const [submitting,setSubmitting] = useState(false);
+  const [submitErr,setSubmitErr] = useState("");
+  const [courses,setCourses] = useState([]);
+  const [phoneToken,setPhoneToken] = useState("");
+  const [sessions,setSessions] = useState([makeSession()]);
+  const [projects,setProjects] = useState([]);
+  const [slots,setSlots] = useState([]);
+  const [draftStart,setDraftStart] = useState("");
+  const [draftEnd,setDraftEnd] = useState("");
+  const [shiftPrefs,setShiftPrefs] = useState([]);
+  const [availabilityErr,setAvailabilityErr] = useState("");
 
-export default function TutorRegistrationPage(){
-  const [step,setStep]=useState(1),[submitted,setSubmitted]=useState(false),[submitting,setSubmitting]=useState(false),[submitErr,setSubmitErr]=useState(""),[courses,setCourses]=useState([]),[phoneToken,setPhoneToken]=useState("");
-  const [sessions,setSessions]=useState([makeSession()]),[projects,setProjects]=useState([]);
-  const [form,setForm]=useState({fullName:"",email:"",phone:"",course_id:"",occupationStatus:"",workExperience:"",companies:"",yearsExp:"",start_time:"",end_time:"",hideIdentity:"no",location:"",languages:""});
-  useEffect(()=>{courseApi.list().then(res=>setCourses(res.data||[])).catch(()=>setCourses([]))},[]);
-  const set=(key,value)=>setForm(v=>({...v,[key]:value}));
-  const timeSlotLabel=useMemo(()=>{if(!form.start_time||!form.end_time)return "";const to12=time=>{const [h,m]=time.split(":").map(Number);const period=h>=12?"PM":"AM";return `${h%12||12}:${String(m).padStart(2,"0")} ${period}`};return `${to12(form.start_time)} – ${to12(form.end_time)}`},[form.start_time,form.end_time]);
-  const canNext=()=>{if(step===1)return form.fullName&&form.email&&form.phone&&phoneToken;if(step===2)return form.occupationStatus&&form.yearsExp&&form.course_id&&form.workExperience;if(step===3)return sessions.length>0&&sessions.every(s=>s.name.trim());if(step===4)return form.start_time&&form.end_time&&form.start_time<form.end_time&&form.location;return true};
-  const submit=async()=>{setSubmitErr("");if(!canNext())return setSubmitErr("Please complete all required fields.");setSubmitting(true);try{await tutorApi.apply({name:form.fullName.trim(),email:form.email.trim().toLowerCase(),phone:form.phone.trim(),phone_token:phoneToken,occupation:form.occupationStatus,years_exp:Number(form.yearsExp)||0,companies:form.companies||"Not specified",work_experience:form.workExperience,course_id:form.course_id,time_slots:timeSlotLabel?[timeSlotLabel]:[],hide_identity:form.hideIdentity==="yes",location:form.location,languages:form.languages?form.languages.split(",").map(x=>x.trim()).filter(Boolean):[],syllabus_sessions:sessions.map((s,idx)=>({session_number:idx+1,name:s.name.trim(),type:s.type||"BOTH"})),syllabus_projects:projects.filter(p=>p.name.trim()).map(p=>({name:p.name.trim(),highlights:p.highlights.filter(Boolean)}))});setSubmitted(true)}catch(e){setSubmitErr(e.message||"Application submission failed.")}finally{setSubmitting(false)}};
+  const [form,setForm] = useState({
+    fullName:"",
+    email:"",
+    phone:"",
+    course_id:"",
+    occupationStatus:"",
+    workExperience:"",
+    companies:"",
+    yearsExp:"",
+    hideIdentity:"no",
+    location:"",
+    languages:"",
+    workingInShifts:"no",
+  });
 
-  if(submitted)return <div className="min-h-screen flex items-center justify-center px-4" style={{background:"linear-gradient(135deg,#f0f7ff 0%,#e8f4fd 100%)"}}><motion.div className="bg-white rounded-3xl shadow-2xl p-12 text-center max-w-sm w-full" initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}}><div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5" style={{background:"linear-gradient(135deg,#22c55e,#16a34a)"}}><CheckCircle2 size={36} className="text-white"/></div><h2 className="text-2xl font-extrabold mb-2" style={{color:C.dark}}>Application Submitted!</h2><p className="text-sm mb-6" style={{color:C.gray}}>Admin will review your profile and activate your tutor login after approval.</p><a href="/dct/auth/login" className="inline-block px-8 py-3 rounded-xl text-white text-sm font-bold" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}>Back to Login</a></motion.div></div>;
+  useEffect(()=>{courseApi.list().then((res)=>setCourses(res.data||[])).catch(()=>setCourses([]));},[]);
 
-  return <div className="min-h-screen flex" style={{background:"linear-gradient(135deg,#f0f7ff 0%,#f9f9ff 100%)"}}><div className="hidden lg:flex w-80 flex-col justify-between p-10 sticky top-0 self-start min-h-screen" style={{background:`linear-gradient(160deg,${C.dark} 0%,${C.navy} 55%,${C.primary} 100%)`}}><div><div className="text-white font-black text-lg tracking-widest mb-12">DIGITAL<span style={{color:"#5bb8e8"}}>CAD</span></div><h1 className="text-3xl font-extrabold text-white leading-tight mb-3">Join as an<br/>Expert Tutor</h1><p className="text-white/60 text-sm leading-relaxed mb-10">Submit your profile, syllabus and availability for admin approval.</p><div className="space-y-3">{STEPS.map((s,i)=>{const active=i+1===step,done=i+1<step;return <div key={s.id} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:done?C.primary:active?"rgba(0,123,191,0.35)":"rgba(255,255,255,0.08)"}}>{done?<Check size={13} className="text-white"/>:<s.icon size={14} className="text-white/70"/>}</div><span className="text-sm font-semibold" style={{color:active?"white":done?"#5bb8e8":"rgba(255,255,255,0.45)"}}>{s.label}</span></div>})}</div></div><p className="text-white/30 text-xs">© DigitalCAD Training</p></div><div className="flex-1 px-5 sm:px-10 lg:px-14 py-10 pb-24 max-w-2xl mx-auto w-full"><StepBar current={step}/><AnimatePresence mode="wait">
-    {step===1&&<motion.div key="step1" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5"><h2 className="text-2xl font-extrabold" style={{color:C.dark}}>Personal Information</h2><Field label="Full Name" required><Input value={form.fullName} onChange={e=>set("fullName",e.target.value)} placeholder="e.g. Balkrishna Dhuri"/></Field><Field label="Email" required><Input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="your@email.com"/></Field><Field label="Phone" required><Input value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="+91 XXXXXXXXXX"/></Field>{phoneToken?<div className="rounded-xl p-3 bg-green-50 border border-green-200 text-green-700 text-sm font-bold">✓ Phone verified</div>:<OtpBox form={form} onVerified={setPhoneToken}/>}</motion.div>}
-    {step===2&&<motion.div key="step2" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5"><h2 className="text-2xl font-extrabold" style={{color:C.dark}}>Professional Details</h2><Field label="Occupation" required><Select value={form.occupationStatus} onChange={e=>set("occupationStatus",e.target.value)} options={OCCUPATION} placeholder="Select occupation"/></Field><Field label="Years of Experience" required><Input type="number" value={form.yearsExp} onChange={e=>set("yearsExp",e.target.value)} placeholder="12"/></Field><Field label="Course You Want To Teach" required><Select value={form.course_id} onChange={e=>set("course_id",e.target.value)} options={courses.map(c=>({value:c.id,label:c.name}))} placeholder={courses.length?"Select course":"Loading courses..."}/></Field><Field label="Companies Worked With"><Input value={form.companies} onChange={e=>set("companies",e.target.value)} placeholder="Tata, Mahindra, Tier-1 suppliers..."/></Field><Field label="Work Experience" required><Textarea value={form.workExperience} onChange={e=>set("workExperience",e.target.value)} placeholder="Write your design/domain experience..."/></Field></motion.div>}
-    {step===3&&<motion.div key="step3" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}}><h2 className="text-2xl font-extrabold mb-1" style={{color:C.dark}}>Syllabus Builder</h2><p className="text-sm mb-6" style={{color:C.gray}}>Add course sessions and optional projects.</p><SyllabusBuilder sessions={sessions} setSessions={setSessions} projects={projects} setProjects={setProjects}/></motion.div>}
-    {step===4&&<motion.div key="step4" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5"><h2 className="text-2xl font-extrabold" style={{color:C.dark}}>Availability</h2><Field label="Class Timing" required hint={timeSlotLabel?`Selected: ${timeSlotLabel}`:"Select exact start and end time."}><div className="grid grid-cols-2 gap-3"><Input type="time" value={form.start_time} onChange={e=>set("start_time",e.target.value)}/><Input type="time" value={form.end_time} onChange={e=>set("end_time",e.target.value)}/></div></Field><Field label="Location" required><Input value={form.location} onChange={e=>set("location",e.target.value)} placeholder="Pune / Mumbai / Remote"/></Field><Field label="Languages"><Input value={form.languages} onChange={e=>set("languages",e.target.value)} placeholder="Hindi, English, Marathi"/></Field><Field label="Hide Identity?"><Select value={form.hideIdentity} onChange={e=>set("hideIdentity",e.target.value)} options={[{value:"no",label:"No, show my identity"},{value:"yes",label:"Yes, hide company identity"}]} placeholder="Select preference"/></Field></motion.div>}
-    {step===5&&<motion.div key="step5" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5"><h2 className="text-2xl font-extrabold" style={{color:C.dark}}>Review & Submit</h2><div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3"><p className="text-sm"><strong>Name:</strong> {form.fullName}</p><p className="text-sm"><strong>Email:</strong> {form.email}</p><p className="text-sm"><strong>Sessions:</strong> {sessions.length}</p><p className="text-sm"><strong>Projects:</strong> {projects.length}</p><p className="text-sm"><strong>Timing:</strong> {timeSlotLabel||"—"}</p></div>{submitErr&&<div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm font-semibold"><AlertCircle size={15}/>{submitErr}</div>}<button onClick={submit} disabled={submitting} className="w-full py-3.5 rounded-xl text-white text-sm font-bold disabled:opacity-60" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}>{submitting?"Submitting...":"Submit Tutor Application"}</button></motion.div>}
-  </AnimatePresence><div className="flex items-center justify-between mt-8"><button type="button" onClick={()=>setStep(s=>Math.max(1,s-1))} disabled={step===1} className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold border disabled:opacity-40 bg-white" style={{color:C.gray,borderColor:"#e5e7eb"}}><ChevronLeft size={15}/> Back</button>{step<5&&<button type="button" onClick={()=>canNext()?setStep(s=>s+1):setSubmitErr("Please complete required fields before continuing.")} className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold" style={{background:`linear-gradient(135deg,${C.blue},${C.primary})`}}>Next <ChevronRight size={15}/></button>}</div>{submitErr&&step!==5&&<div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm font-semibold text-red-600">{submitErr}</div>}</div></div>;
+  const setField = (key,value) => {
+    setSubmitErr("");
+    setForm((v)=>({ ...v, [key]:value }));
+  };
+
+  const shiftSummary = useMemo(() => {
+    if (form.workingInShifts !== "yes") return "No";
+    if (!shiftPrefs.length) return "";
+    return SHIFT_OPTIONS.filter((s)=>shiftPrefs.includes(s.id)).map((s)=>s.label).join(", ");
+  }, [form.workingInShifts, shiftPrefs]);
+
+  const timeSlotSummary = useMemo(()=>slots.map((slot)=>slot.label).join(", "), [slots]);
+
+  const canNext = () => {
+    if (step === 1) return Boolean(form.fullName && form.email && form.phone && phoneToken);
+    if (step === 2) return Boolean(form.occupationStatus && form.yearsExp && form.course_id && form.workExperience);
+    if (step === 3) return sessions.length > 0 && sessions.every((s)=>s.name.trim());
+    if (step === 4) {
+      const shiftsOk = form.workingInShifts !== "yes" || shiftPrefs.length > 0;
+      return Boolean(slots.length > 0 && form.location && shiftsOk);
+    }
+    return true;
+  };
+
+  const goNext = () => {
+    setSubmitErr("");
+    if (canNext()) setStep((s)=>s + 1);
+    else setSubmitErr("Please complete required fields before continuing.");
+  };
+
+  const submit = async () => {
+    setSubmitErr("");
+    if (!canNext()) return setSubmitErr("Please complete all required fields.");
+    setSubmitting(true);
+
+    try {
+      const timeSlotsPayload = slots.map((slot)=>slot.label);
+      if (form.workingInShifts === "yes" && shiftSummary) {
+        timeSlotsPayload.push(`Working shifts: ${shiftSummary}`);
+      }
+
+      await tutorApi.apply({
+        name: form.fullName.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        phone_token: phoneToken,
+        occupation: form.occupationStatus,
+        years_exp: Number(form.yearsExp) || 0,
+        companies: form.companies || "Not specified",
+        work_experience: form.workExperience,
+        course_id: form.course_id,
+        time_slots: timeSlotsPayload,
+        hide_identity: form.hideIdentity === "yes",
+        location: form.location,
+        languages: form.languages ? form.languages.split(",").map((x)=>x.trim()).filter(Boolean) : [],
+        syllabus_sessions: sessions.map((s,idx)=>({ session_number:idx+1, name:s.name.trim(), type:s.type || "BOTH" })),
+        syllabus_projects: projects.filter((p)=>p.name.trim()).map((p)=>({ name:p.name.trim(), highlights:p.highlights.filter(Boolean) })),
+      });
+
+      setSubmitted(true);
+    } catch (e) {
+      setSubmitErr(e.message || "Application submission failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background:"linear-gradient(135deg,#f0f7ff 0%,#e8f4fd 100%)" }}>
+        <motion.div className="bg-white rounded-3xl shadow-2xl p-12 text-center max-w-sm w-full" initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}}>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background:"linear-gradient(135deg,#22c55e,#16a34a)" }}>
+            <CheckCircle2 size={36} className="text-white"/>
+          </div>
+          <h2 className="text-2xl font-extrabold mb-2" style={{ color:C.dark }}>Application Submitted!</h2>
+          <p className="text-sm mb-6" style={{ color:C.gray }}>Admin will review your profile and activate your tutor login after approval.</p>
+          <a href="/dct/auth/login" className="inline-block px-8 py-3 rounded-xl text-white text-sm font-bold" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>Back to Login</a>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex" style={{ background:"linear-gradient(135deg,#f0f7ff 0%,#f9f9ff 100%)" }}>
+      <div className="hidden lg:flex w-80 flex-col justify-between p-10 sticky top-0 self-start min-h-screen" style={{ background:`linear-gradient(160deg,${C.dark} 0%,${C.navy} 55%,${C.primary} 100%)` }}>
+        <div>
+          <div className="text-white font-black text-lg tracking-widest mb-10">DIGITAL CAD TRAINING</div>
+          <h1 className="text-4xl font-black text-white leading-tight mb-4">Become a DCT Tutor</h1>
+          <p className="text-sm leading-7 text-white/75">Apply as a trainer, add your syllabus, available slots and expertise for admin review.</p>
+        </div>
+        <div className="rounded-3xl bg-white/10 border border-white/15 p-5 text-white">
+          <p className="text-sm font-bold mb-2">Review Process</p>
+          <p className="text-xs leading-6 text-white/75">Admin checks profile, course, availability and syllabus before approval.</p>
+        </div>
+      </div>
+
+      <div className="flex-1 p-4 sm:p-8 lg:p-12">
+        <div className="max-w-3xl mx-auto">
+          <a href="/dct/auth/login" className="inline-flex items-center text-sm mb-6" style={{ color:C.gray }}>← Back</a>
+          <div className="bg-white rounded-[2rem] shadow-xl border border-blue-50 p-6 sm:p-8">
+            <StepBar current={step}/>
+
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div key="step1" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5">
+                  <h2 className="text-2xl font-extrabold" style={{ color:C.dark }}>Personal Details</h2>
+                  <Field label="Full Name" required><Input value={form.fullName} onChange={(e)=>setField("fullName", e.target.value)} placeholder="Your full name"/></Field>
+                  <Field label="Email" required><Input type="email" value={form.email} onChange={(e)=>setField("email", e.target.value)} placeholder="you@example.com"/></Field>
+                  <Field label="Phone" required><Input value={form.phone} onChange={(e)=>setField("phone", e.target.value.replace(/\D/g,"").slice(0,10))} placeholder="10 digit WhatsApp number"/></Field>
+                  <OtpBox form={form} phoneToken={phoneToken} onVerified={setPhoneToken}/>
+                </motion.div>
+              )}
+
+              {step === 2 && (
+                <motion.div key="step2" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5">
+                  <h2 className="text-2xl font-extrabold" style={{ color:C.dark }}>Professional Details</h2>
+                  <Field label="Occupation" required><Select value={form.occupationStatus} onChange={(e)=>setField("occupationStatus", e.target.value)} options={OCCUPATION} placeholder="Select occupation"/></Field>
+                  <Field label="Years of Experience" required><Input type="number" value={form.yearsExp} onChange={(e)=>setField("yearsExp", e.target.value)} placeholder="12"/></Field>
+                  <Field label="Course You Want To Teach" required><Select value={form.course_id} onChange={(e)=>setField("course_id", e.target.value)} options={courses.map((c)=>({ value:c.id, label:c.name }))} placeholder={courses.length ? "Select course" : "Loading courses..."}/></Field>
+                  <Field label="Companies Worked With"><Input value={form.companies} onChange={(e)=>setField("companies", e.target.value)} placeholder="Tata, Mahindra, Tier-1 suppliers..."/></Field>
+                  <Field label="Work Experience" required><Textarea value={form.workExperience} onChange={(e)=>setField("workExperience", e.target.value)} placeholder="Write your design/domain experience..."/></Field>
+                </motion.div>
+              )}
+
+              {step === 3 && (
+                <motion.div key="step3" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}}>
+                  <h2 className="text-2xl font-extrabold mb-1" style={{ color:C.dark }}>Syllabus Builder</h2>
+                  <p className="text-sm mb-6" style={{ color:C.gray }}>Add course sessions and optional projects.</p>
+                  <SyllabusBuilder sessions={sessions} setSessions={setSessions} projects={projects} setProjects={setProjects}/>
+                </motion.div>
+              )}
+
+              {step === 4 && (
+                <AvailabilityStep
+                  slots={slots}
+                  setSlots={setSlots}
+                  draftStart={draftStart}
+                  setDraftStart={setDraftStart}
+                  draftEnd={draftEnd}
+                  setDraftEnd={setDraftEnd}
+                  form={form}
+                  setField={setField}
+                  shiftPrefs={shiftPrefs}
+                  setShiftPrefs={setShiftPrefs}
+                  availabilityErr={availabilityErr}
+                  setAvailabilityErr={setAvailabilityErr}
+                />
+              )}
+
+              {step === 5 && (
+                <motion.div key="step5" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5">
+                  <h2 className="text-2xl font-extrabold" style={{ color:C.dark }}>Review & Submit</h2>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+                    <p className="text-sm"><strong>Name:</strong> {form.fullName}</p>
+                    <p className="text-sm"><strong>Email:</strong> {form.email}</p>
+                    <p className="text-sm"><strong>Sessions:</strong> {sessions.length}</p>
+                    <p className="text-sm"><strong>Projects:</strong> {projects.length}</p>
+                    <p className="text-sm"><strong>Available Slots:</strong> {timeSlotSummary || "—"}</p>
+                    <p className="text-sm"><strong>Working in shifts:</strong> {shiftSummary || "—"}</p>
+                  </div>
+
+                  {submitErr && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm font-semibold"><AlertCircle size={15}/>{submitErr}</div>}
+
+                  <button onClick={submit} disabled={submitting} className="w-full py-3.5 rounded-xl text-white text-sm font-bold disabled:opacity-60" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>
+                    {submitting ? "Submitting..." : "Submit Tutor Application"}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex items-center justify-between mt-8">
+              <button type="button" onClick={()=>{ setSubmitErr(""); setStep((s)=>Math.max(1, s-1)); }} disabled={step===1} className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold border disabled:opacity-40 bg-white" style={{ color:C.gray, borderColor:"#e5e7eb" }}>
+                <ChevronLeft size={15}/> Back
+              </button>
+              {step < 5 && <button type="button" onClick={goNext} className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold" style={{ background:`linear-gradient(135deg,${C.blue},${C.primary})` }}>Next <ChevronRight size={15}/></button>}
+            </div>
+
+            {submitErr && step !== 5 && <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-sm font-semibold text-red-600">{submitErr}</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
