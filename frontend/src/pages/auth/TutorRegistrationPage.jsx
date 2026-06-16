@@ -4,7 +4,8 @@ import { authApi, tutorApi, courseApi } from "../../services/api.js";
 import {
   User, Briefcase, Clock, Plus, Trash2, ChevronRight, ChevronLeft,
   CheckCircle2, BookOpen, Shield, Check, AlertCircle
-} from "lucide-react";
+,
+  PlayCircle} from "lucide-react";
 
 const C = { dark:"#1F1A17", navy:"#003C6E", blue:"#024981", primary:"#007BBF", gray:"#6A6B6D", lg:"#7E7F81" };
 
@@ -21,6 +22,7 @@ const SESSION_TYPES = [
   { id:"CAD", label:"CAD" },
   { id:"BOTH", label:"Theory + CAD" },
 ];
+
 
 const OCCUPATION = ["Full-time Tutor","Working Professional","Freelancer","Retired Expert","Student (Post-grad)"];
 
@@ -224,50 +226,124 @@ function OtpBox({ form, phoneToken, onVerified }) {
 }
 
 function SyllabusBuilder({ sessions, setSessions, projects, setProjects }) {
-  const updateSession = (id,key,val) => setSessions((prev)=>prev.map((s)=>s.id===id ? { ...s, [key]:val } : s));
-  const removeSession = (id) => setSessions((prev)=>prev.length <= 1 ? prev : prev.filter((s)=>s.id !== id));
-  const updateProject = (id,key,val) => setProjects((prev)=>prev.map((p)=>p.id===id ? { ...p, [key]:val } : p));
-  const removeProject = (id) => setProjects((prev)=>prev.filter((p)=>p.id !== id));
-  const updateHighlight = (id,i,val) => setProjects((prev)=>prev.map((p)=>{
-    if (p.id !== id) return p;
-    const h = [...p.highlights];
-    h[i] = val;
-    return { ...p, highlights:h };
-  }));
-  const addHighlight = (id) => setProjects((prev)=>prev.map((p)=>p.id===id ? { ...p, highlights:[...p.highlights,""] } : p));
+  const addSession = () => setSessions((prev) => [...prev, makeSession()]);
+  const updateSession = (id, key, val) =>
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, [key]: val } : s)));
+  const removeSession = (id) =>
+    setSessions((prev) => (prev.length <= 1 ? prev : prev.filter((s) => s.id !== id)));
+
+  const addProject = () => setProjects((prev) => [...prev, makeProject()]);
+  const updateProject = (id, key, val) =>
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+
+        if (key === "is_recorded") {
+          return {
+            ...p,
+            is_recorded: val,
+            sessions: val ? [] : (p.sessions && p.sessions.length ? p.sessions : [makeProjectSession()]),
+            unlock_rule: val ? "FIRST_LIVE_PROJECT_START" : null,
+          };
+        }
+
+        return { ...p, [key]: val };
+      }),
+    );
+
+  const removeProject = (id) => setProjects((prev) => prev.filter((p) => p.id !== id));
+
+  const updateProjectSession = (projectId, sessionId, value) =>
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          sessions: (p.sessions || []).map((s) =>
+            s.id === sessionId ? { ...s, name: value } : s,
+          ),
+        };
+      }),
+    );
+
+  const addProjectSession = (projectId) =>
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, sessions: [...(p.sessions || []), makeProjectSession()] }
+          : p,
+      ),
+    );
+
+  const removeProjectSession = (projectId, sessionId) =>
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        const nextSessions = (p.sessions || []).filter((s) => s.id !== sessionId);
+        return { ...p, sessions: nextSessions.length ? nextSessions : [makeProjectSession()] };
+      }),
+    );
+
+  const liveProjects = projects.filter((p) => !p.is_recorded).length;
+  const recordedProjects = projects.filter((p) => p.is_recorded).length;
 
   return (
     <div className="space-y-7">
       <div>
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-base font-extrabold" style={{ color:C.dark }}>Course Sessions</h3>
-            <p className="text-xs" style={{ color:C.gray }}>Add every session in sequence.</p>
+            <h3 className="text-base font-extrabold" style={{ color: C.dark }}>Course Sessions</h3>
+            <p className="text-xs" style={{ color: C.gray }}>Add every general live session in sequence.</p>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background:"#eff8ff", color:C.primary }}>{sessions.length} sessions</span>
+          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "#eff8ff", color: C.primary }}>
+            {sessions.length} sessions
+          </span>
         </div>
 
         <div className="space-y-3">
-          {sessions.map((s,idx)=>(
-            <motion.div key={s.id} className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor:"#e5e7eb" }} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>
-              <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor:"#f0f0f0", background:"#fafbff" }}>
-                <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background:`linear-gradient(135deg,${C.navy},${C.primary})` }}>{idx+1}</span>
-                <span className="text-xs font-bold flex-1" style={{ color:C.gray }}>Session {idx+1}</span>
-                {sessions.length > 1 && <button type="button" onClick={()=>removeSession(s.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button>}
+          {sessions.map((s, idx) => (
+            <motion.div
+              key={s.id}
+              className="rounded-2xl border bg-white overflow-hidden"
+              style={{ borderColor: "#e5e7eb" }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "#f0f0f0", background: "#fafbff" }}>
+                <span
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
+                  style={{ background: `linear-gradient(135deg,${C.navy},${C.primary})` }}
+                >
+                  {idx + 1}
+                </span>
+                <span className="text-xs font-bold flex-1" style={{ color: C.gray }}>Session {idx + 1}</span>
+                {sessions.length > 1 && (
+                  <button type="button" onClick={() => removeSession(s.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50">
+                    <Trash2 size={13} className="text-red-400" />
+                  </button>
+                )}
               </div>
 
               <div className="p-4 space-y-3">
-                <Input value={s.name} onChange={(e)=>updateSession(s.id,"name",e.target.value)} placeholder={`e.g. CATIA Surfacing Basics - Session ${idx+1}`}/>
+                <Input
+                  value={s.name}
+                  onChange={(e) => updateSession(s.id, "name", e.target.value)}
+                  placeholder={`e.g. CATIA Surfacing Basics - Session ${idx + 1}`}
+                />
                 <div className="grid grid-cols-3 gap-2">
-                  {SESSION_TYPES.map((t)=>{
+                  {SESSION_TYPES.map((t) => {
                     const sel = s.type === t.id;
                     return (
                       <button
                         key={t.id}
                         type="button"
-                        onClick={()=>updateSession(s.id,"type",t.id)}
+                        onClick={() => updateSession(s.id, "type", t.id)}
                         className="px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
-                        style={{ borderColor:sel ? C.primary : "#e5e7eb", background:sel ? "#eff8ff" : "white", color:sel ? C.primary : C.gray }}
+                        style={{
+                          borderColor: sel ? C.primary : "#e5e7eb",
+                          background: sel ? "#eff8ff" : "white",
+                          color: sel ? C.primary : C.gray,
+                        }}
                       >
                         {t.label}
                       </button>
@@ -279,38 +355,126 @@ function SyllabusBuilder({ sessions, setSessions, projects, setProjects }) {
           ))}
         </div>
 
-        <button type="button" onClick={()=>setSessions((prev)=>[...prev, makeSession()])} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold" style={{ borderColor:C.primary, color:C.primary, background:"#f0f8ff" }}>
-          <Plus size={15}/> Add Next Session
+        <button
+          type="button"
+          onClick={addSession}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold"
+          style={{ borderColor: C.primary, color: C.primary, background: "#f0f8ff" }}
+        >
+          <Plus size={15} /> Add Next Session
         </button>
       </div>
 
       <div>
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-base font-extrabold" style={{ color:C.dark }}>Projects</h3>
-            <p className="text-xs" style={{ color:C.gray }}>Optional project list shown to admin during review.</p>
+            <h3 className="text-base font-extrabold" style={{ color: C.dark }}>Projects</h3>
+            <p className="text-xs max-w-xl" style={{ color: C.gray }}>
+              Tick Recorded Data for projects that students will practice from recordings. These projects will not increase live session schedule days.
+            </p>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background:"#f5f3ff", color:"#8b5cf6" }}>{projects.length} projects</span>
+          <div className="flex gap-2">
+            <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "#eff8ff", color: C.primary }}>
+              {liveProjects} live
+            </span>
+            <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+              {recordedProjects} recorded
+            </span>
+          </div>
         </div>
 
         <div className="space-y-3">
-          {projects.map((p,idx)=>(
-            <div key={p.id} className="rounded-2xl border p-4 bg-white" style={{ borderColor:"#ede9fe" }}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background:"linear-gradient(135deg,#7c3aed,#a78bfa)" }}>{idx+1}</span>
-                <div className="flex-1"><Input value={p.name} onChange={(e)=>updateProject(p.id,"name",e.target.value)} placeholder="Project name"/></div>
-                <button type="button" onClick={()=>removeProject(p.id)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50"><Trash2 size={13} className="text-red-400"/></button>
+          {projects.map((p, idx) => {
+            const isRecorded = Boolean(p.is_recorded);
+            return (
+              <div key={p.id} className="rounded-2xl border p-4 bg-white" style={{ borderColor: isRecorded ? "#ede9fe" : "#dbeafe" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white"
+                    style={{ background: isRecorded ? "linear-gradient(135deg,#7c3aed,#a78bfa)" : `linear-gradient(135deg,${C.navy},${C.primary})` }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1">
+                    <Input value={p.name} onChange={(e) => updateProject(p.id, "name", e.target.value)} placeholder="Project name e.g. Map Pocket / Door Trim" />
+                  </div>
+                  <button type="button" onClick={() => removeProject(p.id)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50">
+                    <Trash2 size={13} className="text-red-400" />
+                  </button>
+                </div>
+
+                <label
+                  className="flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer mb-3"
+                  style={{
+                    borderColor: isRecorded ? "#8b5cf6" : "#e5e7eb",
+                    background: isRecorded ? "#f5f3ff" : "#fff",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isRecorded}
+                    onChange={(e) => updateProject(p.id, "is_recorded", e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="block text-sm font-extrabold" style={{ color: isRecorded ? "#7c3aed" : C.dark }}>
+                      Recorded Data
+                    </span>
+                    <span className="block text-xs leading-5 mt-1" style={{ color: C.gray }}>
+                      This project will show in student syllabus as recorded practice and will not be included in live session schedule.
+                    </span>
+                  </span>
+                </label>
+
+                {isRecorded ? (
+                  <div className="rounded-xl border px-4 py-3" style={{ borderColor: "#ede9fe", background: "#faf5ff" }}>
+                    <p className="text-xs font-bold" style={{ color: C.dark }}>
+                      Unlock date: same date when first live project starts.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold" style={{ color: C.dark }}>Live project sessions</p>
+                    {(p.sessions || []).map((session, sessionIndex) => (
+                      <div key={session.id} className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: "#eff8ff", color: C.primary }}>
+                          {sessionIndex + 1}
+                        </span>
+                        <div className="flex-1">
+                          <Input
+                            value={session.name}
+                            onChange={(e) => updateProjectSession(p.id, session.id, e.target.value)}
+                            placeholder={`Project session ${sessionIndex + 1} e.g. Class-A analysis / Close body / B-side features`}
+                          />
+                        </div>
+                        <button type="button" onClick={() => removeProjectSession(p.id, session.id)} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50">
+                          <Trash2 size={13} className="text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => addProjectSession(p.id)}
+                      className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed text-xs font-bold"
+                      style={{ borderColor: C.primary, color: C.primary, background: "#f0f8ff" }}
+                    >
+                      <Plus size={14} /> Add Project Session
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                {p.highlights.map((h,i)=><Input key={i} value={h} onChange={(e)=>updateHighlight(p.id,i,e.target.value)} placeholder={`Highlight ${i+1}`}/>)}
-              </div>
-              <button type="button" onClick={()=>addHighlight(p.id)} className="mt-2 text-xs font-bold" style={{ color:"#8b5cf6" }}>+ Add Highlight</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <button type="button" onClick={()=>setProjects((prev)=>[...prev,makeProject()])} className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold" style={{ borderColor:"#8b5cf6", color:"#8b5cf6", background:"#f5f3ff" }}>
-          <Plus size={15}/> Add Project
+        <button
+          type="button"
+          onClick={addProject}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm font-bold"
+          style={{ borderColor: "#8b5cf6", color: "#8b5cf6", background: "#f5f3ff" }}
+        >
+          <Plus size={15} /> Add Project
         </button>
       </div>
     </div>
@@ -603,7 +767,8 @@ export default function TutorRegistrationPage() {
                     <p className="text-sm"><strong>Name:</strong> {form.fullName}</p>
                     <p className="text-sm"><strong>Email:</strong> {form.email}</p>
                     <p className="text-sm"><strong>Sessions:</strong> {sessions.length}</p>
-                    <p className="text-sm"><strong>Projects:</strong> {projects.length}</p>
+                    <p className="text-sm"><strong>Live Project Sessions:</strong> {liveProjectSessions}</p>
+                    <p className="text-sm"><strong>Recorded Projects:</strong> {recordedProjectCount}</p>
                     <p className="text-sm"><strong>Available Slots:</strong> {timeSlotSummary || "—"}</p>
                     <p className="text-sm"><strong>Working in shifts:</strong> {shiftSummary || "—"}</p>
                   </div>
