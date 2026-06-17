@@ -44,13 +44,6 @@ function makeProject() {
   return { id: uid(), name: "", highlights: [""] };
 }
 
-function makeProjectSession() {
-  return {
-    id: uid(),
-    name: "",
-  };
-}
-
 function addMinutes(time, mins = 60) {
   if (!time) return "";
   const [h, m] = time.split(":").map(Number);
