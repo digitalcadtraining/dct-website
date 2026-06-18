@@ -331,44 +331,65 @@ const getBatchDetails = async (req, res, next) => {
 
 const getCourseBatchesForRegistration = async (req, res, next) => {
   try {
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 10);
-    minDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const maxDate = new Date();
-    maxDate.setMonth(maxDate.getMonth() + 2);
+    // Registration visibility rule:
+    // show approved/upcoming/active batches from the last 10 days onwards.
+    // Example: on 18 Jun, 3 Jun is hidden, but 1 Jul / 5 Jul remains visible.
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() - 10);
+
+    const maxDate = new Date(today);
+    maxDate.setMonth(maxDate.getMonth() + 12);
     maxDate.setHours(23, 59, 59, 999);
 
     const batches = await prisma.batch.findMany({
       where: {
         course_id: req.params.courseId,
-        status: "UPCOMING",
+        // Admin approval in this project may save status as APPROVED,
+        // while older flows use UPCOMING/ACTIVE. Show only registration-safe statuses.
+        status: { in: ["APPROVED", "UPCOMING", "ACTIVE"] },
         start_date: { gte: minDate, lte: maxDate },
       },
       orderBy: { start_date: "asc" },
       select: {
-        id: true, name: true, start_date: true, end_date: true,
-        status: true, max_students: true, time_slots: true,
+        id: true,
+        name: true,
+        start_date: true,
+        end_date: true,
+        status: true,
+        max_students: true,
+        time_slots: true,
         tutor: { select: { name: true } },
         _count: { select: { enrollments: true } },
       },
     });
 
-    const result = batches.map(b => ({
-      id: b.id,
-      name: b.name,
-      start_date: b.start_date,
-      end_date: b.end_date,
-      status: b.status,
-      tutor_name: b.tutor.name,
-      time_slots: b.time_slots || [],
-      enrolled: b._count.enrollments,
-      available_seats: b.max_students - b._count.enrollments,
-      is_full: b._count.enrollments >= b.max_students,
-    }));
+    const result = batches
+      .map((b) => {
+        const enrolled = b._count?.enrollments || 0;
+        const availableSeats = Math.max(0, Number(b.max_students || 0) - enrolled);
+
+        return {
+          id: b.id,
+          name: b.name,
+          start_date: b.start_date,
+          end_date: b.end_date,
+          status: b.status,
+          tutor_name: b.tutor?.name || "DCT Tutor",
+          time_slots: b.time_slots || [],
+          enrolled,
+          available_seats: availableSeats,
+          is_full: availableSeats <= 0,
+        };
+      })
+      .filter((b) => !b.is_full);
 
     return success(res, 200, "Available batches.", result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 module.exports = {
