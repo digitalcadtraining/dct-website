@@ -65,10 +65,24 @@ const homepageHtml = `
     <div><strong>₹3.5–9 LPA</strong><span>Course-wise Package Guidance</span></div>
   </div>
   <div class="courses-grid courses-grid-four">
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-plastic"></div><span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><div class="dct-card-authority">CADPOINT Authorized • OEM/Tier-1 Track</div><h3 class="card-title">Automotive Plastic Product Design Course</h3><p class="card-desc">CATIA V5 surfacing, B-side features, tooling direction, mould feasibility and real automotive trim projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–8 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 50-session practical syllabus</li><li>✓ 9+ real automotive projects with images</li><li>✓ Placement + portfolio support</li></ul><a class="btn-enroll" href="/courses/plastic-product-design#demo" data-demo-route="/courses/plastic-product-design">Watch Free Demo</a></div></div>
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-biw"></div><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><div class="dct-card-authority">MNC/OEM Career Direction</div><h3 class="card-title">Automotive BIW Product Design Course</h3><p class="card-desc">Automotive Body-in-White design with sheet metal, joints, reinforcements, assembly and BIW project workflow.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–7 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ live sessions with recordings</li><li>✓ BIW component + assembly projects</li><li>✓ Resume, mock interview & referrals</li></ul><a class="btn-enroll" href="/courses/biw-product-design#demo" data-demo-route="/courses/biw-product-design">Watch Free Demo</a></div></div>
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-ansys"></div><span class="card-badge badge-selling">CAE Track</span></div><div class="card-body"><div class="dct-card-authority">Analysis / CAE Job Track</div><h3 class="card-title">Analysis With Ansys Course</h3><p class="card-desc">FEA fundamentals, meshing, boundary conditions, structural, modal, thermal analysis and CAE reports.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ analysis-focused sessions</li><li>✓ 10 CAE projects + report creation</li><li>✓ 2–3 years workflow confidence</li></ul><a class="btn-enroll" href="/courses/analysis-with-ansys#demo" data-demo-route="/courses/analysis-with-ansys">Watch Free Demo</a></div></div>
-    <div class="course-card"><div class="card-img-wrap"><div class="card-img-ph course-img-mould"></div><span class="card-badge badge-popular">Tooling Track</span></div><div class="card-body"><div class="dct-card-authority">Toolroom-Level Workflow</div><h3 class="card-title">Injection Mould Design Course</h3><p class="card-desc">Injection moulding, core-cavity, parting, runner-gate, cooling, ejection, slider-lifter and DFM review.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ tooling sessions</li><li>✓ 12 mould design projects</li><li>✓ Portfolio + toolroom review training</li></ul><a class="btn-enroll" href="/courses/mould-design#demo" data-demo-route="/courses/mould-design">Watch Free Demo</a></div></div>
+    <div class="course-card"><div class="card-img-wrap">
+    <img
+  class="course-card-img"
+  src="/images/courses/plastic.png"
+  alt="Automotive Plastic Product Design Course"/>
+<span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><div class="dct-card-authority">CADPOINT Authorized • OEM/Tier-1 Track</div><h3 class="card-title">Automotive Plastic Product Design Course</h3><p class="card-desc">CATIA V5 surfacing, B-side features, tooling direction, mould feasibility and real automotive trim projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–8 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 50-session practical syllabus</li><li>✓ 9+ real automotive projects with images</li><li>✓ Placement + portfolio support</li></ul><a class="btn-enroll" href="/courses/plastic-product-design#demo" data-demo-route="/courses/plastic-product-design">Watch Free Demo</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><img
+  class="course-card-img"
+  src="/images/courses/biw.png"
+  alt="Automotive Plastic Product Design Course"/><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><div class="dct-card-authority">MNC/OEM Career Direction</div><h3 class="card-title">Automotive BIW Product Design Course</h3><p class="card-desc">Automotive Body-in-White design with sheet metal, joints, reinforcements, assembly and BIW project workflow.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–7 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ live sessions with recordings</li><li>✓ BIW component + assembly projects</li><li>✓ Resume, mock interview & referrals</li></ul><a class="btn-enroll" href="/courses/biw-product-design#demo" data-demo-route="/courses/biw-product-design">Watch Free Demo</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><img
+  class="course-card-img"
+  src="/images/courses/ansys.png"
+  alt="Automotive Plastic Product Design Course"/><span class="card-badge badge-selling">CAE Track</span></div><div class="card-body"><div class="dct-card-authority">Analysis / CAE Job Track</div><h3 class="card-title">Analysis With Ansys Course</h3><p class="card-desc">FEA fundamentals, meshing, boundary conditions, structural, modal, thermal analysis and CAE reports.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ analysis-focused sessions</li><li>✓ 10 CAE projects + report creation</li><li>✓ 2–3 years workflow confidence</li></ul><a class="btn-enroll" href="/courses/analysis-with-ansys#demo" data-demo-route="/courses/analysis-with-ansys">Watch Free Demo</a></div></div>
+    <div class="course-card"><div class="card-img-wrap"><img
+  class="course-card-img"
+  src="/images/courses/mould.png"
+  alt="Automotive Plastic Product Design Course"/><span class="card-badge badge-popular">Tooling Track</span></div><div class="card-body"><div class="dct-card-authority">Toolroom-Level Workflow</div><h3 class="card-title">Injection Mould Design Course</h3><p class="card-desc">Injection moulding, core-cavity, parting, runner-gate, cooling, ejection, slider-lifter and DFM review.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹4–9 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 45+ tooling sessions</li><li>✓ 12 mould design projects</li><li>✓ Portfolio + toolroom review training</li></ul><a class="btn-enroll" href="/courses/mould-design#demo" data-demo-route="/courses/mould-design">Watch Free Demo</a></div></div>
   </div>
   <div class="dct-course-bottom-trust-note">Students can review complete syllabus, projects, package guidance and hiring direction before registration.</div>
 </section>
@@ -257,7 +271,7 @@ const homepageHtml = `
     <div class="dct-footer-grid">
       <div>
         <h4>Office Address</h4>
-        <p>413, Jai Ganesh Vision,<br/>Akurdi / Nigdi, PCMC,<br/>Pune, Maharashtra, India.</p>
+        <p>S13, Second Floor, Inspiria Mall,<br/> Nigdi, PCMC,<br/>Pune, Maharashtra, India. <br/>Just look upwards to Inspiria Mall From Nigdi Bus Stop</p>
       </div>
       <div>
         <h4>Contact</h4>
@@ -299,23 +313,29 @@ export default function HomePage() {
     return () => document.removeEventListener("click", handleDemoClick);
   }, [navigate]);
 
-
   useEffect(() => {
     let index = 0;
     const timer = window.setInterval(() => {
-      const stages = Array.from(document.querySelectorAll(".career-road-stage"));
+      const stages = Array.from(
+        document.querySelectorAll(".career-road-stage"),
+      );
       const fill = document.getElementById("careerRoadFill");
       if (!stages.length) return;
       index = (index + 1) % stages.length;
-      stages.forEach((stage, i) => stage.classList.toggle("active", i === index));
+      stages.forEach((stage, i) =>
+        stage.classList.toggle("active", i === index),
+      );
       if (fill) fill.style.width = `${((index + 1) / stages.length) * 100}%`;
       if (window.innerWidth <= 768) {
-        stages[index]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        stages[index]?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
       }
     }, 2600);
     return () => window.clearInterval(timer);
   }, []);
-
 
   const dashLink = !user
     ? "/auth/login"
@@ -332,20 +352,129 @@ export default function HomePage() {
     <div className="dct-home-page">
       <nav>
         <a href="/" className="logo">
-          <div className="logo-ring"><span className="logo-ring-text">D</span></div>
-          <div className="logo-text"><span className="dig">DIGITAL</span><span className="sub">CAD Training</span></div>
+          <img
+            src="/images/dct-logo.png"
+            alt="Digital CAD Training"
+            className="nav-logo-img"
+          />
         </a>
-        <ul className="nav-links"><li><a href="#" className="active">Home</a></li><li><a href="#">About</a></li><li><a href="#courses">Courses</a></li><li><a href="#">Contact Us</a></li><li><a href="/auth/tutor-register">Tutor</a></li></ul>
+        <ul className="nav-links">
+          <li>
+            <a href="#" className="active">
+              Home
+            </a>
+          </li>
+          <li>
+            <a href="#">About</a>
+          </li>
+          <li>
+            <a href="#courses">Courses</a>
+          </li>
+          <li>
+            <a href="#">Contact Us</a>
+          </li>
+          <li>
+            <a href="/auth/tutor-register">Tutor</a>
+          </li>
+        </ul>
         <div className="nav-right">
-          <div className="nav-phone"><div className="phone-icon"><svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.39 21 3 13.61 3 4.5a1 1 0 011-1H7.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" /></svg></div><span className="phone-num">+91 1234567890</span></div>
+          <div className="nav-phone">
+            <div className="phone-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.39 21 3 13.61 3 4.5a1 1 0 011-1H7.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
+              </svg>
+            </div>
+            <span className="phone-num">+91 1234567890</span>
+          </div>
           <div className="nav-divider" />
-          {user ? (<a href={dashLink} className="nav-user-btn"><div className="nav-user-avatar">{firstInitial}</div><span className="nav-user-name">{firstName}</span><span className="nav-user-arrow">▾</span></a>) : (<a href="/auth/login" className="nav-login-btn"><svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" /></svg><span className="nav-login-text">Login</span></a>)}
+          {user ? (
+            <a href={dashLink} className="nav-user-btn">
+              <div className="nav-user-avatar">{firstInitial}</div>
+              <span className="nav-user-name">{firstName}</span>
+              <span className="nav-user-arrow">▾</span>
+            </a>
+          ) : (
+            <a href="/auth/login" className="nav-login-btn">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+              </svg>
+              <span className="nav-login-text">Login</span>
+            </a>
+          )}
         </div>
-        <button className="hamburger" onClick={() => setMenuOpen((v) => !v)} aria-label="Toggle menu"><span style={{ transform: menuOpen ? "translateY(7px) rotate(45deg)" : "" }} /><span style={{ opacity: menuOpen ? 0 : 1 }} /><span style={{ transform: menuOpen ? "translateY(-7px) rotate(-45deg)" : "" }} /></button>
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          <span
+            style={{
+              transform: menuOpen ? "translateY(7px) rotate(45deg)" : "",
+            }}
+          />
+          <span style={{ opacity: menuOpen ? 0 : 1 }} />
+          <span
+            style={{
+              transform: menuOpen ? "translateY(-7px) rotate(-45deg)" : "",
+            }}
+          />
+        </button>
       </nav>
       <div className={`mobile-menu${menuOpen ? " open" : ""}`}>
-        <ul>{[["Home", "#"], ["About", "#"], ["Courses", "#courses"], ["Contact Us", "#"], ["Tutor", "/auth/tutor-register"]].map(([label, href]) => (<li key={label}><a href={href} onClick={() => setMenuOpen(false)}>{label}</a></li>))}</ul>
-        <div className="mobile-menu-bottom"><div className="mob-phone"><div className="phone-icon" style={{ width: 28, height: 28 }}><svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.39 21 3 13.61 3 4.5a1 1 0 011-1H7.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" /></svg></div><span>+91 1234567890</span></div>{user ? (<><a href={dashLink} className="mob-login" onClick={() => setMenuOpen(false)}>My Dashboard ({firstName})</a><button className="mob-login" style={{ color: "#dc2626" }} onClick={() => { logout(); setMenuOpen(false); }}>Logout</button></>) : (<a href="/auth/login" className="mob-login" onClick={() => setMenuOpen(false)}>Login / My Account</a>)}</div>
+        <ul>
+          {[
+            ["Home", "#"],
+            ["About", "#"],
+            ["Courses", "#courses"],
+            ["Contact Us", "#"],
+            ["Tutor", "/auth/tutor-register"],
+          ].map(([label, href]) => (
+            <li key={label}>
+              <a href={href} onClick={() => setMenuOpen(false)}>
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="mobile-menu-bottom">
+          <div className="mob-phone">
+            <div className="phone-icon" style={{ width: 28, height: 28 }}>
+              <svg viewBox="0 0 24 24" fill="#fff" width="13" height="13">
+                <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.39 21 3 13.61 3 4.5a1 1 0 011-1H7.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
+              </svg>
+            </div>
+            <span>+91 1234567890</span>
+          </div>
+          {user ? (
+            <>
+              <a
+                href={dashLink}
+                className="mob-login"
+                onClick={() => setMenuOpen(false)}
+              >
+                My Dashboard ({firstName})
+              </a>
+              <button
+                className="mob-login"
+                style={{ color: "#dc2626" }}
+                onClick={() => {
+                  logout();
+                  setMenuOpen(false);
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <a
+              href="/auth/login"
+              className="mob-login"
+              onClick={() => setMenuOpen(false)}
+            >
+              Login / My Account
+            </a>
+          )}
+        </div>
       </div>
       <div dangerouslySetInnerHTML={{ __html: homepageHtml }} />
     </div>

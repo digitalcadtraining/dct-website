@@ -6,6 +6,16 @@ const { success, error } = require("../utils/response");
 const { normalizePhone } = require("../utils/helpers");
 const jwt = require("jsonwebtoken");
 
+function projectMeta(project = {}) {
+  const isRecorded = Boolean(project.is_recorded || project.delivery_mode === "RECORDED");
+  return {
+    is_recorded: isRecorded,
+    delivery_mode: isRecorded ? "RECORDED" : "LIVE",
+    unlock_rule: isRecorded ? "FIRST_LIVE_PROJECT_START" : null,
+    sessions: isRecorded ? [] : (project.sessions || []),
+  };
+}
+
 const submitApplication = async (req, res, next) => {
   try {
     const {
@@ -38,10 +48,18 @@ const submitApplication = async (req, res, next) => {
     const application = await prisma.$transaction(async (tx) => {
       const app = await tx.tutorApplication.create({
         data: {
-          name, email, phone: normalizedPhone, occupation, years_exp: parseInt(years_exp),
-          companies, work_experience, course_id,
-          time_slots: time_slots || [], hide_identity: hide_identity || false,
-          location, languages: languages || [],
+          name,
+          email,
+          phone: normalizedPhone,
+          occupation,
+          years_exp: parseInt(years_exp),
+          companies,
+          work_experience,
+          course_id,
+          time_slots: time_slots || [],
+          hide_identity: hide_identity || false,
+          location,
+          languages: languages || [],
         },
       });
 
@@ -58,7 +76,13 @@ const submitApplication = async (req, res, next) => {
 
       if (syllabus_projects?.length) {
         await tx.syllabusProject.createMany({
-          data: syllabus_projects.map(p => ({ application_id: app.id, name: p.name, highlights: p.highlights || [] })),
+          data: syllabus_projects
+            .filter((p) => p?.name)
+            .map((p) => ({
+              application_id: app.id,
+              name: p.name,
+              highlights: projectMeta(p),
+            })),
         });
       }
 

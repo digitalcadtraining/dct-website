@@ -26,6 +26,85 @@ function generateBatchName(courseName, startDate) {
   return `${courseName} - ${day} ${month} ${year}`;
 }
 
+function projectMeta(project) {
+  const h = project?.highlights;
+  if (h && typeof h === "object" && !Array.isArray(h)) return h;
+  if (Array.isArray(h)) {
+    const isRecorded = h.includes("RECORDED_DATA");
+    return { is_recorded: isRecorded, delivery_mode: isRecorded ? "RECORDED" : "LIVE", unlock_rule: isRecorded ? "FIRST_LIVE_PROJECT_START" : null, sessions: [] };
+  }
+  return { is_recorded: false, delivery_mode: "LIVE", unlock_rule: null, sessions: [] };
+}
+
+function isRecordedProject(project) {
+  const meta = projectMeta(project);
+  return Boolean(meta.is_recorded || meta.delivery_mode === "RECORDED");
+}
+
+function projectToStudent(project) {
+  const meta = projectMeta(project);
+  return {
+    id: project.id,
+    name: project.name,
+    is_recorded: isRecordedProject(project),
+    delivery_mode: isRecordedProject(project) ? "RECORDED" : "LIVE",
+    unlock_rule: meta.unlock_rule || (isRecordedProject(project) ? "FIRST_LIVE_PROJECT_START" : null),
+  };
+}
+
+function liveProjectSessions(project) {
+  const meta = projectMeta(project);
+  if (isRecordedProject(project)) return [];
+  return Array.isArray(meta.sessions) ? meta.sessions.filter((s) => s?.name) : [];
+}
+
+function buildLiveSessionItems(syllabusSessions = [], syllabusProjects = []) {
+  const general = syllabusSessions.map((s) => ({ name: s.name, type: s.type || "BOTH" }));
+  const projectItems = [];
+  for (const project of syllabusProjects) {
+    liveProjectSessions(project).forEach((s) => {
+      projectItems.push({ name: `Project: ${project.name} - ${s.name}`, type: "CAD" });
+    });
+  }
+  return [...general, ...projectItems].map((item, idx) => ({ ...item, session_number: idx + 1 }));
+}
+
+async function getTutorCourseProjectMap(pairs) {
+  const uniquePairs = [];
+  const seen = new Set();
+
+  for (const pair of pairs) {
+    if (!pair?.tutor_id || !pair?.course_id) continue;
+    const key = `${pair.tutor_id}:${pair.course_id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniquePairs.push(pair);
+  }
+
+  if (!uniquePairs.length) return new Map();
+
+  const applications = await prisma.tutorApplication.findMany({
+    where: {
+      status: "APPROVED",
+      OR: uniquePairs.map((p) => ({ user_id: p.tutor_id, course_id: p.course_id })),
+    },
+    include: {
+      syllabus_projects: true,
+    },
+  });
+
+  const map = new Map();
+  for (const app of applications) {
+    const key = `${app.user_id}:${app.course_id}`;
+    const recorded = (app.syllabus_projects || [])
+      .filter(isRecordedProject)
+      .map(projectToStudent);
+    map.set(key, recorded);
+  }
+
+  return map;
+}
+
 const createBatch = async (req, res, next) => {
   try {
     const { course_id, start_date, max_students, description, zoom_link, time_slots, alt_days = false, sunday_off = true } = req.body;
@@ -48,6 +127,7 @@ const createBatch = async (req, res, next) => {
       where: { user_id: tutorId, course_id, status: "APPROVED" },
       include: {
         syllabus_sessions: { orderBy: { session_number: "asc" } },
+        syllabus_projects: true,
         course: { select: { name: true, short_name: true } },
       },
     });
@@ -59,14 +139,16 @@ const createBatch = async (req, res, next) => {
     const duplicate = await prisma.batch.findFirst({ where: { tutor_id: tutorId, course_id, name: batchName } });
     if (duplicate) return error(res, 409, `Batch "${batchName}" already exists.`);
 
-    const syllabusSessions = application.syllabus_sessions;
-    const totalSessions = syllabusSessions.length;
-    if (totalSessions === 0) return error(res, 400, "No approved syllabus sessions found for this course. Please contact admin.");
+    const liveItems = buildLiveSessionItems(application.syllabus_sessions || [], application.syllabus_projects || []);
+    const totalSessions = liveItems.length;
+    if (totalSessions === 0) return error(res, 400, "No approved live sessions found for this course. Please contact admin.");
 
     const sessionDates = generateSessionDates(start_date, totalSessions, Boolean(alt_days), Boolean(sunday_off));
     const endDate = sessionDates.length > 0
       ? sessionDates[sessionDates.length - 1]
       : new Date(new Date(start_date).setMonth(new Date(start_date).getMonth() + 4));
+
+    const recordedProjects = (application.syllabus_projects || []).filter(isRecordedProject).map(projectToStudent);
 
     const batch = await prisma.$transaction(async (tx) => {
       const newBatch = await tx.batch.create({
@@ -85,11 +167,11 @@ const createBatch = async (req, res, next) => {
       });
 
       await tx.scheduledSession.createMany({
-        data: syllabusSessions.map((s, idx) => ({
+        data: liveItems.map((s, idx) => ({
           batch_id: newBatch.id,
           session_number: s.session_number,
           name: s.name,
-          type: s.type,
+          type: s.type || "CAD",
           scheduled_at: sessionDates[idx] || null,
           status: "UPCOMING",
         })),
@@ -107,7 +189,10 @@ const createBatch = async (req, res, next) => {
       },
     });
 
-    return success(res, 201, `Batch "${batchName}" created with ${totalSessions} sessions scheduled. Awaiting admin approval.`, fullBatch);
+    return success(res, 201, `Batch "${batchName}" created with ${totalSessions} live sessions scheduled. ${recordedProjects.length} recorded project(s) will unlock with the first live project. Awaiting admin approval.`, {
+      ...fullBatch,
+      recorded_projects: recordedProjects,
+    });
   } catch (err) {
     next(err);
   }
@@ -180,16 +265,28 @@ const getEnrolledBatches = async (req, res, next) => {
       },
     });
 
+    const projectMap = await getTutorCourseProjectMap(
+      enrollments.map((e) => ({
+        tutor_id: e.batch?.tutor_id,
+        course_id: e.batch?.course_id,
+      })),
+    );
+
     const result = enrollments.map(e => {
       const batch = e.batch || {};
       const progress = progressFromAssignments(batch, e.progress);
       const { assignments, ...cleanBatch } = batch;
+      const key = `${batch.tutor_id}:${batch.course_id}`;
+
       return {
         enrollment_id: e.id,
         enrolled_at: e.enrolled_at,
         payment_status: e.payment_status,
         progress,
-        batch: cleanBatch,
+        batch: {
+          ...cleanBatch,
+          recorded_projects: projectMap.get(key) || [],
+        },
       };
     });
 
@@ -224,7 +321,11 @@ const getBatchDetails = async (req, res, next) => {
       return error(res, 403, "You do not own this batch.");
     }
 
-    return success(res, 200, "Batch details.", batch);
+    const projectMap = await getTutorCourseProjectMap([{ tutor_id: batch.tutor_id, course_id: batch.course_id }]);
+    return success(res, 200, "Batch details.", {
+      ...batch,
+      recorded_projects: projectMap.get(`${batch.tutor_id}:${batch.course_id}`) || [],
+    });
   } catch (err) { next(err); }
 };
 
