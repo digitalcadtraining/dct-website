@@ -1,5 +1,5 @@
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
-const APP_BASE = import.meta.env.BASE_URL || "/dct/";
+const APP_BASE = "/";
 const BACKEND = BASE.replace(/\/api\/v1\/?$/, "");
 
 export const ROLE_KEYS = {
@@ -20,7 +20,7 @@ function normalizeRole(role) {
 }
 
 function roleFromBrowserPath() {
-  const path = window.location.pathname.replace(/^\/dct/, "") || "/";
+const path = window.location.pathname || "/";
   if (path.startsWith("/admin")) return "admin";
   if (path.startsWith("/tutor")) return "tutor";
   if (path.startsWith("/student")) return "student";

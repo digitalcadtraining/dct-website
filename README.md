@@ -153,7 +153,7 @@ npm install
 
 # 2. Start dev server
 npm run dev
-# App: http://localhost:5173/dct/
+# App: http://localhost:5173/
 ```
 
 ---

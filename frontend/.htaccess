@@ -1,5 +1,5 @@
 Options -MultiViews
 RewriteEngine On
-RewriteBase /dct/
+RewriteBase /
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.html [QL]
