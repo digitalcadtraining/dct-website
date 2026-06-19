@@ -1,5 +1,10 @@
-Options -MultiViews
-RewriteEngine On
-RewriteBase /dct/
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^ index.html [QL]
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
