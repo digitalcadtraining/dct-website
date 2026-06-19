@@ -1,0 +1,98 @@
+/* Home mobile scroll + hero viewer fixes
+   Scope: homepage only. Keeps all other sections untouched. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+}
+
+/* Remove black panel behind hero 360 interior. Keep only the car/interior image visible. */
+.dct-home-page .hero-interior360 .interior360-right,
+.dct-home-page .hero-right.interior360-right {
+  background: transparent !important;
+}
+
+.dct-home-page .interior360-viewer {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dct-home-page .interior360-stage {
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  touch-action: pan-y !important;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.dct-home-page .interior360-stage::after {
+  display: none !important;
+}
+
+.dct-home-page .interior360-img {
+  object-fit: contain !important;
+}
+
+/* Mobile scroll fix: roadmap was a horizontal scroll-snap area.
+   On mobile it can trap touch scrolling while moving upward.
+   Make it a normal vertical stack on mobile. */
+@media (max-width: 768px) {
+  .dct-home-page {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .dct-home-page .career-roadmap-section,
+  .dct-home-page .dashboard-section,
+  .dct-home-page .project-swipe-section,
+  .dct-home-page .courses-section {
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .dct-home-page .career-road-wrap {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+    gap: 18px !important;
+    padding-top: 18px !important;
+  }
+
+  .dct-home-page .career-road-stage {
+    min-width: 0 !important;
+    width: 100% !important;
+    scroll-snap-align: none !important;
+  }
+
+  .dct-home-page .career-road-stage:hover .road-pin,
+  .dct-home-page .career-road-stage.active .road-pin,
+  .dct-home-page .career-road-stage:hover .road-card,
+  .dct-home-page .career-road-stage.active .road-card {
+    transform: none !important;
+  }
+
+  .dct-home-page .hero-interior360 .interior360-right {
+    padding-top: 18px !important;
+    padding-bottom: 34px !important;
+  }
+
+  .dct-home-page .interior360-stage {
+    min-height: 230px !important;
+    aspect-ratio: 16 / 10 !important;
+  }
+
+  .dct-home-page .interior360-bottom,
+  .dct-home-page .slider-dots.abs {
+    display: none !important;
+  }
+}
