@@ -323,7 +323,7 @@ export default function CoursePage({ course }) {
           <div className="dct-course-stat"><strong>{course.duration}</strong><span>Job-focused duration</span></div>
           <div className="dct-course-stat"><strong>{course.sessions}</strong><span>Live + recorded sessions</span></div>
           <div className="dct-course-stat"><strong>{course.projectCount || projects.length}</strong><span>Industry portfolio projects</span></div>
-          <div className="dct-course-stat"><strong>{course.packageRange || "3–8 LPA"}</strong><span>Package guidance range</span></div>
+          <div className="dct-course-stat"><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance range</span></div>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ export default function CoursePage({ course }) {
               <div className="dct-course-trust-mini-stats">
                 <div><strong>{course.trustYears || "7+"}</strong><span>Years trust connection</span></div>
                 <div><strong>PAN India</strong><span>MNC / OEM / Tier-1 network</span></div>
-                <div><strong>{course.packageRange || "3–8 LPA"}</strong><span>Package guidance</span></div>
+                <div><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance</span></div>
               </div>
             </div>
             <div className="dct-course-proof-list">
@@ -487,10 +487,15 @@ export default function CoursePage({ course }) {
         </section>
       )}
 
-      <div className="dct-course-bottom-cta">
-        <div><strong>{course.name}</strong><span>Batch start: {batchStartText}</span></div>
-        <button className="dct-course-btn primary" type="button" onClick={handleEnroll}>Register</button>
-      </div>
+<div className="dct-course-bottom-cta">
+  <div>
+    <strong>{course.name}</strong>
+    <span>New Batch Starts: {batchStartText}</span>
+  </div>
+  <button className="dct-course-btn primary" type="button" onClick={handleEnroll}>
+    Register
+  </button>
+</div>
     </div>
   );
 }
