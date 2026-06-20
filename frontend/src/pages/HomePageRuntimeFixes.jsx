@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { courseApi } from "../services/api.js";
 
 const FRAME_COUNT = 30;
 
@@ -244,6 +245,82 @@ function setupInterior(cleanups) {
   show(0);
 }
 
+function formatBatchDate(value) {
+  if (!value) return "New batch opening soon";
+  return new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function pickLatestPublicBatch(batches = []) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const minDate = new Date(today);
+  minDate.setDate(minDate.getDate() - 10);
+
+  const visibleStatuses = new Set(["APPROVED", "UPCOMING", "ACTIVE"]);
+
+  const visible = (batches || [])
+    .filter((batch) => {
+      if (!batch) return false;
+      if (batch.status && !visibleStatuses.has(String(batch.status).toUpperCase())) return false;
+      if (!batch.start_date) return true;
+      const start = new Date(batch.start_date);
+      start.setHours(0, 0, 0, 0);
+      return start >= minDate;
+    })
+    .sort((a, b) => {
+      const createdDiff = new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      if (createdDiff) return createdDiff;
+      return new Date(b.start_date || 0) - new Date(a.start_date || 0);
+    });
+
+  return visible[0] || null;
+}
+
+function setupCourseBatchStartPatch(cleanups) {
+  let cancelled = false;
+
+  const updateBatchStart = async () => {
+    if (cancelled || !window.location.pathname.startsWith("/courses/")) return;
+
+    const slug = window.location.pathname.split("/").filter(Boolean)[1];
+    const coursePage = document.querySelector(".dct-course-page");
+    if (!slug || !coursePage) return;
+
+    try {
+      const coursesRes = await courseApi.list();
+      if (cancelled) return;
+      const course = (coursesRes.data || []).find((item) => item.slug === slug);
+      if (!course?.id) return;
+
+      const batchesRes = await courseApi.getBatches(course.id);
+      if (cancelled) return;
+      const batch = pickLatestPublicBatch(batchesRes.data || []);
+      if (!batch?.start_date) return;
+
+      const infoItems = Array.from(document.querySelectorAll(".dct-course-info-item"));
+      const batchInfo = infoItems.find((item) => item.querySelector("strong")?.textContent?.trim() === "New Batch Starts");
+      const value = batchInfo?.querySelector("span");
+      if (value) value.textContent = formatBatchDate(batch.start_date);
+    } catch {
+      // Keep static text if the live batch API is unavailable.
+    }
+  };
+
+  const timer = window.setTimeout(updateBatchStart, 650);
+  const interval = window.setInterval(updateBatchStart, 3500);
+
+  cleanups.push(() => {
+    cancelled = true;
+    window.clearTimeout(timer);
+    window.clearInterval(interval);
+  });
+}
+
 export function HomePageRuntimeFixes() {
   useEffect(() => {
     const cleanups = [];
@@ -272,6 +349,7 @@ export function HomePageRuntimeFixes() {
     const timer = window.setTimeout(() => {
       setupRoadmap(cleanups);
       setupInterior(cleanups);
+      setupCourseBatchStartPatch(cleanups);
     }, 250);
     cleanups.push(() => window.clearTimeout(timer));
 
