@@ -261,7 +261,7 @@ function pickLatestPublicBatch(batches = []) {
   const minDate = new Date(today);
   minDate.setDate(minDate.getDate() - 10);
 
-  const visibleStatuses = new Set(["APPROVED", "UPCOMING", "ACTIVE"]);
+  const visibleStatuses = new Set(["UPCOMING", "ACTIVE"]);
 
   const visible = (batches || [])
     .filter((batch) => {
@@ -321,6 +321,94 @@ function setupCourseBatchStartPatch(cleanups) {
   });
 }
 
+function setDashboardPreview(idx) {
+  const keys = ["sessions", "syllabus", "assignments", "queries"];
+  const key = keys[idx] || "sessions";
+
+  document.querySelectorAll(".acc-item").forEach((item, i) => {
+    item.classList.toggle("active", i === idx);
+  });
+
+  document.querySelectorAll(".dash-preview-view").forEach((view) => {
+    view.classList.toggle("active", view.dataset.dashView === key);
+  });
+
+  document.querySelectorAll(".dash-nav-item").forEach((nav) => {
+    const navKey = nav.dataset.dashNav;
+    nav.classList.toggle("active", navKey === key || (key === "sessions" && navKey === "sessions"));
+  });
+
+  const bannerTitle = document.getElementById("dashPreviewBannerTitle");
+  const bannerText = document.getElementById("dashPreviewBannerText");
+  const bannerBtn = document.getElementById("dashPreviewBannerBtn");
+  const bannerIcon = document.getElementById("dashPreviewIcon");
+
+  const content = {
+    sessions: ["Got Questions?", "We are here to help you!", "Ask a question", "▣"],
+    syllabus: ["Track Your Learning", "Every topic is organized module-wise.", "View syllabus", "▤"],
+    assignments: ["Submit Your Work", "Upload assignments and get feedback.", "View task", "▧"],
+    queries: ["Ask Doubts Anytime", "Raise query with session reference.", "Open query", "?"],
+  }[key];
+
+  if (bannerTitle) bannerTitle.textContent = content[0];
+  if (bannerText) bannerText.textContent = content[1];
+  if (bannerBtn) bannerBtn.textContent = content[2];
+  if (bannerIcon) bannerIcon.textContent = content[3];
+}
+
+function setupDashboardScrollSwitch(cleanups) {
+  const dashboard = document.querySelector(".dashboard-section");
+  const items = Array.from(document.querySelectorAll(".dashboard-section .acc-item"));
+  if (!dashboard || items.length < 2 || !("IntersectionObserver" in window)) return;
+
+  // Keep desktop click behavior untouched; scroll-driven switching is mobile-only.
+  if (window.innerWidth > 768) return;
+
+  const sectionObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (!entry?.isIntersecting) return;
+      const rect = dashboard.getBoundingClientRect();
+      const viewport = window.innerHeight || document.documentElement.clientHeight;
+      const progress = Math.min(1, Math.max(0, (viewport * 0.72 - rect.top) / Math.max(1, rect.height - viewport * 0.18)));
+      const nextIndex = Math.min(items.length - 1, Math.floor(progress * items.length));
+      setDashboardPreview(nextIndex);
+    },
+    { threshold: [0.18, 0.3, 0.45, 0.6, 0.75], rootMargin: "-12% 0px -20% 0px" },
+  );
+
+  const onScroll = () => {
+    const rect = dashboard.getBoundingClientRect();
+    const viewport = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.bottom < viewport * 0.2 || rect.top > viewport * 0.9) return;
+    const progress = Math.min(1, Math.max(0, (viewport * 0.68 - rect.top) / Math.max(1, rect.height - viewport * 0.2)));
+    const nextIndex = Math.min(items.length - 1, Math.floor(progress * items.length));
+    setDashboardPreview(nextIndex);
+  };
+
+  sectionObserver.observe(dashboard);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
+  onScroll();
+
+  cleanups.push(() => sectionObserver.disconnect());
+  cleanups.push(() => window.removeEventListener("scroll", onScroll));
+  cleanups.push(() => window.removeEventListener("resize", onScroll));
+}
+
+function setupMobileHeadingPolish() {
+  if (window.innerWidth > 768) return;
+
+  const coursesTitle = document.querySelector(".dct-home-page .courses-title");
+  if (coursesTitle && !coursesTitle.querySelector("span")) {
+    coursesTitle.innerHTML = "Industry-Focused <span>Mechanical Engineering Courses</span>";
+  }
+
+  const dashTitle = document.querySelector(".dct-home-page .dash-section-title");
+  if (dashTitle && !dashTitle.querySelector("span")) {
+    dashTitle.innerHTML = "Smartly Designed Student <span>Learning Dashboard</span>";
+  }
+}
+
 export function HomePageRuntimeFixes() {
   useEffect(() => {
     const cleanups = [];
@@ -347,8 +435,10 @@ export function HomePageRuntimeFixes() {
     });
 
     const timer = window.setTimeout(() => {
+      setupMobileHeadingPolish();
       setupRoadmap(cleanups);
       setupInterior(cleanups);
+      setupDashboardScrollSwitch(cleanups);
       setupCourseBatchStartPatch(cleanups);
     }, 250);
     cleanups.push(() => window.clearTimeout(timer));
