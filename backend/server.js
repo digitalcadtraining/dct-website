@@ -23,27 +23,42 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 function normalizeOrigins(value) {
   return String(value || "")
     .split(",")
-    .map((x) => x.trim())
+    .map((x) => x.trim().replace(/\/$/, ""))
     .filter(Boolean);
 }
 
-const allowedOrigins = [
+const allowedOrigins = Array.from(new Set([
   ...normalizeOrigins(process.env.FRONTEND_URL),
+  ...normalizeOrigins(process.env.CLIENT_URL),
   ...normalizeOrigins(process.env.EXTRA_CORS_ORIGINS),
+  "https://digitalcadtraining.com",
+  "https://www.digitalcadtraining.com",
+  "http://digitalcadtraining.com",
+  "http://www.digitalcadtraining.com",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-];
+]));
 
-app.use(helmet());
-app.use(cors({
+const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    const cleanOrigin = String(origin).replace(/\/$/, "");
+    if (allowedOrigins.includes(cleanOrigin)) return callback(null, true);
+    console.warn(`⚠️ CORS blocked origin: ${origin}`);
     return callback(new Error(`CORS blocked origin: ${origin}`));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use(helmet({
+  crossOriginResourcePolicy: false,
 }));
 
 const generalLimiter = rateLimit({
@@ -112,6 +127,7 @@ async function startServer() {
       console.log(`🚀 DCT Server running on http://localhost:${PORT}`);
       console.log(`📋 API base: http://localhost:${PORT}/api/v1`);
       console.log(`🌍 Environment: ${NODE_ENV}`);
+      console.log(`🌐 CORS allowed origins: ${allowedOrigins.join(", ")}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
