@@ -117,39 +117,25 @@ function getNearestBatch(batches = []) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Course page should match registration dropdown logic:
-  // show batches that started within the last 10 days or any future approved batch.
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() - 10);
-
   const visibleStatuses = new Set(["APPROVED", "UPCOMING", "ACTIVE"]);
 
   const allowedBatches = (batches || [])
     .filter((batch) => {
       if (!batch) return false;
       if (batch.status && !visibleStatuses.has(String(batch.status).toUpperCase())) return false;
+      if (!batch.start_date) return false;
 
-      if (!batch.start_date) return true;
       const startDate = new Date(batch.start_date);
       startDate.setHours(0, 0, 0, 0);
-      return startDate >= minDate;
+
+      return startDate >= today;
     })
     .sort(
       (a, b) =>
-        new Date(a.start_date || 8640000000000000) -
-        new Date(b.start_date || 8640000000000000)
+        new Date(b.start_date || 0) - new Date(a.start_date || 0)
     );
 
-  // Prefer the nearest upcoming batch. If a batch is already active from the
-  // last 10 days, use it only when there is no future batch.
-  const upcoming = allowedBatches.find((batch) => {
-    if (!batch.start_date) return true;
-    const startDate = new Date(batch.start_date);
-    startDate.setHours(0, 0, 0, 0);
-    return startDate >= today;
-  });
-
-  return upcoming || allowedBatches[0] || null;
+  return allowedBatches[0] || null;
 }
 
 function makeProjectPracticeSessions(projectLibrary = []) {
@@ -236,6 +222,8 @@ export default function CoursePage({ course }) {
   const saved = Math.max(0, originalPrice - currentPrice);
   const discount = originalPrice ? Math.round((saved / originalPrice) * 100) : 0;
   const batchStartText = nearestBatch?.start_date ? formatDate(nearestBatch.start_date) : "New batch opening soon";
+  const displayBatchStartText = batchStartText;
+
   const demoUrl = course.demoYoutubeUrl || course.youtubeDemoUrl || course.demoUrl || "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
   const demoEmbedUrl = getYoutubeEmbedUrl(demoUrl);
   const companyList = placements.length >= 50 ? placements : DEFAULT_COMPANIES;
@@ -307,13 +295,8 @@ export default function CoursePage({ course }) {
               <div className="dct-course-info-item"><strong>Learn in both software</strong><span>CATIA V5 + UG NX workflow included in the training.</span></div>
               <div className="dct-course-info-item"><strong>Complete practical syllabus</strong><span>42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.</span></div>
               <div className="dct-course-info-item"><strong>Live + lifetime recording</strong><span>100% live Zoom sessions with recording access for lifetime revision.</span></div>
-              <div className="dct-course-info-item"><strong>New Batch Starts</strong><span>{batchStartText}</span></div>
+              <div className="dct-course-info-item"><strong>New Batch Starts</strong><span>{displayBatchStartText}</span></div>
             </div>
-            <ul className="dct-course-checks">
-              <li>✓ Live + recorded sessions</li>
-              <li>✓ CATIA + NX project workflow</li>
-              <li>✓ Placement support</li>
-            </ul>
           </aside>
         </div>
       </section>
@@ -490,7 +473,7 @@ export default function CoursePage({ course }) {
 <div className="dct-course-bottom-cta">
   <div>
     <strong>{course.name}</strong>
-    <span>New Batch Starts: {batchStartText}</span>
+    <span>New Batch Starts: {displayBatchStartText}</span>
   </div>
   <button className="dct-course-btn primary" type="button" onClick={handleEnroll}>
     Register
