@@ -8,6 +8,23 @@ const { prisma }         = require("../config/db");
 const { success, error } = require("../utils/response");
 const { slugify }        = require("../utils/helpers");
 
+const PUBLIC_BATCH_STATUSES = ["APPROVED", "UPCOMING", "ACTIVE"];
+
+function getPublicBatchDateFilter() {
+  const minDate = new Date();
+  minDate.setHours(0, 0, 0, 0);
+  minDate.setDate(minDate.getDate() - 10);
+  return minDate;
+}
+
+function publicBatchWhere(courseId) {
+  return {
+    course_id: courseId,
+    status: { in: PUBLIC_BATCH_STATUSES },
+    start_date: { gte: getPublicBatchDateFilter() },
+  };
+}
+
 async function getPricingByBatchIds(batchIds = []) {
   if (!batchIds.length) return new Map();
   try {
@@ -40,7 +57,7 @@ const listCourses = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── PUBLIC: Get single course + upcoming batches ──────────
+// ── PUBLIC: Get single course + visible public batches ──────────
 // GET /courses/:slug
 const getCourse = async (req, res, next) => {
   try {
@@ -48,10 +65,16 @@ const getCourse = async (req, res, next) => {
       where: { slug: req.params.slug },
       include: {
         batches: {
-          where:   { status: { in: ["UPCOMING", "ACTIVE"] } },
-          orderBy: { start_date: "asc" },
+          where: {
+            status: { in: PUBLIC_BATCH_STATUSES },
+            start_date: { gte: getPublicBatchDateFilter() },
+          },
+          orderBy: [
+            { start_date: "asc" },
+            { created_at: "desc" },
+          ],
           select: {
-            id: true, name: true, start_date: true, end_date: true,
+            id: true, name: true, start_date: true, end_date: true, created_at: true,
             status: true, max_students: true,
             _count: { select: { enrollments: true } },
           },
@@ -67,6 +90,7 @@ const getCourse = async (req, res, next) => {
       ...(pricingMap.get(b.id) || {}),
       enrolled:        b._count.enrollments,
       available_seats: b.max_students - b._count.enrollments,
+      is_full:         b._count.enrollments >= b.max_students,
     }));
 
     return success(res, 200, "Course details.", { ...course, batches: batchesWithSeats });
@@ -78,13 +102,13 @@ const getCourse = async (req, res, next) => {
 const getCourseBatches = async (req, res, next) => {
   try {
     const batches = await prisma.batch.findMany({
-      where: {
-        course_id: req.params.courseId,
-        status:    { in: ["UPCOMING", "ACTIVE"] },
-      },
-      orderBy: { start_date: "asc" },
+      where: publicBatchWhere(req.params.courseId),
+      orderBy: [
+        { start_date: "asc" },
+        { created_at: "desc" },
+      ],
       select: {
-        id: true, name: true, start_date: true, end_date: true,
+        id: true, name: true, start_date: true, end_date: true, created_at: true,
         status: true, max_students: true,
         tutor: { select: { name: true } },
         _count: { select: { enrollments: true } },
@@ -97,8 +121,9 @@ const getCourseBatches = async (req, res, next) => {
       name:            b.name,
       start_date:      b.start_date,
       end_date:        b.end_date,
+      created_at:      b.created_at,
       status:          b.status,
-      tutor_name:      b.tutor.name,
+      tutor_name:      b.tutor?.name || "Industry Expert",
       enrolled:        b._count.enrollments,
       available_seats: b.max_students - b._count.enrollments,
       is_full:         b._count.enrollments >= b.max_students,
