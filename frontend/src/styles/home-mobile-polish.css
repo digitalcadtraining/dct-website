@@ -1,0 +1,302 @@
+/* Mobile-only homepage polish for 360–430px common phones and tablets up to 768px.
+   Scope is strictly .dct-home-page so course pages, dashboards and inner pages remain untouched. */
+
+@media (max-width: 768px) {
+  .dct-home-page {
+    --mobile-side: clamp(22px, 6vw, 34px);
+  }
+
+  /* Common premium section heading language */
+  .dct-home-page .courses-header,
+  .dct-home-page .cad-software-home-head,
+  .dct-home-page .trust-verified-head,
+  .dct-home-page .dashboard-mobile-head {
+    text-align: center;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .dct-home-page .courses-title,
+  .dct-home-page .dash-section-title,
+  .dct-home-page .cad-software-home-title {
+    font-size: clamp(30px, 9vw, 42px) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.04em !important;
+    font-weight: 900 !important;
+    color: #0c0f11 !important;
+  }
+
+  .dct-home-page .courses-title span,
+  .dct-home-page .dash-section-title span,
+  .dct-home-page .cad-software-home-title span {
+    color: #0d92db !important;
+  }
+
+  .dct-home-page .courses-sub,
+  .dct-home-page .cad-software-home-sub,
+  .dct-home-page .trust-verified-sub {
+    max-width: 330px;
+    font-size: 13.5px !important;
+    line-height: 1.65 !important;
+  }
+
+  /* 1 + last: course cards should breathe on mobile */
+  .dct-home-page .courses-section {
+    padding-left: var(--mobile-side) !important;
+    padding-right: var(--mobile-side) !important;
+  }
+
+  .dct-home-page .courses-grid,
+  .dct-home-page .courses-grid-four {
+    max-width: 360px !important;
+    width: 100% !important;
+    gap: 18px !important;
+  }
+
+  .dct-home-page .course-card {
+    border-radius: 18px !important;
+    box-shadow: 0 12px 34px rgba(2, 73, 129, 0.09) !important;
+  }
+
+  .dct-home-page .course-card-img,
+  .dct-home-page .card-img-ph {
+    aspect-ratio: 16 / 8.8 !important;
+    object-fit: cover !important;
+  }
+
+  .dct-home-page .card-body {
+    padding: 18px 18px 20px !important;
+  }
+
+  .dct-home-page .card-title {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
+
+  .dct-home-page .card-desc,
+  .dct-home-page .card-features li,
+  .dct-home-page .rating-reviews,
+  .dct-home-page .dct-card-authority {
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  .dct-home-page .btn-enroll {
+    min-height: 44px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
+  }
+
+  /* 1: CAD software cards smaller with side breathing space */
+  .dct-home-page .cad-software-home-section {
+    padding-left: var(--mobile-side) !important;
+    padding-right: var(--mobile-side) !important;
+  }
+
+  .dct-home-page .cad-software-home-grid {
+    max-width: 360px !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    gap: 18px !important;
+  }
+
+  .dct-home-page .cad-software-card {
+    border-radius: 18px !important;
+    overflow: hidden !important;
+  }
+
+  .dct-home-page .cad-software-visual {
+    min-height: 128px !important;
+    padding: 20px !important;
+  }
+
+  .dct-home-page .cad-software-visual strong {
+    font-size: 42px !important;
+    line-height: 1 !important;
+  }
+
+  .dct-home-page .cad-software-visual span,
+  .dct-home-page .cad-software-body p,
+  .dct-home-page .cad-software-actions a {
+    font-size: 12.5px !important;
+  }
+
+  .dct-home-page .cad-software-body {
+    padding: 18px !important;
+  }
+
+  .dct-home-page .cad-software-body h3 {
+    font-size: 18px !important;
+    line-height: 1.22 !important;
+  }
+
+  /* 2: Dashboard title matches CAD title feel on mobile */
+  .dct-home-page .dashboard-section {
+    padding-left: var(--mobile-side) !important;
+    padding-right: var(--mobile-side) !important;
+  }
+
+  .dct-home-page .dash-section-title {
+    text-align: center !important;
+    margin: 0 auto 26px !important;
+    max-width: 360px !important;
+  }
+
+  .dct-home-page .acc-list {
+    max-width: 360px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .dct-home-page .acc-header {
+    padding: 18px 0 14px !important;
+  }
+
+  .dct-home-page .acc-title {
+    font-size: 20px !important;
+    line-height: 1.22 !important;
+  }
+
+  .dct-home-page .acc-body-inner {
+    font-size: 13.5px !important;
+    line-height: 1.65 !important;
+    padding-bottom: 18px !important;
+  }
+
+  .dct-home-page .dash-mockup-wrap {
+    max-width: 390px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* 3: Social trust cards centered and slimmer */
+  .dct-home-page .trust-verified-section {
+    padding-left: var(--mobile-side) !important;
+    padding-right: var(--mobile-side) !important;
+  }
+
+  .dct-home-page .trust-verified-grid {
+    max-width: 360px !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    gap: 16px !important;
+  }
+
+  .dct-home-page .trust-verified-card {
+    text-align: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 22px 18px !important;
+    border-radius: 18px !important;
+    min-height: auto !important;
+  }
+
+  .dct-home-page .trust-icon-wrap,
+  .dct-home-page .trust-count-row {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    justify-content: center !important;
+  }
+
+  .dct-home-page .trust-verified-card h3,
+  .dct-home-page .trust-verified-card p {
+    text-align: center !important;
+  }
+
+  .dct-home-page .trust-verified-card h3 {
+    font-size: 17px !important;
+  }
+
+  .dct-home-page .trust-verified-card p {
+    max-width: 280px !important;
+    font-size: 12.8px !important;
+    line-height: 1.6 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* 4: Footer mobile-only compact layout */
+  .dct-home-page .dct-site-footer {
+    padding-left: var(--mobile-side) !important;
+    padding-right: var(--mobile-side) !important;
+  }
+
+  .dct-home-page .dct-footer-brand {
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 14px !important;
+  }
+
+  .dct-home-page .dct-footer-logo {
+    width: 74px !important;
+    height: 56px !important;
+    border-radius: 0 !important;
+    background: url('/images/dct-logo.png') center / contain no-repeat !important;
+    box-shadow: none !important;
+  }
+
+  .dct-home-page .dct-footer-logo span {
+    display: none !important;
+  }
+
+  .dct-home-page .dct-footer-brand h3 {
+    font-size: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .dct-home-page .dct-footer-brand h3::after {
+    content: 'Digital CAD Training and Services';
+    display: block;
+    font-size: 20px;
+    line-height: 1.18;
+    font-weight: 900;
+    color: #fff;
+  }
+
+  .dct-home-page .dct-footer-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 18px 14px !important;
+    text-align: left !important;
+  }
+
+  .dct-home-page .dct-footer-grid > div:nth-child(2) {
+    grid-column: 1 / -1 !important;
+    text-align: center !important;
+    margin-top: 4px !important;
+  }
+
+  .dct-home-page .dct-footer-grid h4 {
+    font-size: 13px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .dct-home-page .dct-footer-grid p {
+    font-size: 12.5px !important;
+    line-height: 1.58 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .dct-home-page {
+    --mobile-side: 24px;
+  }
+
+  .dct-home-page .courses-grid,
+  .dct-home-page .courses-grid-four,
+  .dct-home-page .cad-software-home-grid,
+  .dct-home-page .trust-verified-grid,
+  .dct-home-page .acc-list {
+    max-width: 336px !important;
+  }
+
+  .dct-home-page .courses-title,
+  .dct-home-page .dash-section-title,
+  .dct-home-page .cad-software-home-title {
+    font-size: 31px !important;
+  }
+}
