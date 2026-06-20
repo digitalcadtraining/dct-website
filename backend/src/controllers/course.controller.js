@@ -8,9 +8,11 @@ const { prisma }         = require("../config/db");
 const { success, error } = require("../utils/response");
 const { slugify }        = require("../utils/helpers");
 
-const PUBLIC_BATCH_STATUSES = ["APPROVED", "UPCOMING", "ACTIVE"];
+// Must match backend/prisma/schema.prisma BatchStatus enum.
+// Admin approval changes a batch from PENDING_APPROVAL to UPCOMING.
+const PUBLIC_BATCH_STATUSES = ["UPCOMING", "ACTIVE"];
 
-function getPublicBatchDateFilter() {
+function getPublicBatchStartDateLimit() {
   const minDate = new Date();
   minDate.setHours(0, 0, 0, 0);
   minDate.setDate(minDate.getDate() - 10);
@@ -21,7 +23,8 @@ function publicBatchWhere(courseId) {
   return {
     course_id: courseId,
     status: { in: PUBLIC_BATCH_STATUSES },
-    start_date: { gte: getPublicBatchDateFilter() },
+    // Public pages show recently-started batches from the last 10 days + all future batches.
+    start_date: { gte: getPublicBatchStartDateLimit() },
   };
 }
 
@@ -67,7 +70,7 @@ const getCourse = async (req, res, next) => {
         batches: {
           where: {
             status: { in: PUBLIC_BATCH_STATUSES },
-            start_date: { gte: getPublicBatchDateFilter() },
+            start_date: { gte: getPublicBatchStartDateLimit() },
           },
           orderBy: [
             { start_date: "asc" },
