@@ -79,6 +79,9 @@ async function sendViaAiSensy(phone, otp) {
     },
   };
 
+  console.log("AiSensy sending to:", destination);
+  console.log("AiSensy campaign:", campaignName);
+
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -96,17 +99,21 @@ async function sendViaAiSensy(phone, otp) {
 
   if (!response.ok) {
     throw new Error(
-      `AiSensy OTP error (${response.status}): ${data?.message || data?.error || text || "Request failed"}`
+      `AiSensy OTP error (${response.status}): ${data?.message || data?.error || text || "Request failed"}`,
     );
   }
 
-  const statusText = String(data?.status || data?.success || data?.message || "").toLowerCase();
+  const statusText = String(
+    data?.status || data?.success || data?.message || "",
+  ).toLowerCase();
   if (
     data?.success === false ||
     statusText.includes("failed") ||
     statusText.includes("error")
   ) {
-    throw new Error(`AiSensy OTP failed: ${data?.message || data?.error || text}`);
+    throw new Error(
+      `AiSensy OTP failed: ${data?.message || data?.error || text}`,
+    );
   }
 
   console.log("AiSensy OTP response:", JSON.stringify(data, null, 2));
@@ -134,7 +141,7 @@ const sendOtp = async (phone, purpose) => {
 
   if (isDevOtpMode()) {
     console.log(
-      `\n📱 DCT OTP for ${normalizedPhone} [${purpose}]: \x1b[33m${otp}\x1b[0m (expires in ${OTP_EXPIRES_MINUTES} min)\n`
+      `\n📱 DCT OTP for ${normalizedPhone} [${purpose}]: \x1b[33m${otp}\x1b[0m (expires in ${OTP_EXPIRES_MINUTES} min)\n`,
     );
     return { success: true, otp };
   }
