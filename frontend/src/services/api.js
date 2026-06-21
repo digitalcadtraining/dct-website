@@ -20,7 +20,7 @@ function normalizeRole(role) {
 }
 
 function roleFromBrowserPath() {
-const path = window.location.pathname || "/";
+  const path = window.location.pathname || "/";
   if (path.startsWith("/admin")) return "admin";
   if (path.startsWith("/tutor")) return "tutor";
   if (path.startsWith("/student")) return "student";
@@ -139,6 +139,7 @@ export const authApi = {
   logout: (role = roleFromBrowserPath()) => http(`/auth/logout?role=${encodeURIComponent(normalizeRole(role))}`, { method: "POST", role: normalizeRole(role) }),
   me: (role = roleFromBrowserPath()) => http("/auth/me", { role: normalizeRole(role) }),
 };
+
 export const registrationPaymentApi = {
   start: (data) =>
     http("/registration-payments/start", {
@@ -171,6 +172,7 @@ export const batchApi = {
   create: (data) => http("/batches", { method: "POST", role: "tutor", body: JSON.stringify(data) }),
   get: (id) => http(`/batches/${id}`),
   update: (id, data) => http(`/batches/${id}`, { method: "PATCH", role: "tutor", body: JSON.stringify(data) }),
+  updateFull: (id, data) => http(`/batches/${id}/full`, { method: "PATCH", role: "tutor", body: JSON.stringify(data) }),
 };
 
 export const sessionApi = {

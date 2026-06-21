@@ -26,7 +26,7 @@ function setRefreshCookie(res, role, token) {
   res.cookie(cookieNameForRole(role), token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: REFRESH_TOKEN_EXPIRES_MS,
   });
 }

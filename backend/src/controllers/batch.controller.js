@@ -69,6 +69,28 @@ function buildLiveSessionItems(syllabusSessions = [], syllabusProjects = []) {
   return [...general, ...projectItems].map((item, idx) => ({ ...item, session_number: idx + 1 }));
 }
 
+function toDateOrNull(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function normalizeTimeSlots(timeSlots) {
+  if (Array.isArray(timeSlots)) return timeSlots.map(String).map((s) => s.trim()).filter(Boolean);
+  if (typeof timeSlots === "string" && timeSlots.trim()) return [timeSlots.trim()];
+  return [];
+}
+
+function normalizeSessionType(type) {
+  const value = String(type || "BOTH").toUpperCase();
+  return ["THEORY", "CAD", "BOTH"].includes(value) ? value : "BOTH";
+}
+
+function normalizeSessionStatus(status) {
+  const value = String(status || "UPCOMING").toUpperCase();
+  return ["UPCOMING", "LIVE", "COMPLETED", "CANCELLED"].includes(value) ? value : "UPCOMING";
+}
+
 async function getTutorCourseProjectMap(pairs) {
   const uniquePairs = [];
   const seen = new Set();
@@ -113,11 +135,7 @@ const createBatch = async (req, res, next) => {
     if (!course_id) return error(res, 400, "course_id is required.");
     if (!start_date) return error(res, 400, "start_date is required.");
 
-    const normalizedSlots = Array.isArray(time_slots)
-      ? time_slots.filter(Boolean)
-      : typeof time_slots === "string" && time_slots.trim()
-        ? [time_slots.trim()]
-        : [];
+    const normalizedSlots = normalizeTimeSlots(time_slots);
 
     if (normalizedSlots.length === 0) {
       return error(res, 400, "At least one class time slot is required.");
@@ -218,17 +236,194 @@ const updateBatch = async (req, res, next) => {
     const batch = await prisma.batch.findFirst({ where: { id: req.params.id, tutor_id: req.user.id } });
     if (!batch) return error(res, 404, "Batch not found.");
 
-    const { zoom_link, description, max_students, status, time_slots } = req.body;
+    const { name, start_date, end_date, zoom_link, description, max_students, status, time_slots } = req.body;
     const updateData = {};
+
+    if (name !== undefined) updateData.name = String(name).trim() || batch.name;
+    if (start_date !== undefined) {
+      const start = toDateOrNull(start_date);
+      if (!start) return error(res, 400, "Invalid start_date.");
+      updateData.start_date = start;
+    }
+    if (end_date !== undefined) {
+      const end = toDateOrNull(end_date);
+      if (!end) return error(res, 400, "Invalid end_date.");
+      updateData.end_date = end;
+    }
     if (zoom_link !== undefined) updateData.zoom_link = zoom_link || null;
     if (description !== undefined) updateData.description = description || null;
-    if (max_students !== undefined) updateData.max_students = parseInt(max_students);
-    if (status !== undefined) updateData.status = status;
-    if (time_slots !== undefined) updateData.time_slots = Array.isArray(time_slots) ? time_slots : [];
+    if (max_students !== undefined) updateData.max_students = Math.max(1, parseInt(max_students) || batch.max_students);
+    if (status !== undefined) {
+      const allowed = ["PENDING_APPROVAL", "UPCOMING", "ACTIVE", "COMPLETED"];
+      if (!allowed.includes(String(status))) return error(res, 400, "Invalid batch status.");
+      updateData.status = status;
+    }
+    if (time_slots !== undefined) updateData.time_slots = normalizeTimeSlots(time_slots);
 
     const updated = await prisma.batch.update({ where: { id: req.params.id }, data: updateData });
     return success(res, 200, "Batch updated.", updated);
   } catch (err) { next(err); }
+};
+
+const updateBatchFull = async (req, res, next) => {
+  try {
+    const batchId = req.params.id;
+    const tutorId = req.user.id;
+
+    const existingBatch = await prisma.batch.findFirst({
+      where: { id: batchId, tutor_id: tutorId },
+      include: {
+        scheduled_sessions: {
+          orderBy: { session_number: "asc" },
+          include: {
+            _count: { select: { assignments: true, queries: true } },
+          },
+        },
+      },
+    });
+
+    if (!existingBatch) return error(res, 404, "Batch not found.");
+
+    const {
+      name,
+      start_date,
+      end_date,
+      max_students,
+      description,
+      zoom_link,
+      time_slots,
+      status,
+      sessions,
+    } = req.body;
+
+    const batchUpdate = {};
+
+    if (name !== undefined) {
+      const cleanName = String(name || "").trim();
+      if (!cleanName) return error(res, 400, "Batch name cannot be empty.");
+      batchUpdate.name = cleanName;
+    }
+
+    if (start_date !== undefined) {
+      const start = toDateOrNull(start_date);
+      if (!start) return error(res, 400, "Invalid start date.");
+      batchUpdate.start_date = start;
+    }
+
+    if (end_date !== undefined) {
+      const end = toDateOrNull(end_date);
+      if (!end) return error(res, 400, "Invalid end date.");
+      batchUpdate.end_date = end;
+    }
+
+    if (max_students !== undefined) {
+      const max = parseInt(max_students);
+      if (!Number.isFinite(max) || max < 1 || max > 1000) return error(res, 400, "Invalid student limit.");
+      batchUpdate.max_students = max;
+    }
+
+    if (description !== undefined) batchUpdate.description = description || null;
+    if (zoom_link !== undefined) batchUpdate.zoom_link = zoom_link || null;
+
+    if (time_slots !== undefined) {
+      const slots = normalizeTimeSlots(time_slots);
+      if (slots.length === 0) return error(res, 400, "At least one class time slot is required.");
+      batchUpdate.time_slots = slots;
+    }
+
+    if (status !== undefined) {
+      const allowed = ["PENDING_APPROVAL", "UPCOMING", "ACTIVE", "COMPLETED"];
+      if (!allowed.includes(String(status))) return error(res, 400, "Invalid batch status.");
+      batchUpdate.status = status;
+    }
+
+    if (batchUpdate.start_date && (batchUpdate.end_date || existingBatch.end_date)) {
+      const end = batchUpdate.end_date || existingBatch.end_date;
+      if (batchUpdate.start_date > end) return error(res, 400, "Start date cannot be after end date.");
+    }
+    if (batchUpdate.end_date && (batchUpdate.start_date || existingBatch.start_date)) {
+      const start = batchUpdate.start_date || existingBatch.start_date;
+      if (start > batchUpdate.end_date) return error(res, 400, "End date cannot be before start date.");
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      if (Object.keys(batchUpdate).length) {
+        await tx.batch.update({
+          where: { id: batchId },
+          data: batchUpdate,
+        });
+      }
+
+      if (Array.isArray(sessions)) {
+        const existingById = new Map(existingBatch.scheduled_sessions.map((s) => [s.id, s]));
+        const processedIds = new Set();
+
+        for (let i = 0; i < sessions.length; i++) {
+          const item = sessions[i] || {};
+          const cleanName = String(item.name || "").trim();
+          if (!cleanName) continue;
+
+          const payload = {
+            session_number: i + 1,
+            name: cleanName,
+            type: normalizeSessionType(item.type),
+            scheduled_at: item.scheduled_at ? toDateOrNull(item.scheduled_at) : null,
+            duration_minutes: Math.max(15, parseInt(item.duration_minutes) || 90),
+            zoom_link: item.zoom_link || null,
+            recording_url: item.recording_url || null,
+            notes_url: item.notes_url || null,
+            status: normalizeSessionStatus(item.status),
+          };
+
+          if (item.id && existingById.has(item.id)) {
+            processedIds.add(item.id);
+            await tx.scheduledSession.update({
+              where: { id: item.id },
+              data: payload,
+            });
+          } else {
+            const created = await tx.scheduledSession.create({
+              data: {
+                ...payload,
+                batch_id: batchId,
+              },
+            });
+            processedIds.add(created.id);
+          }
+        }
+
+        // Do not hard-delete sessions with assignments/queries. Mark them cancelled instead.
+        const missing = existingBatch.scheduled_sessions.filter((s) => !processedIds.has(s.id));
+        for (const oldSession of missing) {
+          if ((oldSession._count?.assignments || 0) > 0 || (oldSession._count?.queries || 0) > 0) {
+            await tx.scheduledSession.update({
+              where: { id: oldSession.id },
+              data: { status: "CANCELLED" },
+            });
+          } else {
+            await tx.scheduledSession.delete({ where: { id: oldSession.id } });
+          }
+        }
+      }
+
+      return tx.batch.findUnique({
+        where: { id: batchId },
+        include: {
+          course: { select: { id: true, name: true, slug: true } },
+          tutor: { select: { name: true } },
+          scheduled_sessions: {
+            orderBy: { session_number: "asc" },
+            include: { assignments: { select: { id: true, title: true, due_date: true } } },
+          },
+          _count: { select: { scheduled_sessions: true, enrollments: true } },
+        },
+      });
+    });
+
+    return success(res, 200, "Batch details updated successfully.", updated);
+  } catch (err) {
+    next(err);
+  }
 };
 
 function progressFromAssignments(batch, storedProgress = 0) {
@@ -334,9 +529,6 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Registration visibility rule:
-    // show approved/upcoming/active batches from the last 10 days onwards.
-    // Example: on 18 Jun, 3 Jun is hidden, but 1 Jul / 5 Jul remains visible.
     const minDate = new Date(today);
     minDate.setDate(minDate.getDate() - 10);
 
@@ -347,8 +539,6 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
     const batches = await prisma.batch.findMany({
       where: {
         course_id: req.params.courseId,
-        // Admin approval in this project may save status as APPROVED,
-        // while older flows use UPCOMING/ACTIVE. Show only registration-safe statuses.
         status: { in: ["APPROVED", "UPCOMING", "ACTIVE"] },
         start_date: { gte: minDate, lte: maxDate },
       },
@@ -396,6 +586,7 @@ module.exports = {
   createBatch,
   getMyBatches,
   updateBatch,
+  updateBatchFull,
   getEnrolledBatches,
   getBatchDetails,
   getCourseBatchesForRegistration,

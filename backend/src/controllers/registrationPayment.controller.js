@@ -23,7 +23,7 @@ function setStudentRefreshCookie(res, token) {
   res.cookie("student_refresh_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: REFRESH_TOKEN_EXPIRES_MS,
   });
 }
