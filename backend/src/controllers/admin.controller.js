@@ -21,19 +21,24 @@ function normalizeMoney(value) {
   return n;
 }
 
+function normalizeDateTime(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 async function attachBatchPricing(batches = []) {
   if (!batches.length) return batches;
   const ids = batches.map((b) => b.id);
   try {
     const rows = await prisma.$queryRaw`
-      SELECT id, offer_name, original_price, offer_price
+      SELECT id, offer_name, original_price, offer_price, offer_start_at, offer_end_at
       FROM batches
       WHERE id = ANY(${ids})
     `;
     const map = new Map(rows.map((r) => [r.id, r]));
     return batches.map((batch) => ({ ...batch, ...(map.get(batch.id) || {}) }));
   } catch (err) {
-    // Safe fallback if migration has not been applied yet.
     return batches;
   }
 }
@@ -221,24 +226,34 @@ const updateBatchPricing = async (req, res, next) => {
     const offer_name = String(req.body.offer_name || "").trim() || "Limited Batch Offer";
     const original_price = normalizeMoney(req.body.original_price);
     const offer_price = normalizeMoney(req.body.offer_price);
+    const offer_start_at = normalizeDateTime(req.body.offer_start_at);
+    const offer_end_at = normalizeDateTime(req.body.offer_end_at);
 
     if (!original_price || !offer_price) return error(res, 400, "Original price and offer price are required.");
     if (offer_price > original_price) return error(res, 400, "Offer price cannot be greater than original price.");
+    if (offer_start_at && offer_end_at && offer_end_at <= offer_start_at) {
+      return error(res, 400, "Offer end date/time must be after offer start date/time.");
+    }
 
     await prisma.$executeRaw`
       UPDATE batches
-      SET offer_name = ${offer_name}, original_price = ${original_price}, offer_price = ${offer_price}, updated_at = NOW()
+      SET offer_name = ${offer_name},
+          original_price = ${original_price},
+          offer_price = ${offer_price},
+          offer_start_at = ${offer_start_at},
+          offer_end_at = ${offer_end_at},
+          updated_at = NOW()
       WHERE id = ${id}
     `;
 
     const rows = await prisma.$queryRaw`
-      SELECT id, offer_name, original_price, offer_price
+      SELECT id, offer_name, original_price, offer_price, offer_start_at, offer_end_at
       FROM batches
       WHERE id = ${id}
       LIMIT 1
     `;
 
-    return success(res, 200, "Batch pricing updated.", { ...batch, ...(rows[0] || {}) });
+    return success(res, 200, "Batch pricing and offer timer updated.", { ...batch, ...(rows[0] || {}) });
   } catch (err) { next(err); }
 };
 

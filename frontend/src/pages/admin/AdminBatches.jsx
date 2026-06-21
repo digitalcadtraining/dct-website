@@ -18,6 +18,24 @@ function rupee(value) {
   return Number(value || 0).toLocaleString("en-IN");
 }
 
+function toLocalInput(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function offerLabel(batch) {
+  const start = batch.offer_start_at ? new Date(batch.offer_start_at) : null;
+  const end = batch.offer_end_at ? new Date(batch.offer_end_at) : null;
+  const now = new Date();
+  if (start && now < start) return "Scheduled";
+  if (end && now <= end) return "Live";
+  if (start || end) return "Expired";
+  return "No timer";
+}
+
 export default function AdminBatches() {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +76,8 @@ export default function AdminBatches() {
       offer_name: batch.offer_name || "Limited Batch Offer",
       original_price: batch.original_price || batch.course?.price || "",
       offer_price: batch.offer_price || batch.course?.price || "",
+      offer_start_at: toLocalInput(batch.offer_start_at),
+      offer_end_at: toLocalInput(batch.offer_end_at),
     });
   };
 
@@ -69,11 +89,13 @@ export default function AdminBatches() {
         offer_name: editing.offer_name,
         original_price: editing.original_price,
         offer_price: editing.offer_price,
+        offer_start_at: editing.offer_start_at || null,
+        offer_end_at: editing.offer_end_at || null,
       }, "admin");
       const updated = res.data || {};
       setBatches((items) => items.map((b) => b.id === editing.id ? { ...b, ...updated } : b));
       setEditing(null);
-      alert("✅ Batch pricing updated.");
+      alert("✅ Batch pricing and offer timer updated.");
     } catch (e) {
       alert("Error: " + e.message);
     } finally {
@@ -122,6 +144,7 @@ export default function AdminBatches() {
             const slots = batch.time_slots || [];
             const original = batch.original_price || batch.course?.price || 0;
             const offer = batch.offer_price || batch.course?.price || 0;
+            const timer = offerLabel(batch);
             return (
               <motion.div key={batch.id} className="bg-white rounded-2xl border border-gray-100 p-5" style={{ boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay: i * 0.05 }}>
                 <div className="flex items-start gap-4">
@@ -160,6 +183,14 @@ export default function AdminBatches() {
                           Original ₹{rupee(original)}
                         </span>
                       )}
+                      <span className={`text-xs px-3 py-1.5 rounded-full font-bold ${
+                        timer === "Live" ? "bg-orange-50 text-orange-700" :
+                        timer === "Scheduled" ? "bg-sky-50 text-sky-700" :
+                        timer === "Expired" ? "bg-gray-100 text-gray-600" :
+                        "bg-gray-50 text-gray-500"
+                      }`}>
+                        Timer: {timer}
+                      </span>
                     </div>
 
                     {slots.length > 0 && (
@@ -175,7 +206,7 @@ export default function AdminBatches() {
 
                   <div className="flex flex-col gap-2 flex-shrink-0">
                     <button onClick={() => startEdit(batch)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all hover:bg-blue-50" style={{ borderColor:"#bfdbfe", color:C.blue }}>
-                      <Pencil size={13}/> Edit Price
+                      <Pencil size={13}/> Edit Offer
                     </button>
 
                     {batch.status === "PENDING_APPROVAL" && (
@@ -198,22 +229,35 @@ export default function AdminBatches() {
         {editing && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-              <h2 className="text-xl font-extrabold mb-1" style={{ color:C.dark }}>Edit Batch Offer Pricing</h2>
+              <h2 className="text-xl font-extrabold mb-1" style={{ color:C.dark }}>Edit Batch Offer</h2>
               <p className="text-xs mb-5" style={{ color:C.gray }}>{editing.name}</p>
 
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Name</label>
-                  <input value={editing.offer_name} onChange={(e) => setEditing({ ...editing, offer_name:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="Limited Batch Offer" />
+                  <input value={editing.offer_name} onChange={(e) => setEditing({ ...editing, offer_name:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="July Reset Offer" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Original Price / Strike Price</label>
-                  <input type="number" value={editing.original_price} onChange={(e) => setEditing({ ...editing, original_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="24000" />
+                  <input type="number" value={editing.original_price} onChange={(e) => setEditing({ ...editing, original_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="24999" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Price</label>
-                  <input type="number" value={editing.offer_price} onChange={(e) => setEditing({ ...editing, offer_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="18000" />
+                  <input type="number" value={editing.offer_price} onChange={(e) => setEditing({ ...editing, offer_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="20999" />
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Starts At</label>
+                    <input type="datetime-local" value={editing.offer_start_at} onChange={(e) => setEditing({ ...editing, offer_start_at:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Ends At</label>
+                    <input type="datetime-local" value={editing.offer_end_at} onChange={(e) => setEditing({ ...editing, offer_end_at:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" />
+                  </div>
+                </div>
+                <p className="text-[11px] font-semibold" style={{ color:C.gray }}>
+                  If start date is in future, course page shows “offer will start in…”. If live, it shows “offer ends in…” with a classy countdown bar.
+                </p>
               </div>
 
               <div className="flex gap-3 mt-6">
