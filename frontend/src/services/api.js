@@ -131,11 +131,11 @@ export function mediaUrl(filePath) {
 export const authApi = {
   sendOtp: (phone, purpose) => http("/auth/otp/send", { method: "POST", body: JSON.stringify({ phone, purpose }) }),
   verifyOtp: (phone, otp, purpose) => http("/auth/otp/verify", { method: "POST", body: JSON.stringify({ phone, otp, purpose }) }),
-  forgotPassword: (email_or_phone) => http("/auth/password/forgot", { method: "POST", body: JSON.stringify({ email_or_phone }) }),
-  resetPassword: (phone, otp, new_password) => http("/auth/password/reset", { method: "POST", body: JSON.stringify({ phone, otp, new_password }) }),
   register: (data) => http("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (email_or_phone, password) => http("/auth/login", { method: "POST", body: JSON.stringify({ email_or_phone, password }) }),
   adminLogin: (email, password) => http("/auth/admin/login", { method: "POST", role: "admin", body: JSON.stringify({ email, password }) }),
+  forgotPassword: (email_or_phone) => http("/auth/password/forgot", { method: "POST", body: JSON.stringify({ email_or_phone }) }),
+  resetPassword: (phone, otp, new_password) => http("/auth/password/reset", { method: "POST", body: JSON.stringify({ phone, otp, new_password }) }),
   logout: (role = roleFromBrowserPath()) => http(`/auth/logout?role=${encodeURIComponent(normalizeRole(role))}`, { method: "POST", role: normalizeRole(role) }),
   me: (role = roleFromBrowserPath()) => http("/auth/me", { role: normalizeRole(role) }),
 };

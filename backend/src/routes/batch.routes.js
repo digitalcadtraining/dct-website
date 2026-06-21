@@ -4,7 +4,7 @@ const {
   createBatch,
   getMyBatches,
   updateBatch,
-  updateBatchFull,
+  updateFullBatch,
   getEnrolledBatches,
   getBatchDetails,
 } = require("../controllers/batch.controller");
@@ -12,11 +12,7 @@ const {
 router.post("/", authenticate, authorize("TUTOR"), createBatch);
 router.get("/mine", authenticate, authorize("TUTOR"), getMyBatches);
 router.get("/enrolled", authenticate, authorize("STUDENT"), getEnrolledBatches);
-
-// Full batch management for tutor-owned batches.
-// Keep this BEFORE "/:id" so Express does not treat "full" as another route.
-router.patch("/:id/full", authenticate, authorize("TUTOR"), updateBatchFull);
-
+router.patch("/:id/full", authenticate, authorize("TUTOR"), updateFullBatch);
 router.get("/:id", authenticate, getBatchDetails);
 router.patch("/:id", authenticate, authorize("TUTOR"), updateBatch);
 
