@@ -222,19 +222,19 @@ const homepageHtml = `
     </div>
 
     <div class="trust-verified-grid">
-      <a class="trust-verified-card instagram" href="https://www.instagram.com/digitalcadtraining/" target="_blank" rel="noopener noreferrer">
+      <a class="trust-verified-card instagram" href="https://www.instagram.com/digital_cad_training/" target="_blank" rel="noopener noreferrer">
         <div class="trust-icon-wrap"><span class="trust-icon">◎</span></div>
         <div class="trust-count-row"><span class="trust-count" data-count="20">0</span><span class="trust-plus">K+</span></div>
         <h3>Instagram Followers</h3>
         <p>Daily reels, student updates, CAD tips and course awareness for mechanical engineers.</p>
       </a>
-      <a class="trust-verified-card youtube" href="https://www.youtube.com/@digitalcadtraining" target="_blank" rel="noopener noreferrer">
+      <a class="trust-verified-card youtube" href="https://www.youtube.com/@digitalcadtraining5576" target="_blank" rel="noopener noreferrer">
         <div class="trust-icon-wrap"><span class="trust-icon">▶</span></div>
         <div class="trust-count-row"><span class="trust-count" data-count="15">0</span><span class="trust-plus">K+</span></div>
         <h3>YouTube Subscribers</h3>
         <p>Webinars, CAD learning videos and design career direction from experienced mentors.</p>
       </a>
-      <a class="trust-verified-card linkedin" href="https://www.linkedin.com/company/digital-cad-training/" target="_blank" rel="noopener noreferrer">
+      <a class="trust-verified-card linkedin" href="https://www.linkedin.com/in/balkrishnadhuri" target="_blank" rel="noopener noreferrer">
         <div class="trust-icon-wrap"><span class="trust-icon">in</span></div>
         <div class="trust-count-row"><span class="trust-count" data-count="4">0</span><span class="trust-plus">Lakh+</span></div>
         <h3>LinkedIn Reach</h3>

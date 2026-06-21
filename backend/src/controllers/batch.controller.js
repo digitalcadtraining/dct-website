@@ -644,20 +644,38 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
         name: true,
         start_date: true,
         end_date: true,
+        created_at: true,
         status: true,
         max_students: true,
         time_slots: true,
-
-        offer_name: true,
-        original_price: true,
-        offer_price: true,
-        offer_start_at: true,
-        offer_end_at: true,
-
         tutor: { select: { name: true } },
         _count: { select: { enrollments: true } },
       },
     });
+
+    const batchIds = batches.map((b) => b.id);
+    let offerMap = new Map();
+
+    if (batchIds.length > 0) {
+      try {
+        const offerRows = await prisma.$queryRaw`
+          SELECT
+            id,
+            offer_name,
+            original_price,
+            offer_price,
+            offer_start_at,
+            offer_end_at
+          FROM batches
+          WHERE id = ANY(${batchIds})
+        `;
+
+        offerMap = new Map(offerRows.map((row) => [row.id, row]));
+      } catch (offerErr) {
+        // Safe fallback: if offer columns are not migrated yet, batches still load.
+        offerMap = new Map();
+      }
+    }
 
     const result = batches
       .map((b) => {
@@ -666,25 +684,26 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
           0,
           Number(b.max_students || 0) - enrolled,
         );
+        const offer = offerMap.get(b.id) || {};
 
         return {
           id: b.id,
           name: b.name,
           start_date: b.start_date,
           end_date: b.end_date,
+          created_at: b.created_at,
           status: b.status,
           tutor_name: b.tutor?.name || "DCT Tutor",
           time_slots: b.time_slots || [],
-
-          offer_name: b.offer_name,
-          original_price: b.original_price,
-          offer_price: b.offer_price,
-          offer_start_at: b.offer_start_at,
-          offer_end_at: b.offer_end_at,
-
           enrolled,
           available_seats: availableSeats,
           is_full: availableSeats <= 0,
+
+          offer_name: offer.offer_name || null,
+          original_price: offer.original_price || null,
+          offer_price: offer.offer_price || null,
+          offer_start_at: offer.offer_start_at || null,
+          offer_end_at: offer.offer_end_at || null,
         };
       })
       .filter((b) => !b.is_full);
@@ -694,6 +713,7 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
     next(err);
   }
 };
+
 
 module.exports = {
   createBatch,
