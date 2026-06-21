@@ -65,7 +65,12 @@ function projectMeta(project) {
       sessions: [],
     };
   }
-  return { is_recorded: false, delivery_mode: "LIVE", unlock_rule: null, sessions: [] };
+  return {
+    is_recorded: false,
+    delivery_mode: "LIVE",
+    unlock_rule: null,
+    sessions: [],
+  };
 }
 
 function isRecordedProject(project) {
@@ -80,25 +85,38 @@ function projectToStudent(project) {
     name: project.name,
     is_recorded: isRecordedProject(project),
     delivery_mode: isRecordedProject(project) ? "RECORDED" : "LIVE",
-    unlock_rule: meta.unlock_rule || (isRecordedProject(project) ? "FIRST_LIVE_PROJECT_START" : null),
+    unlock_rule:
+      meta.unlock_rule ||
+      (isRecordedProject(project) ? "FIRST_LIVE_PROJECT_START" : null),
   };
 }
 
 function liveProjectSessions(project) {
   const meta = projectMeta(project);
   if (isRecordedProject(project)) return [];
-  return Array.isArray(meta.sessions) ? meta.sessions.filter((s) => s?.name) : [];
+  return Array.isArray(meta.sessions)
+    ? meta.sessions.filter((s) => s?.name)
+    : [];
 }
 
 function buildLiveSessionItems(syllabusSessions = [], syllabusProjects = []) {
-  const general = syllabusSessions.map((s) => ({ name: s.name, type: s.type || "BOTH" }));
+  const general = syllabusSessions.map((s) => ({
+    name: s.name,
+    type: s.type || "BOTH",
+  }));
   const projectItems = [];
   for (const project of syllabusProjects) {
     liveProjectSessions(project).forEach((s) => {
-      projectItems.push({ name: `Project: ${project.name} - ${s.name}`, type: "CAD" });
+      projectItems.push({
+        name: `Project: ${project.name} - ${s.name}`,
+        type: "CAD",
+      });
     });
   }
-  return [...general, ...projectItems].map((item, idx) => ({ ...item, session_number: idx + 1 }));
+  return [...general, ...projectItems].map((item, idx) => ({
+    ...item,
+    session_number: idx + 1,
+  }));
 }
 
 async function getTutorCourseProjectMap(pairs) {
@@ -118,7 +136,10 @@ async function getTutorCourseProjectMap(pairs) {
   const applications = await prisma.tutorApplication.findMany({
     where: {
       status: "APPROVED",
-      OR: uniquePairs.map((p) => ({ user_id: p.tutor_id, course_id: p.course_id })),
+      OR: uniquePairs.map((p) => ({
+        user_id: p.tutor_id,
+        course_id: p.course_id,
+      })),
     },
     include: { syllabus_projects: true },
   });
@@ -126,7 +147,9 @@ async function getTutorCourseProjectMap(pairs) {
   const map = new Map();
   for (const app of applications) {
     const key = `${app.user_id}:${app.course_id}`;
-    const recorded = (app.syllabus_projects || []).filter(isRecordedProject).map(projectToStudent);
+    const recorded = (app.syllabus_projects || [])
+      .filter(isRecordedProject)
+      .map(projectToStudent);
     map.set(key, recorded);
   }
   return map;
@@ -147,7 +170,12 @@ function safeSessionType(value) {
 }
 
 function safeBatchStatus(value, current = "UPCOMING") {
-  const allowed = new Set(["PENDING_APPROVAL", "UPCOMING", "ACTIVE", "COMPLETED"]);
+  const allowed = new Set([
+    "PENDING_APPROVAL",
+    "UPCOMING",
+    "ACTIVE",
+    "COMPLETED",
+  ]);
   return allowed.has(String(value || "").toUpperCase())
     ? String(value).toUpperCase()
     : current;
@@ -190,23 +218,45 @@ const createBatch = async (req, res, next) => {
       },
     });
 
-    if (!application) return error(res, 403, "You are not approved to teach this course.");
+    if (!application)
+      return error(res, 403, "You are not approved to teach this course.");
 
     const batchName = generateBatchName(application.course.name, start_date);
-    const duplicate = await prisma.batch.findFirst({ where: { tutor_id: tutorId, course_id, name: batchName } });
-    if (duplicate) return error(res, 409, `Batch "${batchName}" already exists.`);
+    const duplicate = await prisma.batch.findFirst({
+      where: { tutor_id: tutorId, course_id, name: batchName },
+    });
+    if (duplicate)
+      return error(res, 409, `Batch "${batchName}" already exists.`);
 
-    const liveItems = buildLiveSessionItems(application.syllabus_sessions || [], application.syllabus_projects || []);
+    const liveItems = buildLiveSessionItems(
+      application.syllabus_sessions || [],
+      application.syllabus_projects || [],
+    );
     const totalSessions = liveItems.length;
-    if (totalSessions === 0) return error(res, 400, "No approved live sessions found for this course. Please contact admin.");
+    if (totalSessions === 0)
+      return error(
+        res,
+        400,
+        "No approved live sessions found for this course. Please contact admin.",
+      );
 
-    const sessionDates = generateSessionDates(start_date, totalSessions, Boolean(alt_days), Boolean(sunday_off));
-    const endDate = sessionDates.length > 0
-      ? sessionDates[sessionDates.length - 1]
-      : new Date(new Date(start_date).setMonth(new Date(start_date).getMonth() + 4));
+    const sessionDates = generateSessionDates(
+      start_date,
+      totalSessions,
+      Boolean(alt_days),
+      Boolean(sunday_off),
+    );
+    const endDate =
+      sessionDates.length > 0
+        ? sessionDates[sessionDates.length - 1]
+        : new Date(
+            new Date(start_date).setMonth(new Date(start_date).getMonth() + 4),
+          );
 
     const mainSlot = normalizedSlots[0];
-    const recordedProjects = (application.syllabus_projects || []).filter(isRecordedProject).map(projectToStudent);
+    const recordedProjects = (application.syllabus_projects || [])
+      .filter(isRecordedProject)
+      .map(projectToStudent);
 
     const batch = await prisma.$transaction(async (tx) => {
       const newBatch = await tx.batch.create({
@@ -214,7 +264,8 @@ const createBatch = async (req, res, next) => {
           course_id,
           tutor_id: tutorId,
           name: batchName,
-          start_date: withSlotTime(start_date, mainSlot) || new Date(start_date),
+          start_date:
+            withSlotTime(start_date, mainSlot) || new Date(start_date),
           end_date: withSlotTime(endDate, mainSlot) || endDate,
           max_students: parseInt(max_students) || 50,
           description: description || null,
@@ -247,10 +298,15 @@ const createBatch = async (req, res, next) => {
       },
     });
 
-    return success(res, 201, `Batch "${batchName}" created with ${totalSessions} live sessions scheduled. ${recordedProjects.length} recorded project(s) will unlock with the first live project. Awaiting admin approval.`, {
-      ...fullBatch,
-      recorded_projects: recordedProjects,
-    });
+    return success(
+      res,
+      201,
+      `Batch "${batchName}" created with ${totalSessions} live sessions scheduled. ${recordedProjects.length} recorded project(s) will unlock with the first live project. Awaiting admin approval.`,
+      {
+        ...fullBatch,
+        recorded_projects: recordedProjects,
+      },
+    );
   } catch (err) {
     next(err);
   }
@@ -275,19 +331,28 @@ const getMyBatches = async (req, res, next) => {
 
 const updateBatch = async (req, res, next) => {
   try {
-    const batch = await prisma.batch.findFirst({ where: { id: req.params.id, tutor_id: req.user.id } });
+    const batch = await prisma.batch.findFirst({
+      where: { id: req.params.id, tutor_id: req.user.id },
+    });
     if (!batch) return error(res, 404, "Batch not found.");
 
-    const { zoom_link, description, max_students, status, time_slots } = req.body;
+    const { zoom_link, description, max_students, status, time_slots } =
+      req.body;
     const updateData = {};
 
     if (zoom_link !== undefined) updateData.zoom_link = zoom_link || null;
     if (description !== undefined) updateData.description = description || null;
-    if (max_students !== undefined) updateData.max_students = parseInt(max_students);
-    if (status !== undefined) updateData.status = safeBatchStatus(status, batch.status);
-    if (time_slots !== undefined) updateData.time_slots = Array.isArray(time_slots) ? time_slots : [];
+    if (max_students !== undefined)
+      updateData.max_students = parseInt(max_students);
+    if (status !== undefined)
+      updateData.status = safeBatchStatus(status, batch.status);
+    if (time_slots !== undefined)
+      updateData.time_slots = Array.isArray(time_slots) ? time_slots : [];
 
-    const updated = await prisma.batch.update({ where: { id: req.params.id }, data: updateData });
+    const updated = await prisma.batch.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
     return success(res, 200, "Batch updated.", updated);
   } catch (err) {
     next(err);
@@ -325,12 +390,20 @@ const updateFullBatch = async (req, res, next) => {
     } = req.body;
 
     const updateData = {};
-    if (name !== undefined) updateData.name = String(name || "").trim() || existingBatch.name;
-    if (start_date !== undefined && start_date) updateData.start_date = new Date(start_date);
-    if (end_date !== undefined && end_date) updateData.end_date = new Date(end_date);
-    if (max_students !== undefined) updateData.max_students = Math.max(1, parseInt(max_students) || existingBatch.max_students);
+    if (name !== undefined)
+      updateData.name = String(name || "").trim() || existingBatch.name;
+    if (start_date !== undefined && start_date)
+      updateData.start_date = new Date(start_date);
+    if (end_date !== undefined && end_date)
+      updateData.end_date = new Date(end_date);
+    if (max_students !== undefined)
+      updateData.max_students = Math.max(
+        1,
+        parseInt(max_students) || existingBatch.max_students,
+      );
     if (description !== undefined) updateData.description = description || null;
-    if (status !== undefined) updateData.status = safeBatchStatus(status, existingBatch.status);
+    if (status !== undefined)
+      updateData.status = safeBatchStatus(status, existingBatch.status);
     if (time_slots !== undefined) {
       const normalizedSlots = Array.isArray(time_slots)
         ? time_slots.map((slot) => String(slot || "").trim()).filter(Boolean)
@@ -351,17 +424,24 @@ const updateFullBatch = async (req, res, next) => {
       });
 
       if (incomingSessions) {
-        const incomingIds = new Set(incomingSessions.filter((s) => s.id).map((s) => s.id));
+        const incomingIds = new Set(
+          incomingSessions.filter((s) => s.id).map((s) => s.id),
+        );
 
         for (const oldSession of currentSessions) {
           if (!incomingIds.has(oldSession.id)) {
-            if ((oldSession._count?.assignments || 0) > 0 || (oldSession._count?.queries || 0) > 0) {
+            if (
+              (oldSession._count?.assignments || 0) > 0 ||
+              (oldSession._count?.queries || 0) > 0
+            ) {
               await tx.scheduledSession.update({
                 where: { id: oldSession.id },
                 data: { status: "CANCELLED" },
               });
             } else {
-              await tx.scheduledSession.delete({ where: { id: oldSession.id } });
+              await tx.scheduledSession.delete({
+                where: { id: oldSession.id },
+              });
             }
           }
         }
@@ -373,7 +453,9 @@ const updateFullBatch = async (req, res, next) => {
             session_number: sessionNumber,
             name: String(item.name || "").trim() || `Session ${sessionNumber}`,
             type: safeSessionType(item.type),
-            scheduled_at: item.scheduled_at ? new Date(item.scheduled_at) : null,
+            scheduled_at: item.scheduled_at
+              ? new Date(item.scheduled_at)
+              : null,
             status: safeSessionStatus(item.status),
           };
 
@@ -400,7 +482,11 @@ const updateFullBatch = async (req, res, next) => {
           tutor: { select: { name: true } },
           scheduled_sessions: {
             orderBy: { session_number: "asc" },
-            include: { assignments: { select: { id: true, title: true, due_date: true } } },
+            include: {
+              assignments: {
+                select: { id: true, title: true, due_date: true },
+              },
+            },
           },
           assignments: { orderBy: { created_at: "asc" } },
           _count: { select: { enrollments: true, scheduled_sessions: true } },
@@ -408,7 +494,12 @@ const updateFullBatch = async (req, res, next) => {
       });
     });
 
-    return success(res, 200, "Full batch updated. Student dashboard will show latest data.", updatedBatch);
+    return success(
+      res,
+      200,
+      "Full batch updated. Student dashboard will show latest data.",
+      updatedBatch,
+    );
   } catch (err) {
     next(err);
   }
@@ -417,9 +508,12 @@ const updateFullBatch = async (req, res, next) => {
 function progressFromAssignments(batch, storedProgress = 0) {
   const assignments = Array.isArray(batch.assignments) ? batch.assignments : [];
   const total = assignments.length;
-  if (total === 0) return Math.max(0, Math.min(100, Math.round(Number(storedProgress || 0))));
+  if (total === 0)
+    return Math.max(0, Math.min(100, Math.round(Number(storedProgress || 0))));
 
-  const submitted = assignments.filter((a) => Array.isArray(a.submissions) && a.submissions.length > 0).length;
+  const submitted = assignments.filter(
+    (a) => Array.isArray(a.submissions) && a.submissions.length > 0,
+  ).length;
   return Math.round((submitted / total) * 100);
 }
 
@@ -431,7 +525,9 @@ const getEnrolledBatches = async (req, res, next) => {
       include: {
         batch: {
           include: {
-            course: { select: { id: true, name: true, slug: true, thumbnail_url: true } },
+            course: {
+              select: { id: true, name: true, slug: true, thumbnail_url: true },
+            },
             tutor: { select: { name: true } },
             assignments: {
               select: {
@@ -455,7 +551,7 @@ const getEnrolledBatches = async (req, res, next) => {
       })),
     );
 
-    const result = enrollments.map(e => {
+    const result = enrollments.map((e) => {
       const batch = e.batch || {};
       const progress = progressFromAssignments(batch, e.progress);
       const { assignments, ...cleanBatch } = batch;
@@ -491,7 +587,9 @@ const getBatchDetails = async (req, res, next) => {
         tutor: { select: { name: true } },
         scheduled_sessions: {
           orderBy: { session_number: "asc" },
-          include: { assignments: { select: { id: true, title: true, due_date: true } } },
+          include: {
+            assignments: { select: { id: true, title: true, due_date: true } },
+          },
         },
         assignments: { orderBy: { created_at: "asc" } },
       },
@@ -500,16 +598,22 @@ const getBatchDetails = async (req, res, next) => {
     if (!batch) return error(res, 404, "Batch not found.");
 
     if (role === "STUDENT") {
-      const enrollment = await prisma.enrollment.findFirst({ where: { student_id: userId, batch_id: req.params.id } });
-      if (!enrollment) return error(res, 403, "You are not enrolled in this batch.");
+      const enrollment = await prisma.enrollment.findFirst({
+        where: { student_id: userId, batch_id: req.params.id },
+      });
+      if (!enrollment)
+        return error(res, 403, "You are not enrolled in this batch.");
     } else if (role === "TUTOR" && batch.tutor_id !== userId) {
       return error(res, 403, "You do not own this batch.");
     }
 
-    const projectMap = await getTutorCourseProjectMap([{ tutor_id: batch.tutor_id, course_id: batch.course_id }]);
+    const projectMap = await getTutorCourseProjectMap([
+      { tutor_id: batch.tutor_id, course_id: batch.course_id },
+    ]);
     return success(res, 200, "Batch details.", {
       ...batch,
-      recorded_projects: projectMap.get(`${batch.tutor_id}:${batch.course_id}`) || [],
+      recorded_projects:
+        projectMap.get(`${batch.tutor_id}:${batch.course_id}`) || [],
     });
   } catch (err) {
     next(err);
@@ -543,6 +647,13 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
         status: true,
         max_students: true,
         time_slots: true,
+
+        offer_name: true,
+        original_price: true,
+        offer_price: true,
+        offer_start_at: true,
+        offer_end_at: true,
+
         tutor: { select: { name: true } },
         _count: { select: { enrollments: true } },
       },
@@ -551,7 +662,10 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
     const result = batches
       .map((b) => {
         const enrolled = b._count?.enrollments || 0;
-        const availableSeats = Math.max(0, Number(b.max_students || 0) - enrolled);
+        const availableSeats = Math.max(
+          0,
+          Number(b.max_students || 0) - enrolled,
+        );
 
         return {
           id: b.id,
@@ -561,6 +675,13 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
           status: b.status,
           tutor_name: b.tutor?.name || "DCT Tutor",
           time_slots: b.time_slots || [],
+
+          offer_name: b.offer_name,
+          original_price: b.original_price,
+          offer_price: b.offer_price,
+          offer_start_at: b.offer_start_at,
+          offer_end_at: b.offer_end_at,
+
           enrolled,
           available_seats: availableSeats,
           is_full: availableSeats <= 0,
