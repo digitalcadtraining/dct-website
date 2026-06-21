@@ -2,8 +2,16 @@ const router = require("express").Router();
 const rateLimit = require("express-rate-limit");
 const { authenticate } = require("../middleware/auth");
 const {
-  sendOtpHandler, verifyOtpHandler, registerStudent,
-  login, adminLogin, refreshToken, logout, getMe
+  sendOtpHandler,
+  verifyOtpHandler,
+  registerStudent,
+  forgotPassword,
+  resetPassword,
+  login,
+  adminLogin,
+  refreshToken,
+  logout,
+  getMe,
 } = require("../controllers/auth.controller");
 
 const otpLimiter = rateLimit({
@@ -21,6 +29,8 @@ const otpLimiter = rateLimit({
 
 router.post("/otp/send", otpLimiter, sendOtpHandler);
 router.post("/otp/verify", otpLimiter, verifyOtpHandler);
+router.post("/password/forgot", otpLimiter, forgotPassword);
+router.post("/password/reset", otpLimiter, resetPassword);
 router.post("/register", registerStudent);
 router.post("/login", login);
 router.post("/admin/login", adminLogin);

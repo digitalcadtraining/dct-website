@@ -37,6 +37,8 @@ function isAuthRoute(path) {
     path.startsWith("/auth/admin/login") ||
     path.startsWith("/auth/otp/send") ||
     path.startsWith("/auth/otp/verify") ||
+    path.startsWith("/auth/password/forgot") ||
+    path.startsWith("/auth/password/reset") ||
     path.startsWith("/auth/register") ||
     path.startsWith("/registration-payments");
 }
@@ -129,6 +131,8 @@ export function mediaUrl(filePath) {
 export const authApi = {
   sendOtp: (phone, purpose) => http("/auth/otp/send", { method: "POST", body: JSON.stringify({ phone, purpose }) }),
   verifyOtp: (phone, otp, purpose) => http("/auth/otp/verify", { method: "POST", body: JSON.stringify({ phone, otp, purpose }) }),
+  forgotPassword: (email_or_phone) => http("/auth/password/forgot", { method: "POST", body: JSON.stringify({ email_or_phone }) }),
+  resetPassword: (phone, otp, new_password) => http("/auth/password/reset", { method: "POST", body: JSON.stringify({ phone, otp, new_password }) }),
   register: (data) => http("/auth/register", { method: "POST", body: JSON.stringify(data) }),
   login: (email_or_phone, password) => http("/auth/login", { method: "POST", body: JSON.stringify({ email_or_phone, password }) }),
   adminLogin: (email, password) => http("/auth/admin/login", { method: "POST", role: "admin", body: JSON.stringify({ email, password }) }),
