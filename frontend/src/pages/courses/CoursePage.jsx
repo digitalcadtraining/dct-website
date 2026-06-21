@@ -16,16 +16,56 @@ const C = {
 };
 
 const DEFAULT_COMPANIES = [
-  "Tata Technologies", "Tata Motors", "Mahindra & Mahindra", "Maruti Suzuki", "Hyundai Motors",
-  "Toyota Kirloskar", "Honda Cars", "Mercedes-Benz R&D", "BMW Group India", "Volkswagen Group",
-  "Skoda Auto Volkswagen", "Renault Nissan", "Stellantis", "Ford India", "Ashok Leyland",
-  "Bajaj Auto", "TVS Motor", "Hero MotoCorp", "Royal Enfield", "Ather Energy",
-  "Ola Electric", "Magna", "Faurecia", "Forvia", "Plastic Omnium",
-  "Yanfeng", "Motherson", "Varroc", "Uno Minda", "Lumax",
-  "Bosch", "Continental", "ZF", "Valeo", "Lear Corporation",
-  "Adient", "Visteon", "Aptiv", "Denso", "Schaeffler",
-  "L&T Technology Services", "Tata Elxsi", "KPIT", "Capgemini Engineering", "Caresoft Global",
-  "Hinduja Tech", "Neilsoft", "EDAG", "Segula Technologies", "Quest Global"
+  "Tata Technologies",
+  "Tata Motors",
+  "Mahindra & Mahindra",
+  "Maruti Suzuki",
+  "Hyundai Motors",
+  "Toyota Kirloskar",
+  "Honda Cars",
+  "Mercedes-Benz R&D",
+  "BMW Group India",
+  "Volkswagen Group",
+  "Skoda Auto Volkswagen",
+  "Renault Nissan",
+  "Stellantis",
+  "Ford India",
+  "Ashok Leyland",
+  "Bajaj Auto",
+  "TVS Motor",
+  "Hero MotoCorp",
+  "Royal Enfield",
+  "Ather Energy",
+  "Ola Electric",
+  "Magna",
+  "Faurecia",
+  "Forvia",
+  "Plastic Omnium",
+  "Yanfeng",
+  "Motherson",
+  "Varroc",
+  "Uno Minda",
+  "Lumax",
+  "Bosch",
+  "Continental",
+  "ZF",
+  "Valeo",
+  "Lear Corporation",
+  "Adient",
+  "Visteon",
+  "Aptiv",
+  "Denso",
+  "Schaeffler",
+  "L&T Technology Services",
+  "Tata Elxsi",
+  "KPIT",
+  "Capgemini Engineering",
+  "Caresoft Global",
+  "Hinduja Tech",
+  "Neilsoft",
+  "EDAG",
+  "Segula Technologies",
+  "Quest Global",
 ];
 
 const PAGE_CSS = `
@@ -83,12 +123,15 @@ function formatINR(value) {
 function formatDate(value) {
   if (!value) return "New batch opening soon";
   try {
-    return new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    return new Date(value).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   } catch {
     return "New batch opening soon";
   }
 }
-
 
 function getYoutubeEmbedUrl(url = "") {
   const fallback = "https://www.youtube.com/embed/lrf4o-zlSKE";
@@ -122,7 +165,11 @@ function getNearestBatch(batches = []) {
   const allowedBatches = (batches || [])
     .filter((batch) => {
       if (!batch) return false;
-      if (batch.status && !visibleStatuses.has(String(batch.status).toUpperCase())) return false;
+      if (
+        batch.status &&
+        !visibleStatuses.has(String(batch.status).toUpperCase())
+      )
+        return false;
       if (!batch.start_date) return false;
 
       const startDate = new Date(batch.start_date);
@@ -130,20 +177,28 @@ function getNearestBatch(batches = []) {
 
       return startDate >= today;
     })
-    .sort(
-      (a, b) =>
-        new Date(b.start_date || 0) - new Date(a.start_date || 0)
-    );
+    .sort((a, b) => new Date(b.start_date || 0) - new Date(a.start_date || 0));
 
   return allowedBatches[0] || null;
 }
 
 function makeProjectPracticeSessions(projectLibrary = []) {
   const fallback = [
-    "Map Pocket Project", "Seat Recliner Cover Project", "Fuse Box Cover Project", "Front Bumper Project",
-    "Door Trim Project", "B-Pillar Upper Project", "IP Trim Project", "Console Trim Project", "Cup Holder Project", "Armrest Project"
+    "Map Pocket Project",
+    "Seat Recliner Cover Project",
+    "Fuse Box Cover Project",
+    "Front Bumper Project",
+    "Door Trim Project",
+    "B-Pillar Upper Project",
+    "IP Trim Project",
+    "Console Trim Project",
+    "Cup Holder Project",
+    "Armrest Project",
   ];
-  const topics = (projectLibrary.length ? projectLibrary : fallback).slice(0, 10);
+  const topics = (projectLibrary.length ? projectLibrary : fallback).slice(
+    0,
+    10,
+  );
   const sessionNos = [51, 54, 58, 61, 65, 68, 72, 75, 79, 85];
 
   return topics.map((topic, index) => ({
@@ -156,16 +211,27 @@ function makeProjectPracticeSessions(projectLibrary = []) {
 
 function SectionHead({ eyebrow, title, highlight, copy, center = false }) {
   return (
-    <div className={center ? "dct-course-center-head" : "dct-course-section-head"}>
+    <div
+      className={center ? "dct-course-center-head" : "dct-course-section-head"}
+    >
       {eyebrow && <span className="dct-course-label">{eyebrow}</span>}
-      <h2 className="dct-course-section-title">{title} {highlight && <span>{highlight}</span>}</h2>
+      <h2 className="dct-course-section-title">
+        {title} {highlight && <span>{highlight}</span>}
+      </h2>
       {copy && <p className="dct-course-section-copy">{copy}</p>}
     </div>
   );
 }
 
 function RichAnswer({ answer }) {
-  if (Array.isArray(answer)) return <ul>{answer.map((a) => <li key={a}>{a}</li>)}</ul>;
+  if (Array.isArray(answer))
+    return (
+      <ul>
+        {answer.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
+    );
   return <p>{answer}</p>;
 }
 
@@ -179,16 +245,23 @@ export default function CoursePage({ course }) {
 
   useEffect(() => {
     let mounted = true;
-    courseApi.list().then((res) => {
-      if (!mounted) return;
-      const found = (res.data || []).find((item) => item.slug === course.slug);
-      if (!found) return;
-      setLiveCourse(found);
-      return courseApi.getBatches(found.id).then((batchRes) => {
-        if (mounted) setLiveBatches(batchRes.data || []);
-      });
-    }).catch(() => {});
-    return () => { mounted = false; };
+    courseApi
+      .list()
+      .then((res) => {
+        if (!mounted) return;
+        const found = (res.data || []).find(
+          (item) => item.slug === course.slug,
+        );
+        if (!found) return;
+        setLiveCourse(found);
+        return courseApi.getBatches(found.id).then((batchRes) => {
+          if (mounted) setLiveBatches(batchRes.data || []);
+        });
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, [course.slug]);
 
   const projects = course.portfolioProjects || course.projects || [];
@@ -199,7 +272,12 @@ export default function CoursePage({ course }) {
     const firstFifty = sessions.slice(0, 50);
     for (let start = 0; start < firstFifty.length; start += 10) {
       const chunk = firstFifty.slice(start, start + 10);
-      if (chunk.length) ranges.push({ label: `Sessions ${chunk[0].no}–${chunk[chunk.length - 1].no}`, short: `${chunk[0].no}–${chunk[chunk.length - 1].no}`, items: chunk });
+      if (chunk.length)
+        ranges.push({
+          label: `Sessions ${chunk[0].no}–${chunk[chunk.length - 1].no}`,
+          short: `${chunk[0].no}–${chunk[chunk.length - 1].no}`,
+          items: chunk,
+        });
     }
 
     const projectPractice = makeProjectPracticeSessions(projectLibrary);
@@ -216,20 +294,49 @@ export default function CoursePage({ course }) {
   const placements = course.placements || [];
   const nearestBatch = getNearestBatch(liveBatches);
 
-  const currentPrice = Number(liveCourse?.offer_price || liveCourse?.price || course.price || 0);
-  const originalPrice = Number(liveCourse?.original_price || liveCourse?.slash_price || course.slashPrice || currentPrice);
-  const offerName = liveCourse?.offer_name || course.offerName || "Limited Batch Offer";
+  const currentPrice = Number(
+    nearestBatch?.offer_price ||
+      liveCourse?.offer_price ||
+      liveCourse?.price ||
+      course.price ||
+      0,
+  );
+
+  const originalPrice = Number(
+    nearestBatch?.original_price ||
+      liveCourse?.original_price ||
+      liveCourse?.slash_price ||
+      course.slashPrice ||
+      currentPrice,
+  );
+
+  const offerName =
+    nearestBatch?.offer_name ||
+    liveCourse?.offer_name ||
+    course.offerName ||
+    "Limited Batch Offer";
   const saved = Math.max(0, originalPrice - currentPrice);
-  const discount = originalPrice ? Math.round((saved / originalPrice) * 100) : 0;
-  const batchStartText = nearestBatch?.start_date ? formatDate(nearestBatch.start_date) : "New batch opening soon";
+  const discount = originalPrice
+    ? Math.round((saved / originalPrice) * 100)
+    : 0;
+  const batchStartText = nearestBatch?.start_date
+    ? formatDate(nearestBatch.start_date)
+    : "New batch opening soon";
   const displayBatchStartText = batchStartText;
 
-  const demoUrl = course.demoYoutubeUrl || course.youtubeDemoUrl || course.demoUrl || "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
+  const demoUrl =
+    course.demoYoutubeUrl ||
+    course.youtubeDemoUrl ||
+    course.demoUrl ||
+    "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
   const demoEmbedUrl = getYoutubeEmbedUrl(demoUrl);
   const companyList = placements.length >= 50 ? placements : DEFAULT_COMPANIES;
   const companyStart = companyPage * 10;
   const visibleCompanies = companyList.slice(companyStart, companyStart + 10);
-  const nextCompanyPage = () => setCompanyPage((page) => ((page + 1) * 10 >= companyList.length ? 0 : page + 1));
+  const nextCompanyPage = () =>
+    setCompanyPage((page) =>
+      (page + 1) * 10 >= companyList.length ? 0 : page + 1,
+    );
 
   const handleEnroll = () => navigate(`/auth/register?course=${course.slug}`);
 
@@ -239,17 +346,32 @@ export default function CoursePage({ course }) {
 
       <nav className="dct-course-nav">
         <div className="dct-course-shell dct-course-nav-inner">
-          <button className="dct-course-logo" onClick={() => navigate("/")} type="button">
+          <button
+            className="dct-course-logo"
+            onClick={() => navigate("/")}
+            type="button"
+          >
             <span className="dct-course-logo-mark">D</span>
-            <span className="dct-course-logo-text"><strong>DIGITAL</strong><span>CAD TRAINING</span></span>
+            <span className="dct-course-logo-text">
+              <strong>DIGITAL</strong>
+              <span>CAD TRAINING</span>
+            </span>
           </button>
           <div className="dct-course-nav-links">
-            <button onClick={() => navigate("/")} type="button">Home</button>
+            <button onClick={() => navigate("/")} type="button">
+              Home
+            </button>
             <a href="#roadmap">Roadmap</a>
             <a href="#projects">Projects</a>
             <a href="#demo">Watch Demo</a>
             <a href="#faq">FAQ</a>
-            <button onClick={handleEnroll} className="dct-course-nav-cta" type="button">Register Now</button>
+            <button
+              onClick={handleEnroll}
+              className="dct-course-nav-cta"
+              type="button"
+            >
+              Register Now
+            </button>
           </div>
         </div>
       </nav>
@@ -257,23 +379,48 @@ export default function CoursePage({ course }) {
       <section className="dct-course-hero">
         <div className="dct-course-shell dct-course-hero-inner">
           <div>
-            {course.badge && <div className="dct-course-kicker">{course.badge}</div>}
-            <span className="dct-course-eyebrow">{course.eyebrow || "Automotive Design Career Program"}</span>
+            {course.badge && (
+              <div className="dct-course-kicker">{course.badge}</div>
+            )}
+            <span className="dct-course-eyebrow">
+              {course.eyebrow || "Automotive Design Career Program"}
+            </span>
             <h1 className="dct-course-title">{course.name}</h1>
             <h2 className="dct-course-tagline">{course.tagline}</h2>
-            <p className="dct-course-desc">{course.heroCopy || "Practical automotive design training with live sessions, industry projects, portfolio guidance and placement-focused interview preparation."}</p>
+            <p className="dct-course-desc">
+              {course.heroCopy ||
+                "Practical automotive design training with live sessions, industry projects, portfolio guidance and placement-focused interview preparation."}
+            </p>
             <div className="dct-course-actions">
-              <button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register Now</button>
-              <a className="dct-course-btn secondary" href="#roadmap">View Roadmap</a>
+              <button
+                type="button"
+                onClick={handleEnroll}
+                className="dct-course-btn primary"
+              >
+                Register Now
+              </button>
+              <a className="dct-course-btn secondary" href="#roadmap">
+                View Roadmap
+              </a>
             </div>
             <div className="dct-course-pills">
               <span className="dct-course-pill">⭐ {course.rating} rating</span>
               <span className="dct-course-pill">{course.reviews} reviews</span>
-              <span className="dct-course-pill">{course.enrolled} learners</span>
+              <span className="dct-course-pill">
+                {course.enrolled} learners
+              </span>
             </div>
             <div className="dct-course-trust-chips">
-              {(course.trustHighlights || ["PAN India MNC/OEM hiring exposure", "Placement-focused mentoring", "Industry project portfolio"]).map((item) => (
-                <span className="dct-course-trust-chip" key={item}>✓ {item}</span>
+              {(
+                course.trustHighlights || [
+                  "PAN India MNC/OEM hiring exposure",
+                  "Placement-focused mentoring",
+                  "Industry project portfolio",
+                ]
+              ).map((item) => (
+                <span className="dct-course-trust-chip" key={item}>
+                  ✓ {item}
+                </span>
               ))}
             </div>
           </div>
@@ -281,21 +428,57 @@ export default function CoursePage({ course }) {
           <aside className="dct-course-offer-card">
             <div className="dct-course-offer-top">
               <span className="dct-course-offer-label">{offerName}</span>
-              {discount > 0 && <span className="dct-course-save">Save {discount}%</span>}
+              {discount > 0 && (
+                <span className="dct-course-save">Save {discount}%</span>
+              )}
             </div>
             <div className="dct-course-price-row">
-              <span className="dct-course-price">₹{formatINR(currentPrice)}</span>
-              {originalPrice > currentPrice && <span className="dct-course-slash">₹{formatINR(originalPrice)}</span>}
+              <span className="dct-course-price">
+                ₹{formatINR(currentPrice)}
+              </span>
+              {originalPrice > currentPrice && (
+                <span className="dct-course-slash">
+                  ₹{formatINR(originalPrice)}
+                </span>
+              )}
             </div>
-            {saved > 0 && <p className="dct-course-saving">You save ₹{formatINR(saved)} on current admission.</p>}
+            {saved > 0 && (
+              <p className="dct-course-saving">
+                You save ₹{formatINR(saved)} on current admission.
+              </p>
+            )}
             <div className="dct-course-offer-actions">
-              <button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register / Enroll Now</button>
+              <button
+                type="button"
+                onClick={handleEnroll}
+                className="dct-course-btn primary"
+              >
+                Register / Enroll Now
+              </button>
             </div>
             <div className="dct-course-info-panel">
-              <div className="dct-course-info-item"><strong>Learn in both software</strong><span>CATIA V5 + UG NX workflow included in the training.</span></div>
-              <div className="dct-course-info-item"><strong>Complete practical syllabus</strong><span>42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.</span></div>
-              <div className="dct-course-info-item"><strong>Live + lifetime recording</strong><span>100% live Zoom sessions with recording access for lifetime revision.</span></div>
-              <div className="dct-course-info-item"><strong>New Batch Starts</strong><span>{displayBatchStartText}</span></div>
+              <div className="dct-course-info-item">
+                <strong>Learn in both software</strong>
+                <span>CATIA V5 + UG NX workflow included in the training.</span>
+              </div>
+              <div className="dct-course-info-item">
+                <strong>Complete practical syllabus</strong>
+                <span>
+                  42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5
+                  projects in NX.
+                </span>
+              </div>
+              <div className="dct-course-info-item">
+                <strong>Live + lifetime recording</strong>
+                <span>
+                  100% live Zoom sessions with recording access for lifetime
+                  revision.
+                </span>
+              </div>
+              <div className="dct-course-info-item">
+                <strong>New Batch Starts</strong>
+                <span>{displayBatchStartText}</span>
+              </div>
             </div>
           </aside>
         </div>
@@ -303,10 +486,22 @@ export default function CoursePage({ course }) {
 
       <div className="dct-course-stats-strip">
         <div className="dct-course-shell dct-course-stats-grid">
-          <div className="dct-course-stat"><strong>{course.duration}</strong><span>Job-focused duration</span></div>
-          <div className="dct-course-stat"><strong>{course.sessions}</strong><span>Live + recorded sessions</span></div>
-          <div className="dct-course-stat"><strong>{course.projectCount || projects.length}</strong><span>Industry portfolio projects</span></div>
-          <div className="dct-course-stat"><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance range</span></div>
+          <div className="dct-course-stat">
+            <strong>{course.duration}</strong>
+            <span>Job-focused duration</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.sessions}</strong>
+            <span>Live + recorded sessions</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.projectCount || projects.length}</strong>
+            <span>Industry portfolio projects</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.packageRange || "3–16 LPA"}</strong>
+            <span>Package guidance range</span>
+          </div>
         </div>
       </div>
 
@@ -314,41 +509,95 @@ export default function CoursePage({ course }) {
         <div className="dct-course-shell">
           <div className="dct-course-trust-grid">
             <div className="dct-course-trust-panel">
-              <span className="dct-course-trust-eyebrow">Trust before registration</span>
+              <span className="dct-course-trust-eyebrow">
+                Trust before registration
+              </span>
               <h2>Built for students who want real hiring confidence.</h2>
-              <p>{course.trustCopy || "Course outcomes, projects and interview preparation are aligned to practical automotive company expectations."}</p>
+              <p>
+                {course.trustCopy ||
+                  "Course outcomes, projects and interview preparation are aligned to practical automotive company expectations."}
+              </p>
               <div className="dct-course-trust-mini-stats">
-                <div><strong>{course.trustYears || "7+"}</strong><span>Years trust connection</span></div>
-                <div><strong>PAN India</strong><span>MNC / OEM / Tier-1 network</span></div>
-                <div><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance</span></div>
+                <div>
+                  <strong>{course.trustYears || "7+"}</strong>
+                  <span>Years trust connection</span>
+                </div>
+                <div>
+                  <strong>PAN India</strong>
+                  <span>MNC / OEM / Tier-1 network</span>
+                </div>
+                <div>
+                  <strong>{course.packageRange || "3–16 LPA"}</strong>
+                  <span>Package guidance</span>
+                </div>
               </div>
             </div>
             <div className="dct-course-proof-list">
-              {(course.trustProofs || [
-                { title: "MNC, OEM & Tier-1 career direction", text: "Course outcomes, projects and interview preparation are aligned to automotive company expectations." },
-                { title: "Project-first learning", text: "Students build portfolio proof instead of only watching tool commands." },
-                { title: "Placement-focused support", text: "Resume, mock interview, referral guidance and job sharing are connected with the course journey." },
-              ]).map((item) => (
-                <div className="dct-course-proof-card" key={item.title}><strong>{item.title}</strong><p>{item.text}</p></div>
+              {(
+                course.trustProofs || [
+                  {
+                    title: "MNC, OEM & Tier-1 career direction",
+                    text: "Course outcomes, projects and interview preparation are aligned to automotive company expectations.",
+                  },
+                  {
+                    title: "Project-first learning",
+                    text: "Students build portfolio proof instead of only watching tool commands.",
+                  },
+                  {
+                    title: "Placement-focused support",
+                    text: "Resume, mock interview, referral guidance and job sharing are connected with the course journey.",
+                  },
+                ]
+              ).map((item) => (
+                <div className="dct-course-proof-card" key={item.title}>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </div>
               ))}
             </div>
           </div>
           <div className="dct-course-package-band">
             <div>
               <h3>Register after understanding the career path clearly.</h3>
-              <p>{course.packageNote || "We show the course outcome, package guidance, company target segment and project roadmap before registration so students know what they are joining."}</p>
+              <p>
+                {course.packageNote ||
+                  "We show the course outcome, package guidance, company target segment and project roadmap before registration so students know what they are joining."}
+              </p>
             </div>
-            <button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register Now</button>
+            <button
+              type="button"
+              onClick={handleEnroll}
+              className="dct-course-btn primary"
+            >
+              Register Now
+            </button>
           </div>
         </div>
       </section>
 
       <section className="dct-course-section">
         <div className="dct-course-shell">
-          <SectionHead eyebrow="Who can join" title="Built for engineers who want a" highlight="design career" copy="The course is structured for freshers, production/quality engineers, CAD users and mechanical professionals who want practical automotive project exposure." />
+          <SectionHead
+            eyebrow="Who can join"
+            title="Built for engineers who want a"
+            highlight="design career"
+            copy="The course is structured for freshers, production/quality engineers, CAD users and mechanical professionals who want practical automotive project exposure."
+          />
           <div className="dct-course-join-grid">
-            {(course.whoCanJoin || ["Mechanical freshers", "Diploma engineers", "Production/Quality switchers", "CAD beginners", "Career gap students"]).map((item, i) => (
-              <div className="dct-course-card" key={item}><div className="dct-course-card-icon">{i + 1}</div><h3>{item}</h3><p>Learn step-by-step with real automotive design workflow.</p></div>
+            {(
+              course.whoCanJoin || [
+                "Mechanical freshers",
+                "Diploma engineers",
+                "Production/Quality switchers",
+                "CAD beginners",
+                "Career gap students",
+              ]
+            ).map((item, i) => (
+              <div className="dct-course-card" key={item}>
+                <div className="dct-course-card-icon">{i + 1}</div>
+                <h3>{item}</h3>
+                <p>Learn step-by-step with real automotive design workflow.</p>
+              </div>
             ))}
           </div>
         </div>
@@ -356,10 +605,21 @@ export default function CoursePage({ course }) {
 
       <section className="dct-course-section alt">
         <div className="dct-course-shell">
-          <SectionHead eyebrow="Learning outcome" title="What you will be able to" highlight="do confidently" />
+          <SectionHead
+            eyebrow="Learning outcome"
+            title="What you will be able to"
+            highlight="do confidently"
+          />
           <div className="dct-course-outcome-grid">
             {(course.outcomes || []).map((outcome) => (
-              <div className="dct-course-card" key={outcome}><div className="dct-course-card-icon">✓</div><h3>{outcome}</h3><p>{course.outcomeSub || "Every topic is connected with practical CAD and automotive interview expectations."}</p></div>
+              <div className="dct-course-card" key={outcome}>
+                <div className="dct-course-card-icon">✓</div>
+                <h3>{outcome}</h3>
+                <p>
+                  {course.outcomeSub ||
+                    "Every topic is connected with practical CAD and automotive interview expectations."}
+                </p>
+              </div>
             ))}
           </div>
         </div>
@@ -368,20 +628,51 @@ export default function CoursePage({ course }) {
       {sessionRanges.length > 0 && (
         <section id="roadmap" className="dct-course-section">
           <div className="dct-course-shell">
-            <SectionHead center eyebrow="Complete syllabus" title={`${sessions.length || 85}-session training`} highlight="roadmap" copy="Sessions 51–85 now focus on selected complete project practice topics." />
-            {course.syllabusPdf && <div className="dct-course-syllabus-action"><a className="dct-course-download-btn" href={asset(course.syllabusPdf)} download>Download Complete Detailed Syllabus PDF</a></div>}
+            <SectionHead
+              center
+              eyebrow="Complete syllabus"
+              title={`${sessions.length || 85}-session training`}
+              highlight="roadmap"
+              copy="Sessions 51–85 now focus on selected complete project practice topics."
+            />
+            {course.syllabusPdf && (
+              <div className="dct-course-syllabus-action">
+                <a
+                  className="dct-course-download-btn"
+                  href={asset(course.syllabusPdf)}
+                  download
+                >
+                  Download Complete Detailed Syllabus PDF
+                </a>
+              </div>
+            )}
             <div className="dct-course-roadmap">
               <div className="dct-course-range-tabs">
                 {sessionRanges.map((range, i) => (
-                  <button key={range.short} className={`dct-course-range-tab ${activeRange === i ? "active" : ""}`} onClick={() => setActiveRange(i)} type="button">{range.short}</button>
+                  <button
+                    key={range.short}
+                    className={`dct-course-range-tab ${activeRange === i ? "active" : ""}`}
+                    onClick={() => setActiveRange(i)}
+                    type="button"
+                  >
+                    {range.short}
+                  </button>
                 ))}
               </div>
               <div className="dct-course-session-list">
                 {sessionRanges[activeRange]?.items.map((session) => (
-                  <div className="dct-course-session-row" key={`${session.no}-${session.title}`}>
+                  <div
+                    className="dct-course-session-row"
+                    key={`${session.no}-${session.title}`}
+                  >
                     <div className="dct-course-session-no">{session.no}</div>
-                    <div><h4>{session.title}</h4><p>{session.trainer || "Industry Expert"}</p></div>
-                    <span className="dct-course-session-chip">{session.category}</span>
+                    <div>
+                      <h4>{session.title}</h4>
+                      <p>{session.trainer || "Industry Expert"}</p>
+                    </div>
+                    <span className="dct-course-session-chip">
+                      {session.category}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -393,25 +684,58 @@ export default function CoursePage({ course }) {
       {projects.length > 0 && (
         <section id="projects" className="dct-course-section dark">
           <div className="dct-course-shell">
-            <SectionHead eyebrow="Portfolio projects" title="Project proof students can" highlight="show in interviews" copy="Real project practice helps students explain design thinking, CAD steps and project logic clearly." />
+            <SectionHead
+              eyebrow="Portfolio projects"
+              title="Project proof students can"
+              highlight="show in interviews"
+              copy="Real project practice helps students explain design thinking, CAD steps and project logic clearly."
+            />
             <div className="dct-course-project-grid">
               {projects.map((project) => (
-                <article className="dct-course-project-card" key={project.title}>
+                <article
+                  className="dct-course-project-card"
+                  key={project.title}
+                >
                   <div className="dct-course-project-visual">
                     <div className="dct-course-project-dual">
-                      {project.frontImage && <div><span className="dct-course-project-image-label">CAD View</span><img src={asset(project.frontImage)} alt={`${project.title} CAD`} /></div>}
-                      {project.backImage && <div><span className="dct-course-project-image-label">Vehicle Reference</span><img src={asset(project.backImage)} alt={`${project.title} vehicle reference`} /></div>}
+                      {project.frontImage && (
+                        <div>
+                          <span className="dct-course-project-image-label">
+                            CAD View
+                          </span>
+                          <img
+                            src={asset(project.frontImage)}
+                            alt={`${project.title} CAD`}
+                          />
+                        </div>
+                      )}
+                      {project.backImage && (
+                        <div>
+                          <span className="dct-course-project-image-label">
+                            Vehicle Reference
+                          </span>
+                          <img
+                            src={asset(project.backImage)}
+                            alt={`${project.title} vehicle reference`}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="dct-course-project-body">
                     <h3>{project.title}</h3>
                     <p>{project.desc || project.short}</p>
-                    <div className="dct-course-project-meta"><span>{project.area || project.tag}</span><span>Project {project.no}</span></div>
+                    <div className="dct-course-project-meta">
+                      <span>{project.area || project.tag}</span>
+                      <span>Project {project.no}</span>
+                    </div>
                   </div>
                 </article>
               ))}
             </div>
-            <p className="dct-course-project-slider-note">Swipe / scroll to view all projects →</p>
+            <p className="dct-course-project-slider-note">
+              Swipe / scroll to view all projects →
+            </p>
           </div>
         </section>
       )}
@@ -420,8 +744,13 @@ export default function CoursePage({ course }) {
         <div className="dct-course-shell">
           <div className="dct-course-demo-head">
             <span className="dct-course-label">Watch demo</span>
-            <h2>Watch project demo <span>before registration</span></h2>
-            <p>Play the demo directly on this page and understand the project explanation style before joining.</p>
+            <h2>
+              Watch project demo <span>before registration</span>
+            </h2>
+            <p>
+              Play the demo directly on this page and understand the project
+              explanation style before joining.
+            </p>
           </div>
 
           <div className="dct-course-video-frame">
@@ -434,22 +763,46 @@ export default function CoursePage({ course }) {
           </div>
 
           <div className="dct-course-demo-open">
-            <a href={demoUrl} target="_blank" rel="noreferrer">Open on YouTube</a>
+            <a href={demoUrl} target="_blank" rel="noreferrer">
+              Open on YouTube
+            </a>
           </div>
         </div>
       </section>
 
       <section className="dct-course-section alt">
         <div className="dct-course-shell">
-          <SectionHead center eyebrow="Placement direction" title="Companies students prepare" highlight="for" copy="Known MNC, OEM, Tier-1 and engineering service companies are shown 10 at a time for easier mobile viewing." />
+          <SectionHead
+            center
+            eyebrow="Placement direction"
+            title="Companies students prepare"
+            highlight="for"
+            copy="Known MNC, OEM, Tier-1 and engineering service companies are shown 10 at a time for easier mobile viewing."
+          />
           <div className="dct-course-company-toolbar">
-            <span>Showing {companyStart + 1}–{Math.min(companyStart + 10, companyList.length)} of {companyList.length} companies</span>
-            <button className="dct-course-company-next" type="button" onClick={nextCompanyPage}>
-              View {companyStart + 10 >= companyList.length ? "1–10" : `${companyStart + 11}–${Math.min(companyStart + 20, companyList.length)}`} Companies
+            <span>
+              Showing {companyStart + 1}–
+              {Math.min(companyStart + 10, companyList.length)} of{" "}
+              {companyList.length} companies
+            </span>
+            <button
+              className="dct-course-company-next"
+              type="button"
+              onClick={nextCompanyPage}
+            >
+              View{" "}
+              {companyStart + 10 >= companyList.length
+                ? "1–10"
+                : `${companyStart + 11}–${Math.min(companyStart + 20, companyList.length)}`}{" "}
+              Companies
             </button>
           </div>
           <div className="dct-course-company-grid">
-            {visibleCompanies.map((company) => <div className="dct-course-company" key={company}>{company}</div>)}
+            {visibleCompanies.map((company) => (
+              <div className="dct-course-company" key={company}>
+                {company}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -457,12 +810,31 @@ export default function CoursePage({ course }) {
       {faqs.length > 0 && (
         <section id="faq" className="dct-course-section">
           <div className="dct-course-shell">
-            <SectionHead center eyebrow="FAQs" title="Common questions before" highlight="registration" />
+            <SectionHead
+              center
+              eyebrow="FAQs"
+              title="Common questions before"
+              highlight="registration"
+            />
             <div className="dct-course-faq-list">
               {faqs.map((faq, index) => (
-                <div className={`dct-course-faq-item ${openFaq === index ? "open" : ""}`} key={faq.q}>
-                  <button className="dct-course-faq-btn" onClick={() => setOpenFaq(openFaq === index ? -1 : index)} type="button"><span>{faq.q}</span><span className="dct-course-faq-icon">+</span></button>
-                  <div className="dct-course-faq-content"><div className="dct-course-faq-answer"><RichAnswer answer={faq.a} /></div></div>
+                <div
+                  className={`dct-course-faq-item ${openFaq === index ? "open" : ""}`}
+                  key={faq.q}
+                >
+                  <button
+                    className="dct-course-faq-btn"
+                    onClick={() => setOpenFaq(openFaq === index ? -1 : index)}
+                    type="button"
+                  >
+                    <span>{faq.q}</span>
+                    <span className="dct-course-faq-icon">+</span>
+                  </button>
+                  <div className="dct-course-faq-content">
+                    <div className="dct-course-faq-answer">
+                      <RichAnswer answer={faq.a} />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -470,15 +842,19 @@ export default function CoursePage({ course }) {
         </section>
       )}
 
-<div className="dct-course-bottom-cta">
-  <div>
-    <strong>{course.name}</strong>
-    <span>New Batch Starts: {displayBatchStartText}</span>
-  </div>
-  <button className="dct-course-btn primary" type="button" onClick={handleEnroll}>
-    Register
-  </button>
-</div>
+      <div className="dct-course-bottom-cta">
+        <div>
+          <strong>{course.name}</strong>
+          <span>New Batch Starts: {displayBatchStartText}</span>
+        </div>
+        <button
+          className="dct-course-btn primary"
+          type="button"
+          onClick={handleEnroll}
+        >
+          Register
+        </button>
+      </div>
     </div>
   );
 }
