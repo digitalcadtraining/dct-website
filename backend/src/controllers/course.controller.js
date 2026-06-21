@@ -30,14 +30,23 @@ function publicBatchWhere(courseId) {
 
 async function getPricingByBatchIds(batchIds = []) {
   if (!batchIds.length) return new Map();
+
   try {
     const rows = await prisma.$queryRaw`
-      SELECT id, offer_name, original_price, offer_price
+      SELECT
+        id,
+        offer_name,
+        original_price,
+        offer_price,
+        offer_start_at,
+        offer_end_at
       FROM batches
       WHERE id = ANY(${batchIds})
     `;
+
     return new Map(rows.map((r) => [r.id, r]));
   } catch {
+    // Safe fallback if offer migration is not yet applied.
     return new Map();
   }
 }
@@ -77,8 +86,14 @@ const getCourse = async (req, res, next) => {
             { created_at: "desc" },
           ],
           select: {
-            id: true, name: true, start_date: true, end_date: true, created_at: true,
-            status: true, max_students: true,
+            id: true,
+            name: true,
+            start_date: true,
+            end_date: true,
+            created_at: true,
+            status: true,
+            max_students: true,
+            time_slots: true,
             _count: { select: { enrollments: true } },
           },
         },
@@ -88,13 +103,20 @@ const getCourse = async (req, res, next) => {
     if (!course || !course.is_active) return error(res, 404, "Course not found.");
 
     const pricingMap = await getPricingByBatchIds(course.batches.map((b) => b.id));
-    const batchesWithSeats = course.batches.map((b) => ({
-      ...b,
-      ...(pricingMap.get(b.id) || {}),
-      enrolled:        b._count.enrollments,
-      available_seats: b.max_students - b._count.enrollments,
-      is_full:         b._count.enrollments >= b.max_students,
-    }));
+    const batchesWithSeats = course.batches.map((b) => {
+      const pricing = pricingMap.get(b.id) || {};
+      return {
+        ...b,
+        offer_name: pricing.offer_name || null,
+        original_price: pricing.original_price || null,
+        offer_price: pricing.offer_price || null,
+        offer_start_at: pricing.offer_start_at || null,
+        offer_end_at: pricing.offer_end_at || null,
+        enrolled:        b._count.enrollments,
+        available_seats: b.max_students - b._count.enrollments,
+        is_full:         b._count.enrollments >= b.max_students,
+      };
+    });
 
     return success(res, 200, "Course details.", { ...course, batches: batchesWithSeats });
   } catch (err) { next(err); }
@@ -111,27 +133,44 @@ const getCourseBatches = async (req, res, next) => {
         { created_at: "desc" },
       ],
       select: {
-        id: true, name: true, start_date: true, end_date: true, created_at: true,
-        status: true, max_students: true,
+        id: true,
+        name: true,
+        start_date: true,
+        end_date: true,
+        created_at: true,
+        status: true,
+        max_students: true,
+        time_slots: true,
         tutor: { select: { name: true } },
         _count: { select: { enrollments: true } },
       },
     });
 
     const pricingMap = await getPricingByBatchIds(batches.map((b) => b.id));
-    const result = batches.map((b) => ({
-      id:              b.id,
-      name:            b.name,
-      start_date:      b.start_date,
-      end_date:        b.end_date,
-      created_at:      b.created_at,
-      status:          b.status,
-      tutor_name:      b.tutor?.name || "Industry Expert",
-      enrolled:        b._count.enrollments,
-      available_seats: b.max_students - b._count.enrollments,
-      is_full:         b._count.enrollments >= b.max_students,
-      ...(pricingMap.get(b.id) || {}),
-    }));
+
+    const result = batches.map((b) => {
+      const pricing = pricingMap.get(b.id) || {};
+
+      return {
+        id:              b.id,
+        name:            b.name,
+        start_date:      b.start_date,
+        end_date:        b.end_date,
+        created_at:      b.created_at,
+        status:          b.status,
+        tutor_name:      b.tutor?.name || "Industry Expert",
+        time_slots:      b.time_slots || [],
+        enrolled:        b._count.enrollments,
+        available_seats: b.max_students - b._count.enrollments,
+        is_full:         b._count.enrollments >= b.max_students,
+
+        offer_name:      pricing.offer_name || null,
+        original_price:  pricing.original_price || null,
+        offer_price:     pricing.offer_price || null,
+        offer_start_at:  pricing.offer_start_at || null,
+        offer_end_at:    pricing.offer_end_at || null,
+      };
+    });
 
     return success(res, 200, "Batches fetched.", result);
   } catch (err) { next(err); }
