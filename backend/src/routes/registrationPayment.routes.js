@@ -15,8 +15,12 @@ const paymentLimiter = rateLimit({
 });
 
 router.post("/start", paymentLimiter, startRegistrationPayment);
-router.post("/verify", paymentLimiter, verifyRegistrationPayment);
-router.get("/verify", paymentLimiter, verifyRegistrationPayment);
+
+// Do not rate-limit verify callback.
+// Instamojo/browser may hit this after successful payment.
+router.post("/verify", verifyRegistrationPayment);
+router.get("/verify", verifyRegistrationPayment);
+
 router.post("/instamojo/webhook", instamojoWebhook);
 
 module.exports = router;
