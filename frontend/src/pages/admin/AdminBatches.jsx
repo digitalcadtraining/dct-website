@@ -20,10 +20,42 @@ function rupee(value) {
 
 function toLocalInput(value) {
   if (!value) return "";
+
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
+
+  // Always display saved offer time as India business time.
+  // Example: saved UTC 2026-06-22T16:40:00Z => input shows 2026-06-22T22:10.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
+
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+function indiaLocalToISO(value) {
+  if (!value) return null;
+
+  const [datePart, timePart] = String(value).split("T");
+  if (!datePart || !timePart) return null;
+
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  if (![year, month, day, hour, minute].every(Number.isFinite)) return null;
+
+  // Convert India local datetime to UTC ISO before sending to backend.
+  // IST is UTC+05:30, so subtract 5h 30m.
+  const utcMs = Date.UTC(year, month - 1, day, hour - 5, minute - 30, 0, 0);
+  return new Date(utcMs).toISOString();
 }
 
 function offerLabel(batch) {
@@ -89,8 +121,8 @@ export default function AdminBatches() {
         offer_name: editing.offer_name,
         original_price: editing.original_price,
         offer_price: editing.offer_price,
-        offer_start_at: editing.offer_start_at || null,
-        offer_end_at: editing.offer_end_at || null,
+        offer_start_at: indiaLocalToISO(editing.offer_start_at),
+        offer_end_at: indiaLocalToISO(editing.offer_end_at),
       }, "admin");
       const updated = res.data || {};
       setBatches((items) => items.map((b) => b.id === editing.id ? { ...b, ...updated } : b));
@@ -238,12 +270,12 @@ export default function AdminBatches() {
                   <input value={editing.offer_name} onChange={(e) => setEditing({ ...editing, offer_name:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="July Reset Offer" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Original Price / Strike Price</label>
+                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Actual Price / Strike Price</label>
                   <input type="number" value={editing.original_price} onChange={(e) => setEditing({ ...editing, original_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="24999" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Offer Price</label>
-                  <input type="number" value={editing.offer_price} onChange={(e) => setEditing({ ...editing, offer_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="20999" />
+                  <label className="text-xs font-bold uppercase tracking-wider" style={{ color:C.gray }}>Timed Offer Price</label>
+                  <input type="number" value={editing.offer_price} onChange={(e) => setEditing({ ...editing, offer_price:e.target.value })} className="w-full mt-1 px-4 py-3 rounded-xl border border-gray-200 outline-none" placeholder="16999" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -256,7 +288,7 @@ export default function AdminBatches() {
                   </div>
                 </div>
                 <p className="text-[11px] font-semibold" style={{ color:C.gray }}>
-                  If start date is in future, course page shows “offer will start in…”. If live, it shows “offer ends in…” with a classy countdown bar.
+                  Time is saved exactly as India time. If start date is in future, course page shows “offer will start in…”. If live, it shows “offer ends in…”. Actual price remains strike price.
                 </p>
               </div>
 

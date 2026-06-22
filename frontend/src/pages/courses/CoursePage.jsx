@@ -619,20 +619,14 @@ export default function CoursePage({ course }) {
             </div>
             <div className="dct-course-info-panel">
               <div className="dct-course-info-item">
-                <strong>Learn in both software</strong>
-                <span>CATIA V5 + UG NX workflow included in the training.</span>
-              </div>
-              <div className="dct-course-info-item">
-                <strong>Complete practical syllabus</strong>
-                <span>
-                  42 syllabus topics in CATIA V5 + 10 projects in CATIA + 5
-                  projects in NX.
-                </span>
+                <strong>Learn in both CATIA V5 + UGNX software</strong>
+                <span>45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5
+                  projects in NX.</span>
               </div>
               <div className="dct-course-info-item">
                 <strong>Live + lifetime recording</strong>
                 <span>
-                  100% live Zoom sessions with recording access for lifetime
+                  100% live Zoom sessions alternative days + recording access for lifetime
                   revision.
                 </span>
               </div>
