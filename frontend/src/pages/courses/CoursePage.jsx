@@ -90,6 +90,23 @@ const PAGE_CSS = `
 .dct-course-pills,.dct-course-trust-chips{display:flex;flex-wrap:wrap;gap:10px}.dct-course-trust-chips{margin-top:24px}.dct-course-pill,.dct-course-trust-chip{min-height:40px;padding:0 16px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.93);font-size:13px;font-weight:900}
 .dct-course-offer-card{width:100%;max-width:430px;justify-self:end;background:#fff;color:${C.dark};border-radius:28px;padding:clamp(22px,3vw,34px);box-shadow:0 30px 70px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35)}
 .dct-course-offer-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}.dct-course-offer-label{color:${C.blueDark};font-size:13px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.dct-course-save{padding:8px 12px;border-radius:999px;background:#DCFCE7;color:#15803D;font-size:13px;font-weight:900}.dct-course-price-row{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}.dct-course-price{font-size:clamp(38px,4vw,54px);line-height:1;font-weight:900;letter-spacing:-.055em}.dct-course-slash{color:${C.muted};text-decoration:line-through;font-size:18px;font-weight:800}.dct-course-saving{color:${C.muted};font-weight:700;margin-bottom:24px}.dct-course-offer-actions{display:grid;gap:12px;margin-bottom:22px}.dct-course-offer-actions .dct-course-btn{width:100%;min-height:54px;color:${C.blueDark};border-color:${C.border};background:${C.lightBg}}.dct-course-offer-actions .dct-course-btn.primary{color:#fff;background:linear-gradient(135deg,${C.blueDark},${C.blue2})}
+
+.dct-course-fomo{margin:14px 0 16px;border-radius:18px;padding:13px 14px;border:1px solid rgba(249,115,22,.22);background:linear-gradient(135deg,#FFF7ED,#FFFBEB);box-shadow:0 14px 32px rgba(249,115,22,.10)}
+.dct-course-fomo.scheduled{border-color:rgba(3,126,196,.22);background:linear-gradient(135deg,#EFF8FF,#F8FBFF);box-shadow:0 14px 32px rgba(3,126,196,.10)}
+.dct-course-fomo-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.dct-course-fomo-kicker{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#9A3412}
+.dct-course-fomo.scheduled .dct-course-fomo-kicker{color:${C.blueDark}}
+.dct-course-fomo-time{font-size:13px;font-weight:900;color:${C.dark};white-space:nowrap}
+.dct-course-fomo-copy{margin:0;color:${C.text};font-size:12px;line-height:1.45;font-weight:800}
+.dct-course-fomo-track{height:7px;border-radius:999px;overflow:hidden;background:rgba(154,52,18,.13);margin-top:10px}
+.dct-course-fomo-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#EA580C,#FACC15);transition:width .35s ease}
+.dct-course-fomo.scheduled .dct-course-fomo-fill{background:linear-gradient(90deg,${C.blueDark},${C.blue2})}
+.dct-course-emi{margin:4px 0 18px;border:1px solid ${C.border};border-radius:16px;background:#F8FBFE;overflow:hidden}
+.dct-course-emi-btn{width:100%;min-height:42px;padding:0 14px;border:0;background:transparent;display:flex;align-items:center;justify-content:space-between;gap:12px;color:${C.blueDark};font-family:inherit;font-size:13px;font-weight:900;cursor:pointer}
+.dct-course-emi-btn span:last-child{font-size:16px;line-height:1}
+.dct-course-emi-panel{border-top:1px solid ${C.border};padding:12px 14px;display:grid;gap:9px}
+.dct-course-emi-row{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;font-weight:800;color:${C.text}}
+.dct-course-emi-row strong{color:${C.dark};font-size:13px}.dct-course-emi-note{margin:2px 0 0;color:${C.muted};font-size:11px;line-height:1.45;font-weight:700}
 .dct-course-info-panel{display:grid;gap:12px;margin-bottom:20px}.dct-course-info-item{padding:14px 16px;border-radius:16px;background:${C.lightBg};border:1px solid ${C.border}}.dct-course-info-item strong{display:block;color:${C.blueDark};font-size:14px;font-weight:900;margin-bottom:5px}.dct-course-info-item span{display:block;color:${C.text};font-size:14px;line-height:1.5;font-weight:700}
 .dct-course-checks{list-style:none;margin:0;padding:0;display:grid;gap:12px;font-weight:800;color:${C.dark}}
 .dct-course-stats-strip{background:${C.lightBg};border-bottom:1px solid ${C.border}}.dct-course-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:24px 0}.dct-course-stat{min-height:92px;padding:20px 22px;border-radius:18px;background:#fff;border:1px solid ${C.border};box-shadow:0 10px 28px rgba(2,73,129,.06)}.dct-course-stat strong{display:block;color:${C.blueDark};font-size:30px;line-height:1;font-weight:900;letter-spacing:-.04em;margin-bottom:8px}.dct-course-stat span{color:${C.text};font-size:14px;font-weight:800}
@@ -131,6 +148,90 @@ function formatDate(value) {
   } catch {
     return "New batch opening soon";
   }
+}
+
+
+function formatShortDate(value) {
+  if (!value) return "TBD";
+  return new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function addDays(value, days) {
+  if (!value) return null;
+  const d = new Date(value);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
+function getOfferState(batch, now = new Date()) {
+  if (!batch?.offer_start_at || !batch?.offer_end_at) {
+    return { visible: false, phase: "none" };
+  }
+
+  const start = new Date(batch.offer_start_at);
+  const end = new Date(batch.offer_end_at);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return { visible: false, phase: "none" };
+  }
+
+  if (now < start) {
+    return {
+      visible: true,
+      phase: "scheduled",
+      title: `${batch.offer_name || "Offer"} starts in`,
+      time: formatCountdown(start.getTime() - now.getTime()),
+      copy: "Special price is scheduled. Register quickly when the timer starts.",
+      progress: 0,
+    };
+  }
+
+  if (now <= end) {
+    const total = end.getTime() - start.getTime();
+    const remaining = end.getTime() - now.getTime();
+    return {
+      visible: true,
+      phase: "live",
+      title: `${batch.offer_name || "Offer"} ends in`,
+      time: formatCountdown(remaining),
+      copy: "FOMO deal is live now. Lock your seat before this price closes.",
+      progress: total ? Math.min(100, Math.max(0, ((total - remaining) / total) * 100)) : 100,
+    };
+  }
+
+  return { visible: false, phase: "expired" };
+}
+
+function getEmiPlan(batchStartDate, currentPrice) {
+  const registrationFee = 999;
+  const remaining = Math.max(0, Number(currentPrice || 0) - registrationFee);
+  const firstEmi = Math.ceil(remaining / 2);
+  const secondEmi = Math.max(0, remaining - firstEmi);
+  const firstDate = addDays(batchStartDate, 2);
+  const secondDate = firstDate ? addDays(firstDate, 31) : null;
+
+  return {
+    registrationFee,
+    firstEmi,
+    secondEmi,
+    firstDate,
+    secondDate,
+  };
 }
 
 function getYoutubeEmbedUrl(url = "") {
@@ -242,6 +343,8 @@ export default function CoursePage({ course }) {
   const [companyPage, setCompanyPage] = useState(0);
   const [liveCourse, setLiveCourse] = useState(null);
   const [liveBatches, setLiveBatches] = useState([]);
+  const [now, setNow] = useState(() => new Date());
+  const [emiOpen, setEmiOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -263,6 +366,11 @@ export default function CoursePage({ course }) {
       mounted = false;
     };
   }, [course.slug]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const projects = course.portfolioProjects || course.projects || [];
   const projectLibrary = course.projectLibrary || [];
@@ -315,6 +423,8 @@ export default function CoursePage({ course }) {
     liveCourse?.offer_name ||
     course.offerName ||
     "Limited Batch Offer";
+  const offerState = getOfferState(nearestBatch, now);
+  const emiPlan = getEmiPlan(nearestBatch?.start_date, currentPrice);
   const saved = Math.max(0, originalPrice - currentPrice);
   const discount = originalPrice
     ? Math.round((saved / originalPrice) * 100)
@@ -447,6 +557,57 @@ export default function CoursePage({ course }) {
                 You save ₹{formatINR(saved)} on current admission.
               </p>
             )}
+
+            {offerState.visible && (
+              <div className={`dct-course-fomo ${offerState.phase}`}>
+                <div className="dct-course-fomo-top">
+                  <span className="dct-course-fomo-kicker">
+                    {offerState.phase === "scheduled" ? "⏳ Offer Scheduled" : "🔥 FOMO Deal Live"}
+                  </span>
+                  <span className="dct-course-fomo-time">{offerState.time}</span>
+                </div>
+                <p className="dct-course-fomo-copy">
+                  <strong>{offerState.title}</strong> · {offerState.copy}
+                </p>
+                <div className="dct-course-fomo-track">
+                  <div
+                    className="dct-course-fomo-fill"
+                    style={{ width: `${offerState.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="dct-course-emi">
+              <button
+                type="button"
+                className="dct-course-emi-btn"
+                onClick={() => setEmiOpen((value) => !value)}
+              >
+                <span>Check EMI option</span>
+                <span>{emiOpen ? "−" : "+"}</span>
+              </button>
+              {emiOpen && (
+                <div className="dct-course-emi-panel">
+                  <div className="dct-course-emi-row">
+                    <span>Lock price now</span>
+                    <strong>₹{formatINR(emiPlan.registrationFee)}</strong>
+                  </div>
+                  <div className="dct-course-emi-row">
+                    <span>First EMI · {formatShortDate(emiPlan.firstDate)}</span>
+                    <strong>₹{formatINR(emiPlan.firstEmi)}</strong>
+                  </div>
+                  <div className="dct-course-emi-row">
+                    <span>Second EMI · {formatShortDate(emiPlan.secondDate)}</span>
+                    <strong>₹{formatINR(emiPlan.secondEmi)}</strong>
+                  </div>
+                  <p className="dct-course-emi-note">
+                    EMI dates are auto-calculated from batch start date. Final confirmation happens during admission.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="dct-course-offer-actions">
               <button
                 type="button"
