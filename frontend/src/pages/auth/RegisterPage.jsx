@@ -38,6 +38,18 @@ function getSoftwarePricing(selected = []) {
   return SOFTWARE_PRICING[count];
 }
 
+function getBatchPrice(batch, course) {
+  return Number(batch?.offer_price || course?.offer_price || course?.price || 0);
+}
+
+function getBatchOriginalPrice(batch, course) {
+  return Number(batch?.original_price || course?.original_price || course?.price || 0);
+}
+
+function getDisplayPrice(value) {
+  return Number(value || 0).toLocaleString("en-IN");
+}
+
 function findSoftwareBatch(batches = [], primaryTool, selectedTools = []) {
   const target = primaryTool || selectedTools[0] || "catia-v5";
   const keywords = SOFTWARE_TOOL_BATCH_KEYWORDS[target] || [];
@@ -147,8 +159,20 @@ export default function RegisterPage() {
       : ["Selected software course"];
 
   const softwarePricing = getSoftwarePricing(form.software_tools);
-  const payableAmount = isSoftwareToolsRegistration ? softwarePricing.amount : REGISTRATION_FEE;
-  const payableLabel = isSoftwareToolsRegistration ? softwarePricing.label : "Registration Fee";
+  const selectedBatchPrice = getBatchPrice(selectedBatch, selectedCourse);
+  const selectedBatchOriginalPrice = getBatchOriginalPrice(selectedBatch, selectedCourse);
+
+  const payableAmount = isSoftwareToolsRegistration
+    ? softwarePricing.amount
+    : selectedBatch
+      ? selectedBatchPrice
+      : REGISTRATION_FEE;
+
+  const payableLabel = isSoftwareToolsRegistration
+    ? softwarePricing.label
+    : selectedBatch
+      ? "Course Fee"
+      : "Registration Fee";
 
   const validate = () => {
     if (!form.name.trim()) return "Full name is required.";
@@ -304,6 +328,11 @@ export default function RegisterPage() {
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-dct-gray">
                   <p className="font-bold text-dct-primary">
                     {payableLabel}: ₹{payableAmount.toLocaleString("en-IN")}
+                    {!isSoftwareToolsRegistration && selectedBatchOriginalPrice > payableAmount && (
+                      <span className="ml-2 text-dct-gray line-through">
+                        ₹{selectedBatchOriginalPrice.toLocaleString("en-IN")}
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1">
                     Your dashboard access starts only after WhatsApp OTP verification and successful payment.
@@ -425,7 +454,7 @@ export default function RegisterPage() {
                           </option>
                           {courses.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.name} — ₹{Number(c.price).toLocaleString("en-IN")} · {c.duration_months} Months
+                              {c.name} · {c.duration_months} Months
                             </option>
                           ))}
                         </select>
@@ -453,6 +482,7 @@ export default function RegisterPage() {
                           {batches.map((b) => (
                             <option key={b.id} value={b.id} disabled={b.is_full}>
                               {b.name}
+                              {b.offer_price ? ` — ₹${getDisplayPrice(b.offer_price)}` : ""}
                               {b.is_full ? " — FULL" : ` — ${b.available_seats} seats left`}
                               {b.time_slots?.length > 0 ? ` · ${b.time_slots[0]}` : ""}
                             </option>
@@ -477,6 +507,14 @@ export default function RegisterPage() {
                           )}
                           <p>
                             <strong>Tutor:</strong> {selectedBatch.tutor_name || "Industry Expert"}
+                          </p>
+                          <p>
+                            <strong>Course Fee:</strong> ₹{getDisplayPrice(selectedBatchPrice)}
+                            {selectedBatchOriginalPrice > selectedBatchPrice && (
+                              <span className="ml-1 line-through text-dct-lightgray">
+                                ₹{getDisplayPrice(selectedBatchOriginalPrice)}
+                              </span>
+                            )}
                           </p>
                         </div>
                       )}
