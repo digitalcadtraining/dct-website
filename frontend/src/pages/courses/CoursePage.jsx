@@ -122,6 +122,13 @@ const PAGE_CSS = `
   to{opacity:1;transform:translateY(0)}
 }
 
+.dct-course-logo-img{
+  height:52px;
+  width:auto;
+  display:block;
+  object-fit:contain;
+}
+
 .dct-course-fomo{margin:14px 0 16px;border-radius:18px;padding:13px 14px;border:1px solid rgba(249,115,22,.22);background:linear-gradient(135deg,#FFF7ED,#FFFBEB);box-shadow:0 14px 32px rgba(249,115,22,.10)}
 .dct-course-fomo.scheduled{border-color:rgba(3,126,196,.22);background:linear-gradient(135deg,#EFF8FF,#F8FBFF);box-shadow:0 14px 32px rgba(3,126,196,.10)}
 .dct-course-fomo-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
@@ -516,11 +523,11 @@ export default function CoursePage({ course }) {
             onClick={() => navigate("/")}
             type="button"
           >
-            <span className="dct-course-logo-mark">D</span>
-            <span className="dct-course-logo-text">
-              <strong>DIGITAL</strong>
-              <span>CAD TRAINING</span>
-            </span>
+            <img
+              src="/images/real_dct_logo.png"
+              alt="Digital CAD Training"
+              className="nav-logo-img"
+            />
           </button>
           <div className="dct-course-nav-links">
             <button onClick={() => navigate("/")} type="button">

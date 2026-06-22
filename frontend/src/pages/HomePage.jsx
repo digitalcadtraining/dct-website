@@ -262,7 +262,13 @@ const homepageHtml = `
 <footer class="dct-site-footer" id="contact">
   <div class="dct-footer-inner">
     <div class="dct-footer-brand">
-      <div class="dct-footer-logo"><span>D</span></div>
+      <div class="dct-footer-logo"><span>
+      <img
+            src="/images/dct-logo.png"
+            alt="Digital CAD Training"
+            className="nav-logo-img"
+          />
+      </span></div>
       <div>
         <h3>Digital CAD Training</h3>
         <p>Industry-focused CAD and automotive design training since 2018.</p>
@@ -353,7 +359,7 @@ export default function HomePage() {
       <nav>
         <a href="/" className="logo">
           <img
-            src="/images/dct-logo.png"
+            src="/images/real_dct_logo.png"
             alt="Digital CAD Training"
             className="nav-logo-img"
           />
