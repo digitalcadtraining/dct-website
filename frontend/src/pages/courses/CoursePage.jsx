@@ -402,13 +402,26 @@ export default function CoursePage({ course }) {
   const placements = course.placements || [];
   const nearestBatch = getNearestBatch(liveBatches);
 
-  const currentPrice = Number(
-    nearestBatch?.offer_price ||
-      liveCourse?.offer_price ||
-      liveCourse?.price ||
-      course.price ||
-      0,
-  );
+const now = new Date();
+const offerStart = nearestBatch?.offer_start_at ? new Date(nearestBatch.offer_start_at) : null;
+const offerEnd = nearestBatch?.offer_end_at ? new Date(nearestBatch.offer_end_at) : null;
+
+const isOfferLive =
+  offerStart &&
+  offerEnd &&
+  now >= offerStart &&
+  now <= offerEnd;
+
+const regularPrice = Number(
+  liveCourse?.price ||
+  course.price ||
+  nearestBatch?.regular_price ||
+  20999
+);
+
+const currentPrice = isOfferLive
+  ? Number(nearestBatch?.offer_price || regularPrice)
+  : regularPrice;
 
   const originalPrice = Number(
     nearestBatch?.original_price ||

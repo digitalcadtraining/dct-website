@@ -33,7 +33,8 @@ function roleFromApiPath(path) {
 }
 
 function isAuthRoute(path) {
-  return path.startsWith("/auth/login") ||
+  return path.startsWith("/courses") ||
+    path.startsWith("/auth/login") ||
     path.startsWith("/auth/admin/login") ||
     path.startsWith("/auth/otp/send") ||
     path.startsWith("/auth/otp/verify") ||
