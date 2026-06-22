@@ -602,7 +602,7 @@ export default function CoursePage({ course }) {
                     <strong>₹{formatINR(emiPlan.secondEmi)}</strong>
                   </div>
                   <p className="dct-course-emi-note">
-                    EMI dates are auto-calculated from batch start date. Final confirmation happens during admission.
+                    Course enrollment is subject to timely EMI payments on shown dates.
                   </p>
                 </div>
               )}
