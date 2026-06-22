@@ -91,6 +91,37 @@ const PAGE_CSS = `
 .dct-course-offer-card{width:100%;max-width:430px;justify-self:end;background:#fff;color:${C.dark};border-radius:28px;padding:clamp(22px,3vw,34px);box-shadow:0 30px 70px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35)}
 .dct-course-offer-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}.dct-course-offer-label{color:${C.blueDark};font-size:13px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.dct-course-save{padding:8px 12px;border-radius:999px;background:#DCFCE7;color:#15803D;font-size:13px;font-weight:900}.dct-course-price-row{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}.dct-course-price{font-size:clamp(38px,4vw,54px);line-height:1;font-weight:900;letter-spacing:-.055em}.dct-course-slash{color:${C.muted};text-decoration:line-through;font-size:18px;font-weight:800}.dct-course-saving{color:${C.muted};font-weight:700;margin-bottom:24px}.dct-course-offer-actions{display:grid;gap:12px;margin-bottom:22px}.dct-course-offer-actions .dct-course-btn{width:100%;min-height:54px;color:${C.blueDark};border-color:${C.border};background:${C.lightBg}}.dct-course-offer-actions .dct-course-btn.primary{color:#fff;background:linear-gradient(135deg,${C.blueDark},${C.blue2})}
 
+.dct-course-pills-premium{
+  margin-top:24px;
+  animation:dctSoftRise .7s ease both;
+}
+
+.dct-course-pills-premium .dct-course-pill{
+  min-height:46px;
+  padding:0 18px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 12px 28px rgba(0,0,0,.14);
+  transition:transform .2s ease, background .2s ease;
+}
+
+.dct-course-pills-premium .dct-course-pill:hover{
+  transform:translateY(-3px);
+  background:rgba(255,255,255,.15);
+}
+
+.dct-course-stars{
+  color:#FFEB3A;
+  letter-spacing:1px;
+  font-size:14px;
+  text-shadow:0 0 14px rgba(255,235,58,.35);
+}
+
+@keyframes dctSoftRise{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
 .dct-course-fomo{margin:14px 0 16px;border-radius:18px;padding:13px 14px;border:1px solid rgba(249,115,22,.22);background:linear-gradient(135deg,#FFF7ED,#FFFBEB);box-shadow:0 14px 32px rgba(249,115,22,.10)}
 .dct-course-fomo.scheduled{border-color:rgba(3,126,196,.22);background:linear-gradient(135deg,#EFF8FF,#F8FBFF);box-shadow:0 14px 32px rgba(3,126,196,.10)}
 .dct-course-fomo-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
@@ -150,7 +181,6 @@ function formatDate(value) {
   }
 }
 
-
 function formatShortDate(value) {
   if (!value) return "TBD";
   return new Date(value).toLocaleDateString("en-IN", {
@@ -186,7 +216,11 @@ function getOfferState(batch, now = new Date()) {
 
   const start = new Date(batch.offer_start_at);
   const end = new Date(batch.offer_end_at);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    end <= start
+  ) {
     return { visible: false, phase: "none" };
   }
 
@@ -210,7 +244,9 @@ function getOfferState(batch, now = new Date()) {
       title: `${batch.offer_name || "Offer"} ends in`,
       time: formatCountdown(remaining),
       copy: "FOMO deal is live now. Lock your seat before this price closes.",
-      progress: total ? Math.min(100, Math.max(0, ((total - remaining) / total) * 100)) : 100,
+      progress: total
+        ? Math.min(100, Math.max(0, ((total - remaining) / total) * 100))
+        : 100,
     };
   }
 
@@ -402,27 +438,33 @@ export default function CoursePage({ course }) {
   const placements = course.placements || [];
   const nearestBatch = getNearestBatch(liveBatches);
 
-const now = new Date();
-const offerStart = nearestBatch?.offer_start_at ? new Date(nearestBatch.offer_start_at) : null;
-const offerEnd = nearestBatch?.offer_end_at ? new Date(nearestBatch.offer_end_at) : null;
+  const offerStart = nearestBatch?.offer_start_at
+    ? new Date(nearestBatch.offer_start_at)
+    : null;
+  const offerEnd = nearestBatch?.offer_end_at
+    ? new Date(nearestBatch.offer_end_at)
+    : null;
 
-const isOfferLive =
-  offerStart &&
-  offerEnd &&
-  now >= offerStart &&
-  now <= offerEnd;
+  const isOfferLive =
+    offerStart && offerEnd && now >= offerStart && now <= offerEnd;
 
-const regularPrice = Number(
-  liveCourse?.price ||
-  course.price ||
-  nearestBatch?.regular_price ||
-  20999
-);
+  // Regular everyday offer price shown when special timed offer is not live.
+  const regularPrice = Number(
+    nearestBatch?.regular_offer_price ||
+      course.regularOfferPrice ||
+      course.regularPrice ||
+      20999,
+  );
 
-const currentPrice = isOfferLive
-  ? Number(nearestBatch?.offer_price || regularPrice)
-  : regularPrice;
+  // Special timed offer price shown only during live timer.
+  const currentPrice = isOfferLive
+    ? Number(nearestBatch?.offer_price || regularPrice)
+    : regularPrice;
 
+  const batchSlotText =
+    nearestBatch?.time_slots?.length > 0
+      ? nearestBatch.time_slots.join(", ")
+      : "Batch timing will be updated soon";
   const originalPrice = Number(
     nearestBatch?.original_price ||
       liveCourse?.original_price ||
@@ -526,25 +568,19 @@ const currentPrice = isOfferLive
                 View Roadmap
               </a>
             </div>
-            <div className="dct-course-pills">
-              <span className="dct-course-pill">⭐ {course.rating} rating</span>
-              <span className="dct-course-pill">{course.reviews} reviews</span>
-              <span className="dct-course-pill">
-                {course.enrolled} learners
+            <div className="dct-course-pills dct-course-pills-premium">
+              <span className="dct-course-pill dct-course-rating-pill">
+                <span className="dct-course-stars">★★★★★</span>
+                <strong>4.9 rating</strong>
               </span>
-            </div>
-            <div className="dct-course-trust-chips">
-              {(
-                course.trustHighlights || [
-                  "PAN India MNC/OEM hiring exposure",
-                  "Placement-focused mentoring",
-                  "Industry project portfolio",
-                ]
-              ).map((item) => (
-                <span className="dct-course-trust-chip" key={item}>
-                  ✓ {item}
-                </span>
-              ))}
+
+              <span className="dct-course-pill">
+                <strong>312 reviews</strong>
+              </span>
+
+              <span className="dct-course-pill">
+                <strong>1000+ learnt and placed</strong>
+              </span>
             </div>
           </div>
 
@@ -575,9 +611,13 @@ const currentPrice = isOfferLive
               <div className={`dct-course-fomo ${offerState.phase}`}>
                 <div className="dct-course-fomo-top">
                   <span className="dct-course-fomo-kicker">
-                    {offerState.phase === "scheduled" ? "⏳ Offer Scheduled" : "🔥 FOMO Deal Live"}
+                    {offerState.phase === "scheduled"
+                      ? "⏳ Offer Scheduled"
+                      : "🔥 FOMO Deal Live"}
                   </span>
-                  <span className="dct-course-fomo-time">{offerState.time}</span>
+                  <span className="dct-course-fomo-time">
+                    {offerState.time}
+                  </span>
                 </div>
                 <p className="dct-course-fomo-copy">
                   <strong>{offerState.title}</strong> · {offerState.copy}
@@ -597,7 +637,7 @@ const currentPrice = isOfferLive
                 className="dct-course-emi-btn"
                 onClick={() => setEmiOpen((value) => !value)}
               >
-                <span>Check EMI option</span>
+                <span>YES, EMI available</span>
                 <span>{emiOpen ? "−" : "+"}</span>
               </button>
               {emiOpen && (
@@ -607,15 +647,20 @@ const currentPrice = isOfferLive
                     <strong>₹{formatINR(emiPlan.registrationFee)}</strong>
                   </div>
                   <div className="dct-course-emi-row">
-                    <span>First EMI · {formatShortDate(emiPlan.firstDate)}</span>
+                    <span>
+                      First EMI · {formatShortDate(emiPlan.firstDate)}
+                    </span>
                     <strong>₹{formatINR(emiPlan.firstEmi)}</strong>
                   </div>
                   <div className="dct-course-emi-row">
-                    <span>Second EMI · {formatShortDate(emiPlan.secondDate)}</span>
+                    <span>
+                      Second EMI · {formatShortDate(emiPlan.secondDate)}
+                    </span>
                     <strong>₹{formatINR(emiPlan.secondEmi)}</strong>
                   </div>
                   <p className="dct-course-emi-note">
-                    Course enrollment is subject to timely EMI payments on shown dates.
+                    Course enrollment is subject to timely EMI payments on shown
+                    dates.
                   </p>
                 </div>
               )}
@@ -633,15 +678,21 @@ const currentPrice = isOfferLive
             <div className="dct-course-info-panel">
               <div className="dct-course-info-item">
                 <strong>Learn in both CATIA V5 + UGNX software</strong>
-                <span>45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5
-                  projects in NX.</span>
+                <span>
+                  45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5
+                  projects in NX.
+                </span>
               </div>
               <div className="dct-course-info-item">
                 <strong>Live + lifetime recording</strong>
                 <span>
-                  100% live Zoom sessions alternative days + recording access for lifetime
-                  revision.
+                  100% live Zoom sessions alternative days + recording access
+                  for lifetime revision.
                 </span>
+              </div>
+              <div className="dct-course-info-item">
+                <strong>Live session fixed slot</strong>
+                <span>{batchSlotText}</span>
               </div>
               <div className="dct-course-info-item">
                 <strong>New Batch Starts</strong>
