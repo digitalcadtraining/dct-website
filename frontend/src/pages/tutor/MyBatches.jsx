@@ -39,8 +39,15 @@ function statusOf(b) {
 function toDateInput(value) {
   if (!value) return "";
   const d = new Date(value);
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+  if (Number.isNaN(d.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const get = (type) => parts.find((p) => p.type === type)?.value || "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 function parseSlotStart(slot) {
@@ -73,20 +80,33 @@ function parseSlotEnd(slot) {
 function toTimeInput(value, fallbackSlot) {
   if (!value) return parseSlotStart(fallbackSlot);
   const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return parseSlotStart(fallbackSlot);
 
-  // Old sessions were saved at UTC midnight, which appears as 05:30 in IST.
-  // For those old rows, show the batch slot instead.
-  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+
+  const hour = parts.find((p) => p.type === "hour")?.value || "";
+  const minute = parts.find((p) => p.type === "minute")?.value || "";
+
+  if ((hour === "00" && minute === "00") || (hour === "05" && minute === "30")) {
     return parseSlotStart(fallbackSlot);
   }
 
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${hour}:${minute}`;
 }
 
 function combineDateTime(date, time) {
   if (!date) return null;
-  const t = time || "00:00";
-  return new Date(`${date}T${t}:00`).toISOString();
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = (time || "00:00").split(":").map(Number);
+
+  // Selected date/time is India business time in the browser.
+  // Store once as ISO; do not manually subtract 5:30, or it shifts twice.
+  return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
 }
 
 function NewBatchModal({ isOpen, onClose, onCreated }) {
@@ -278,8 +298,8 @@ function EditFullBatchModal({ batch, onClose, onSaved }) {
     try {
       const payload = {
         name: form.name.trim(),
-        start_date: combineDateTime(form.start_date, form.start_time),
-        end_date: combineDateTime(form.end_date, form.start_time),
+        start_date: combineDateTime(form.start_date, "00:00"),
+        end_date: combineDateTime(form.end_date, "23:59"),
         max_students: Number(form.max_students) || 50,
         time_slots: [makeSlot(form.start_time, form.end_time)],
         status: form.status,
@@ -399,8 +419,8 @@ function BatchCard({ batch, index, onEdit }) {
       <p className="text-xs text-dct-lightgray mb-3">{batch.course?.name}</p>
       {slots.length > 0 && <div className="flex flex-wrap gap-1.5 mb-3">{slots.map((s) => <span key={s} className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-blue-50 text-dct-primary"><Clock size={9} />{s}</span>)}</div>}
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="border rounded-lg p-2.5"><p className="text-xs font-bold">{batch.start_date ? new Date(batch.start_date).toLocaleDateString("en-IN") : "—"}</p><p className="text-[10px] text-dct-lightgray">Start</p></div>
-        <div className="border rounded-lg p-2.5"><p className="text-xs font-bold">{batch.end_date ? new Date(batch.end_date).toLocaleDateString("en-IN") : "—"}</p><p className="text-[10px] text-dct-lightgray">End</p></div>
+        <div className="border rounded-lg p-2.5"><p className="text-xs font-bold">{batch.start_date ? new Date(batch.start_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}</p><p className="text-[10px] text-dct-lightgray">Start</p></div>
+        <div className="border rounded-lg p-2.5"><p className="text-xs font-bold">{batch.end_date ? new Date(batch.end_date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "—"}</p><p className="text-[10px] text-dct-lightgray">End</p></div>
       </div>
       <div className="flex items-center gap-4 text-xs text-dct-gray mb-3"><span className="flex items-center gap-1"><Users size={11} />{enrolled}/{batch.max_students}</span><span className="flex items-center gap-1"><BookOpen size={11} />{sessions} sessions</span></div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4"><div className="h-full bg-dct-primary" style={{ width: `${pct}%` }} /></div>

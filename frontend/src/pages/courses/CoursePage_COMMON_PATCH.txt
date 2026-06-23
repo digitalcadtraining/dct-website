@@ -1,0 +1,117 @@
+COURSEPAGE COMMON PATCH
+
+Apply these changes in:
+frontend/src/pages/courses/CoursePage.jsx
+
+Goal:
+- Do not hardcode 51–85 project practice.
+- Let each course define its own practice sessions.
+- Let each course define its own price-card info text.
+- Plastic can show 100 days roadmap.
+- BIW can show 80 days roadmap and 35–45 practice sessions.
+
+1) Replace makeProjectPracticeSessions(projectLibrary = []) with:
+
+function makeProjectPracticeSessions(projectLibrary = [], customPracticeSessions = []) {
+  if (customPracticeSessions.length) return customPracticeSessions;
+
+  const fallback = [
+    "Map Pocket Project",
+    "Seat Recliner Cover Project",
+    "Fuse Box Cover Project",
+    "Front Bumper Project",
+    "Door Trim Project",
+    "B-Pillar Upper Project",
+    "IP Trim Project",
+    "Console Trim Project",
+    "Cup Holder Project",
+    "Armrest Project",
+  ];
+
+  const topics = (projectLibrary.length ? projectLibrary : fallback).slice(0, 10);
+
+  return topics.map((topic, index) => ({
+    no: 51 + index,
+    title: topic.toLowerCase().includes("project") ? topic : `${topic} Project`,
+    trainer: "Project Practice",
+    category: "Project",
+  }));
+}
+
+2) In CoursePage component, replace this range code:
+
+const projectPractice = makeProjectPracticeSessions(projectLibrary);
+ranges.push({
+  label: "Sessions 51–85",
+  short: "51–85",
+  items: projectPractice,
+});
+
+with:
+
+const projectPractice = makeProjectPracticeSessions(
+  projectLibrary,
+  course.projectPracticeSessions || [],
+);
+
+if (projectPractice.length) {
+  const firstNo = projectPractice[0]?.no || 51;
+  const lastNo = projectPractice[projectPractice.length - 1]?.no || firstNo;
+
+  ranges.push({
+    label: `Sessions ${firstNo}–${lastNo}`,
+    short: `${firstNo}–${lastNo}`,
+    items: projectPractice,
+  });
+}
+
+3) In CoursePage price-card info panel, replace the hardcoded info items:
+
+<div className="dct-course-info-item">
+  <strong>Learn in both CATIA V5 + UGNX software</strong>
+  <span>45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.</span>
+</div>
+<div className="dct-course-info-item">
+  <strong>Live + lifetime recording</strong>
+  <span>100% live Zoom sessions alternative days + recording access for lifetime revision.</span>
+</div>
+
+with:
+
+{(
+  course.offerInfoItems || [
+    {
+      title: "Learn in both CATIA V5 + UGNX software",
+      text: "45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.",
+    },
+    {
+      title: "Live + lifetime recording",
+      text: "100% live Zoom sessions alternative days + recording access for lifetime revision.",
+    },
+  ]
+).map((item) => (
+  <div className="dct-course-info-item" key={item.title}>
+    <strong>{item.title}</strong>
+    <span>{item.text}</span>
+  </div>
+))}
+
+4) In PlasticProductDesign.jsx, add/update these fields inside COURSE:
+
+roadmapLabel: "100 days training roadmap",
+offerInfoItems: [
+  {
+    title: "Learn in both CATIA V5 + UGNX software",
+    text: "45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.",
+  },
+  {
+    title: "Live + lifetime recording",
+    text: "100% live Zoom sessions alternative days + recording access for lifetime revision.",
+  },
+],
+
+5) If your CoursePage heading says "50-session training roadmap", replace the hardcoded heading/copy with:
+
+{course.roadmapLabel || `${course.sessions || sessions.length}-session training roadmap`}
+
+This keeps common UI in CoursePage and course-specific content inside each course file.

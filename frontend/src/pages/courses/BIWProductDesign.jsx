@@ -1,198 +1,466 @@
 import CoursePage from "./CoursePage.jsx";
 
+const T = "BIW Product Design";
+
 const COURSE = {
   slug: "biw-product-design",
   name: "BIW Product Design",
   tagline: "Master Automotive Body-in-White Design With OEM-Level Workflow",
-  heroCopy: "OEM-level BIW design training with CATIA, body structure logic, weld flange rules, master sections, assembly validation, GD&T and real automotive portfolio projects.",
+  heroCopy:
+    "Learn BIW fundamentals, nomenclature, material selection, manufacturing logic, DFM/DFA, master sections and CATIA-based Roof + Hood assembly projects with interview-ready practice assignments.",
   eyebrow: "Automotive BIW Career Program",
   badge: "🚀 Industry Favourite",
   badgeBg: "#037EC4",
   badgeColor: "#fff",
+
   price: 18000,
+  regularOfferPrice: 18000,
   slashPrice: 22000,
+
   rating: "4.8",
   reviews: "180+",
   enrolled: "180+",
   duration: "4 Months",
-  sessions: "85",
-  projectCount: "10",
-  tools: ["CATIA V5 BIW", "Assembly Design", "Weld Planning", "GD&T", "DMU", "Master Sections"],
-  packageRange: "₹3.5–16 LPA",
-  trustYears: "7+",
-  partnerLine: "Digital CAD Training is partner and authorized by CADPOINT for professional CAD training direction.",
-  trustCopy: "Students see the complete syllabus, project roadmap, career path and registration value clearly before joining. The program is structured for 2–3 years experience-level practical confidence.",
-  packageNote: "Package depends on skill, location, interview performance and company requirement. We guide students with portfolio, resume direction, mock interview preparation and PAN India job updates.",
-  trustHighlights: ["CADPOINT Authorized Partner", "PAN India MNC/OEM hiring exposure", "2–3 years experience-level learning", "Package guidance ₹3.5–7 LPA"],
-  trustProofs: [
-    { title: "Industry-level practical workflow", text: "Every module is connected with real company work, design checks, reports and interview explanation." },
-    { title: "Portfolio-first learning", text: "Students build project proof instead of only watching software commands." },
-    { title: "Placement-focused mentoring", text: "Resume, portfolio, mock interview and job-sharing support are connected with the course journey." },
-    { title: "Mobile-friendly clarity", text: "Syllabus, projects, demo and batch information are visible clearly before registration." },
-  ],
-  tutor: { name: "Balkrishna Dhuri", exp: "12+ Years Experience", companies: "Automotive Engineering Expert", initial: "B" },
-  outcomes: [
-    "Design BIW panels, reinforcements, brackets and closure structures with proper design intent",
-    "Understand load path, joining strategy, weld flange logic and manufacturability requirements",
-    "Read master sections, prepare BIW components and explain section-based design decisions",
-    "Apply datum strategy, RPS, GD&T and assembly validation thinking in BIW projects",
-    "Build interview-ready BIW portfolio projects with professional documentation",
-    "Prepare for fresher to junior BIW design engineer roles in OEM/Tier-1 companies"
-  ],
-  includes: [
-    { icon: "📹", label: "85-session roadmap", sub: "Live sessions + lifetime recordings" },
-    { icon: "🏭", label: "10 portfolio projects", sub: "Industry workflow and interview explanation" },
-    { icon: "📊", label: "Project documentation", sub: "Reports, review points and portfolio proof" },
-    { icon: "💼", label: "Placement support", sub: "Resume, portfolio and mock interview prep" },
-    { icon: "❓", label: "Doubt support", sub: "Project correction and guidance" },
-    { icon: "♾", label: "Lifetime access", sub: "Recordings for revision anytime" }
-  ],
-  syllabusSessions: [
-    { no: 1, title: "Automotive BIW industry overview", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 2, title: "Vehicle body architecture and load paths", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 3, title: "BIW terminology: panels, reinforcements and closures", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 4, title: "Sheet metal material and thickness selection", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 5, title: "Stamping, hemming and assembly process overview", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 6, title: "Spot weld, MIG, adhesive and SPR joining methods", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 7, title: "Datum strategy and locating concept", trainer: "BIW Product Design", category: "Fundamentals" },
-    { no: 8, title: "CATIA BIW environment and data organization", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 9, title: "Benchmarking and section study", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 10, title: "Master section reading and design intent", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 11, title: "Flange design rules and weld flange requirements", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 12, title: "Emboss, bead and stiffness feature design", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 13, title: "Hole, cut-out and relief design guidelines", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 14, title: "Sealing, mastic and adhesive surface planning", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 15, title: "BIW design checklist and review report", trainer: "BIW Product Design", category: "CAD Workflow" },
-    { no: 16, title: "Front floor architecture and cross-member logic", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 17, title: "Rear floor architecture and boot floor layout", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 18, title: "Side sill and rocker reinforcement design", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 19, title: "A-pillar package and reinforcement study", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 20, title: "B-pillar load path and reinforcement design", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 21, title: "C-pillar and quarter inner structure logic", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 22, title: "Roof panel and roof bow design basics", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 23, title: "Roof rail and header reinforcement design", trainer: "BIW Product Design", category: "Design Rules" },
-    { no: 24, title: "Door inner panel architecture", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 25, title: "Door outer, hemming and seal flange logic", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 26, title: "Hood inner panel and reinforcement design", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 27, title: "Tailgate inner structure and mounting areas", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 28, title: "Fender mounting and bracket strategy", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 29, title: "Seat mounting reinforcement and load path", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 30, title: "Seat belt anchorage and reinforcement basics", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 31, title: "Hinge reinforcement and striker mounting study", trainer: "BIW Product Design", category: "Manufacturing" },
-    { no: 32, title: "Weld spot planning and pitch requirements", trainer: "BIW Product Design", category: "Validation" },
-    { no: 33, title: "Gap and flush fundamentals for closures", trainer: "BIW Product Design", category: "Validation" },
-    { no: 34, title: "DMU check, clash check and section validation", trainer: "BIW Product Design", category: "Validation" },
-    { no: 35, title: "BIW drawing, notes and release package basics", trainer: "BIW Product Design", category: "Validation" },
-    { no: 36, title: "Advanced flange development from master section", trainer: "BIW Product Design", category: "Validation" },
-    { no: 37, title: "Deep drawing feasibility and stamping constraints", trainer: "BIW Product Design", category: "Validation" },
-    { no: 38, title: "Springback basics and compensation thinking", trainer: "BIW Product Design", category: "Validation" },
-    { no: 39, title: "Joining accessibility and gun study basics", trainer: "BIW Product Design", category: "Validation" },
-    { no: 40, title: "Strength versus weight optimization strategy", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 41, title: "Crash load path for front and side impact", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 42, title: "NVH stiffness and local reinforcement thinking", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 43, title: "Tolerance stack-up basics for BIW assemblies", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 44, title: "RPS / 3-2-1 locating principle", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 45, title: "Assembly sequence and process planning basics", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 46, title: "BIW DFM/DFA review and issue tracking", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 47, title: "Cost, weight and manufacturability trade-off", trainer: "BIW Product Design", category: "Documentation" },
-    { no: 48, title: "Design review presentation and project report format", trainer: "BIW Product Design", category: "Interview" },
-    { no: 49, title: "BIW interview questions and portfolio preparation", trainer: "BIW Product Design", category: "Interview" },
-    { no: 50, title: "Final BIW technical mock review", trainer: "BIW Product Design", category: "Interview" }
-  ],
-  projectLibrary: ["Front Floor Assembly", "Rear Floor Assembly", "Roof Assembly", "A-Pillar Reinforcement", "B-Pillar Reinforcement", "Door Inner Panel", "Underbody Assembly", "Complete Body Side", "Hood Inner Panel", "Tailgate Inner Structure"],
-  portfolioProjects: [
+  sessions: "45",
+  projectCount: "4",
+  roadmapLabel: "80 days training roadmap",
+  offerInfoItems: [
     {
-      no: 1,
-      title: "Front Floor Assembly",
-      area: "BIW Underbody",
-      desc: "Cross-members, seat mounting areas, floor load path and manufacturability review.",
-      frontImage: "/images/projects/biw-front-floor-cad.svg",
-      backImage: "/images/projects/biw-front-floor-ref.svg",
+      title: "Learn BIW in CATIA V5",
+      text: "BIW fundamentals + CATIA project workflow with Roof Assembly, Hood Assembly and practice assignments.",
     },
     {
+      title: "Live + lifetime recording",
+      text: "Live Zoom sessions with lifetime recording access for revision.",
+    },
+  ],
+
+  tools: [
+    "CATIA V5 BIW",
+    "Master Sections",
+    "Stamping",
+    "Welding",
+    "DFM/DFA",
+    "GD&T",
+  ],
+  packageRange: "₹3.5–16 LPA",
+  trustYears: "7+",
+  partnerLine:
+    "Digital CAD Training is partner and authorized by CADPOINT for professional CAD training direction.",
+  trustCopy:
+    "Students see the complete syllabus, project roadmap, career path and registration value clearly before joining. The program is structured for practical BIW design confidence.",
+  packageNote:
+    "Package depends on skill, location, interview performance and company requirement. We guide students with portfolio, resume direction, mock interview preparation and PAN India job updates.",
+  trustHighlights: [
+    "CADPOINT Authorized Partner",
+    "PAN India MNC/OEM hiring exposure",
+    "Practical BIW portfolio projects",
+  ],
+  trustProofs: [
+    {
+      title: "BIW design workflow",
+      text: "Topics move from BIW basics to nomenclature, crashworthiness, material selection, manufacturing process, DFM/DFA and master sections.",
+    },
+    {
+      title: "Project-first learning",
+      text: "Students build Roof and Hood assembly projects and complete Door + B-Pillar practice assignments.",
+    },
+    {
+      title: "Placement-focused mentoring",
+      text: "CV building, mock interviews, portfolio explanation and job-sharing support are connected with the course journey.",
+    },
+  ],
+  tutor: {
+    name: "Balkrishna Dhuri",
+    exp: "12+ Years Experience",
+    companies: "Automotive Engineering Expert",
+    initial: "B",
+  },
+
+  outcomes: [
+    "Understand BIW upper body, underbody and closure nomenclature with functional requirements",
+    "Explain BIW vehicle development process, crashworthiness, material selection and manufacturing process",
+    "Apply DFM/DFA thinking for stamping, welding and assembly constraints",
+    "Read and use master sections for BIW design decisions",
+    "Build Roof Assembly and Hood Assembly project workflow in CATIA",
+    "Prepare BIW portfolio explanation, CV and interview answers",
+  ],
+
+  includes: [
+    {
+      icon: "📅",
+      label: "80 days training roadmap",
+      sub: "Live sessions + lifetime recordings",
+    },
+    {
+      icon: "🚗",
+      label: "4 BIW projects",
+      sub: "Roof, Hood, Door and B-Pillar workflow",
+    },
+    {
+      icon: "📊",
+      label: "Project documentation",
+      sub: "DVP, BOM, design checks and portfolio proof",
+    },
+    {
+      icon: "💼",
+      label: "Placement support",
+      sub: "CV building + technical mock interviews",
+    },
+    {
+      icon: "❓",
+      label: "Doubt support",
+      sub: "Project correction and guidance",
+    },
+    {
+      icon: "♾",
+      label: "Lifetime access",
+      sub: "Recordings for revision anytime",
+    },
+  ],
+
+  syllabusSessions: [
+    { no: 1, title: "BIW Introduction", trainer: T, category: "Fundamentals" },
+    {
       no: 2,
-      title: "Rear Floor Assembly",
-      area: "BIW Underbody",
-      desc: "Rear floor structure, boot floor packaging and reinforcement strategy.",
-      frontImage: "/images/projects/biw-rear-floor-cad.svg",
-      backImage: "/images/projects/biw-rear-floor-ref.svg",
+      title: "BIW Nomenclature – Upper Body",
+      trainer: T,
+      category: "Nomenclature",
     },
     {
       no: 3,
-      title: "Roof Assembly",
-      area: "BIW Upper Body",
-      desc: "Roof panel, roof bows, header reinforcement and stiffness logic.",
-      frontImage: "/images/projects/biw-roof-cad.svg",
-      backImage: "/images/projects/biw-roof-ref.svg",
+      title: "BIW Nomenclature – Under Body",
+      trainer: T,
+      category: "Nomenclature",
     },
     {
       no: 4,
-      title: "A-Pillar Reinforcement",
-      area: "Pillar Design",
-      desc: "Pillar section study, load path and reinforcement design logic.",
-      frontImage: "/images/projects/biw-a-pillar-cad.svg",
-      backImage: "/images/projects/biw-a-pillar-ref.svg",
+      title: "BIW Nomenclature – Closures",
+      trainer: T,
+      category: "Nomenclature",
     },
     {
       no: 5,
-      title: "B-Pillar Reinforcement",
-      area: "Pillar Design",
-      desc: "Side impact load path, seat belt anchorage and reinforcement thinking.",
-      frontImage: "/images/projects/biw-b-pillar-cad.svg",
-      backImage: "/images/projects/biw-b-pillar-ref.svg",
+      title: "BIW Vehicle Development Process – Digital Activities",
+      trainer: T,
+      category: "Development Process",
     },
     {
       no: 6,
-      title: "Door Inner Panel",
-      area: "Closure Design",
-      desc: "Door inner architecture, hemming, hinge and striker reinforcement areas.",
-      frontImage: "/images/projects/biw-door-inner-cad.svg",
-      backImage: "/images/projects/biw-door-inner-ref.svg",
+      title: "BIW Vehicle Development Process – Physical Activities",
+      trainer: T,
+      category: "Development Process",
     },
     {
       no: 7,
-      title: "Underbody Assembly",
-      area: "BIW Assembly",
-      desc: "Complete underbody joining, locating and weld planning workflow.",
-      frontImage: "/images/projects/biw-underbody-cad.svg",
-      backImage: "/images/projects/biw-underbody-ref.svg",
+      title: "BIW Crashworthiness – Crash Tests and Regulations",
+      trainer: T,
+      category: "Crashworthiness",
     },
     {
       no: 8,
-      title: "Complete Body Side",
-      area: "BIW Assembly",
-      desc: "Body side panel, pillars, sill, roof rail and assembly validation.",
-      frontImage: "/images/projects/biw-body-side-cad.svg",
-      backImage: "/images/projects/biw-body-side-ref.svg",
+      title: "BIW Crashworthiness – Design for Better Crash Performance",
+      trainer: T,
+      category: "Crashworthiness",
     },
     {
       no: 9,
-      title: "Hood Inner Panel",
-      area: "Closure Design",
-      desc: "Hood inner panel emboss, latch area and hinge reinforcement logic.",
-      frontImage: "/images/projects/biw-hood-inner-cad.svg",
-      backImage: "/images/projects/biw-hood-inner-ref.svg",
+      title: "BIW Material Selection – Steel Grades and Types",
+      trainer: T,
+      category: "Materials",
     },
     {
       no: 10,
-      title: "Tailgate Inner Structure",
-      area: "Closure Design",
-      desc: "Tailgate packaging, reinforcement and manufacturing feasibility study.",
-      frontImage: "/images/projects/biw-tailgate-cad.svg",
-      backImage: "/images/projects/biw-tailgate-ref.svg",
-    }
+      title: "BIW Material Selection – AHSS Steels and Aluminium Alloys",
+      trainer: T,
+      category: "Materials",
+    },
+    {
+      no: 11,
+      title: "BIW Manufacturing Process – Stamping and Welding",
+      trainer: T,
+      category: "Manufacturing",
+    },
+    {
+      no: 12,
+      title: "BIW Manufacturing Process – Hemming and Painting",
+      trainer: T,
+      category: "Manufacturing",
+    },
+    {
+      no: 13,
+      title: "BIW DFM/DFA – Stamping Design Considerations",
+      trainer: T,
+      category: "DFM/DFA",
+    },
+    {
+      no: 14,
+      title: "BIW DFM/DFA – Welding and Assembly Considerations",
+      trainer: T,
+      category: "DFM/DFA",
+    },
+    {
+      no: 15,
+      title: "BIW Master Section and Requirements",
+      trainer: T,
+      category: "Master Section",
+    },
+
+    {
+      no: 16,
+      title: "Roof Assembly Project – Introduction, Inputs and Benchmarking",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 17,
+      title: "Roof Assembly Project – Front and Rear Roof Rail Master Section",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 18,
+      title: "Roof Assembly Project – Roof Bow and Roof Drip Master Section",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 19,
+      title:
+        "Roof Assembly Project – Front Roof Rail and Rear Roof Rail CAD Creation",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 20,
+      title:
+        "Roof Assembly Project – Roof Panel Radius, Trimline and Side Flange Definition",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 21,
+      title: "Roof Assembly Project – Roof Bow Creation and Connection Data",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 22,
+      title:
+        "Roof Assembly Project – Joggle, Emboss, Diabolo Emboss and Stiffener Bead",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 23,
+      title: "Roof Assembly Project – Draft Analysis",
+      trainer: T,
+      category: "Roof Project",
+    },
+    {
+      no: 24,
+      title: "Roof Assembly Project – Weld Creation, BOM and DVP Explanation",
+      trainer: T,
+      category: "Roof Project",
+    },
+
+    {
+      no: 25,
+      title:
+        "Hood Assembly Project – Introduction, Inputs, Benchmarking and Design Concept Sheet",
+      trainer: T,
+      category: "Hood Project",
+    },
+    {
+      no: 26,
+      title: "Hood Assembly Project – Hood Master Section",
+      trainer: T,
+      category: "Hood Project",
+    },
+    {
+      no: 27,
+      title: "Hood Assembly Project – Hood Outer Panel Hemming Creation",
+      trainer: T,
+      category: "Hood Project",
+    },
+    {
+      no: 28,
+      title: "Hood Assembly Project – Hood Inner Panel CAD Creation Part 1",
+      trainer: T,
+      category: "Hood Project",
+    },
+    {
+      no: 29,
+      title: "Hood Assembly Project – Hood Inner Panel CAD Creation Part 2",
+      trainer: T,
+      category: "Hood Project",
+    },
+    {
+      no: 30,
+      title: "Hood Assembly Project – Hood Assembly DVP Explanation",
+      trainer: T,
+      category: "Hood Project",
+    },
+
+    {
+      no: 31,
+      title: "CV Building Session",
+      trainer: "Career Support",
+      category: "Career",
+    },
+    {
+      no: 32,
+      title: "Technical Mock Interview 1",
+      trainer: "Career Support",
+      category: "Interview",
+    },
+    {
+      no: 33,
+      title: "Technical Mock Interview 2",
+      trainer: "Career Support",
+      category: "Interview",
+    },
+    {
+      no: 34,
+      title: "Portfolio Explanation and Final Review",
+      trainer: "Career Support",
+      category: "Interview",
+    },
   ],
+
+  projectPracticeSessions: [
+    {
+      no: 35,
+      title:
+        "Door Assembly Practice Assignment – Input Study and Master Section",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 36,
+      title: "Door Assembly Practice Assignment – Inner Panel Design Logic",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 37,
+      title:
+        "Door Assembly Practice Assignment – Hemming, Reinforcement and Mounting Areas",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 38,
+      title: "Door Assembly Practice Assignment – DFM/DFA and Draft Review",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 39,
+      title:
+        "Door Assembly Practice Assignment – Documentation and Interview Explanation",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 40,
+      title: "B-Pillar Practice Assignment – Input Study and Load Path",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 41,
+      title:
+        "B-Pillar Practice Assignment – Master Section and Reinforcement Logic",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 42,
+      title: "B-Pillar Practice Assignment – CAD Creation Workflow",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 43,
+      title:
+        "B-Pillar Practice Assignment – Crashworthiness and Mounting Review",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 44,
+      title: "B-Pillar Practice Assignment – Report and Portfolio Explanation",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+    {
+      no: 45,
+      title: "Final BIW Project Review and Interview Readiness",
+      trainer: "Project Practice",
+      category: "Project",
+    },
+  ],
+
+  projectLibrary: [
+    "Door Assembly Practice Assignment",
+    "B-Pillar Practice Assignment",
+  ],
+  portfolioProjects: [
+    {
+      no: 1,
+      title: "Hood Assembly",
+      area: "BIW Closure Design",
+      desc: "Hood master section, hemming, inner panel CAD creation and DVP explanation.",
+      frontImage: "images/Projects/biwproduct/hood_inner.jpeg",
+      backImage: "images/Projects/biwproduct/hood_outer.jpeg",
+    },
+    {
+      no: 2,
+      title: "Door Assembly Practice",
+      area: "BIW Closure Practice",
+      desc: "Door assembly practice assignment for inner panel logic, hemming and reinforcement areas.",
+      frontImage: "images/Projects/biwproduct/door_inner.jpeg",
+      backImage: "images/Projects/biwproduct/door_outer.jpeg",
+    },
+    {
+      no: 3,
+      title: "B-Pillar Practice",
+      area: "Pillar Design Practice",
+      desc: "B-Pillar practice assignment for load path, reinforcement and crashworthiness explanation.",
+      frontImage: "images/Projects/biwproduct/b-pillar-inner.jpeg",
+      backImage: "images/Projects/biwproduct/b-pillar-outer.jpeg",
+    },
+    {
+      no: 4,
+      title: "Tailgate Assembly",
+      area: "BIW Closure Design",
+      desc: "Tailgate inner and outer panel reference for closure design understanding and practice.",
+      frontImage: "images/Projects/biwproduct/tailgate_inner.jpeg",
+      backImage: "images/Projects/biwproduct/tailgate_outer.jpeg",
+    },
+  ],
+
   courseFaqs: [
-    { q: "Do I need prior experience?", a: "No. The course starts from fundamentals and builds toward practical industry-level projects." },
-    { q: "Are sessions live or recorded?", a: "Sessions are live on Zoom and recordings are available for lifetime revision." },
-    { q: "Will I build portfolio projects?", a: "Yes. The course includes structured projects that students can explain in interviews." },
-    { q: "Will this help in interviews?", a: "Yes. Topics are mapped to real workflow, design decisions, reports and interview questions." },
-    { q: "Can freshers join?", a: "Yes. Diploma and BE mechanical freshers can join if they are serious about design/CAE/tooling career." },
-    { q: "Is placement support included?", a: "Yes. Resume, portfolio, mock interview and job-sharing support are included." }
+    {
+      q: "Do I need prior BIW experience?",
+      a: "No. The course starts from BIW fundamentals and moves toward practical CATIA-based project workflow.",
+    },
+    {
+      q: "Which software is used?",
+      a: "The BIW course is focused on CATIA V5 BIW/product design workflow.",
+    },
+    {
+      q: "How many projects are included?",
+      a: "The main live projects are Roof Assembly and Hood Assembly. Door Assembly and B-Pillar are added as practice assignments.",
+    },
+    {
+      q: "Will this help in interviews?",
+      a: "Yes. CV building, portfolio explanation and mock interviews are included in the roadmap.",
+    },
   ],
-  placements: ["Tata Technologies", "Tata Motors", "Mahindra & Mahindra", "Maruti Suzuki", "Hyundai Motors", "Mercedes-Benz R&D", "BMW Group India", "Volkswagen Group", "Skoda Auto Volkswagen", "Stellantis", "Renault Nissan", "Ashok Leyland", "Magna", "Forvia", "Motherson", "Bosch", "Continental", "ZF", "Valeo", "Aptiv", "Denso", "Schaeffler", "Lear Corporation", "Adient", "Visteon", "Capgemini Engineering", "L&T Technology Services", "KPIT", "Tata Elxsi", "HCLTech", "Wipro", "Tech Mahindra", "Quest Global", "Segula Technologies", "EDAG", "Neilsoft", "Caresoft Global", "Hinduja Tech", "Bajaj Auto", "TVS Motor", "Hero MotoCorp", "Ather Energy", "Ola Electric", "Uno Minda", "Varroc", "Lumax", "Faurecia", "Plastic Omnium", "Yanfeng", "Force Motors"],
 };
 
-export default function BIWProductDesignPage() {
+export default function BIWProductDesign() {
   return <CoursePage course={COURSE} />;
 }
