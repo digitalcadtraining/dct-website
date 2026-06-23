@@ -16,12 +16,66 @@ const C = {
 };
 
 const DEFAULT_COMPANIES = [
-  "Tata Technologies","Tata Motors","Mahindra & Mahindra","Maruti Suzuki","Hyundai Motors","Toyota Kirloskar","Honda Cars","Mercedes-Benz R&D","BMW Group India","Volkswagen Group","Skoda Auto Volkswagen","Renault Nissan","Stellantis","Ashok Leyland","Bajaj Auto","TVS Motor","Hero MotoCorp","Royal Enfield","Ather Energy","Ola Electric","Magna","Faurecia","Forvia","Plastic Omnium","Yanfeng","Motherson","Varroc","Uno Minda","Lumax","Bosch","Continental","ZF","Valeo","Lear Corporation","Adient","Visteon","Aptiv","Denso","Schaeffler","L&T Technology Services","Tata Elxsi","KPIT","Capgemini Engineering","Caresoft Global","Hinduja Tech","Neilsoft","EDAG","Segula Technologies","Quest Global"
+  "Tata Technologies",
+  "Tata Motors",
+  "Mahindra & Mahindra",
+  "Maruti Suzuki",
+  "Hyundai Motors",
+  "Toyota Kirloskar",
+  "Honda Cars",
+  "Mercedes-Benz R&D",
+  "BMW Group India",
+  "Volkswagen Group",
+  "Skoda Auto Volkswagen",
+  "Renault Nissan",
+  "Stellantis",
+  "Ashok Leyland",
+  "Bajaj Auto",
+  "TVS Motor",
+  "Hero MotoCorp",
+  "Royal Enfield",
+  "Ather Energy",
+  "Ola Electric",
+  "Magna",
+  "Faurecia",
+  "Forvia",
+  "Plastic Omnium",
+  "Yanfeng",
+  "Motherson",
+  "Varroc",
+  "Uno Minda",
+  "Lumax",
+  "Bosch",
+  "Continental",
+  "ZF",
+  "Valeo",
+  "Lear Corporation",
+  "Adient",
+  "Visteon",
+  "Aptiv",
+  "Denso",
+  "Schaeffler",
+  "L&T Technology Services",
+  "Tata Elxsi",
+  "KPIT",
+  "Capgemini Engineering",
+  "Caresoft Global",
+  "Hinduja Tech",
+  "Neilsoft",
+  "EDAG",
+  "Segula Technologies",
+  "Quest Global",
 ];
 
 const DEFAULT_INFO_ITEMS = [
-  { title: "Learn in both CATIA V5 + UGNX software", text: "45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX." },
-  { title: "Live + lifetime recording", text: "100% live Zoom sessions alternative days + recording access for lifetime revision." },
+  {
+    title: "Learn in both CATIA V5 + UGNX software",
+    text: "45 syllabus topics in CATIA V5 + 10 projects in CATIA + 5 projects in NX.",
+  },
+  {
+    title: "Live + lifetime recording",
+    text: "100% live Zoom sessions alternative days + recording access for lifetime revision.",
+  },
 ];
 
 const PAGE_CSS = `
@@ -93,17 +147,39 @@ function formatCountdown(ms) {
 }
 
 function getOfferState(batch, now = new Date()) {
-  if (!batch?.offer_start_at || !batch?.offer_end_at) return { visible: false, phase: "none" };
+  if (!batch?.offer_start_at || !batch?.offer_end_at)
+    return { visible: false, phase: "none" };
   const start = new Date(batch.offer_start_at);
   const end = new Date(batch.offer_end_at);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return { visible: false, phase: "none" };
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    end <= start
+  )
+    return { visible: false, phase: "none" };
   if (now < start) {
-    return { visible: true, phase: "scheduled", title: `${batch.offer_name || "Offer"} starts in`, time: formatCountdown(start.getTime() - now.getTime()), copy: "Special price is scheduled. Register quickly when the timer starts.", progress: 0 };
+    return {
+      visible: true,
+      phase: "scheduled",
+      title: `${batch.offer_name || "Offer"} starts in`,
+      time: formatCountdown(start.getTime() - now.getTime()),
+      copy: "Special price is scheduled. Register quickly when the timer starts.",
+      progress: 0,
+    };
   }
   if (now <= end) {
     const total = end.getTime() - start.getTime();
     const remaining = end.getTime() - now.getTime();
-    return { visible: true, phase: "live", title: `${batch.offer_name || "Offer"} ends in`, time: formatCountdown(remaining), copy: "FOMO deal is live now. Lock your seat before this price closes.", progress: total ? Math.min(100, Math.max(0, ((total - remaining) / total) * 100)) : 100 };
+    return {
+      visible: true,
+      phase: "live",
+      title: `${batch.offer_name || "Offer"} ends in`,
+      time: formatCountdown(remaining),
+      copy: "FOMO deal is live now. Lock your seat before this price closes.",
+      progress: total
+        ? Math.min(100, Math.max(0, ((total - remaining) / total) * 100))
+        : 100,
+    };
   }
   return { visible: false, phase: "expired" };
 }
@@ -145,7 +221,11 @@ function getNearestBatch(batches = []) {
   const allowedBatches = (batches || [])
     .filter((batch) => {
       if (!batch) return false;
-      if (batch.status && !visibleStatuses.has(String(batch.status).toUpperCase())) return false;
+      if (
+        batch.status &&
+        !visibleStatuses.has(String(batch.status).toUpperCase())
+      )
+        return false;
       if (!batch.start_date) return false;
       const startDate = new Date(batch.start_date);
       startDate.setHours(0, 0, 0, 0);
@@ -155,10 +235,28 @@ function getNearestBatch(batches = []) {
   return allowedBatches[0] || null;
 }
 
-function makeProjectPracticeSessions(projectLibrary = [], customPracticeSessions = []) {
-  if (Array.isArray(customPracticeSessions) && customPracticeSessions.length) return customPracticeSessions;
-  const fallback = ["Map Pocket Project", "Seat Recliner Cover Project", "Fuse Box Cover Project", "Front Bumper Project", "Door Trim Project", "B-Pillar Upper Project", "IP Trim Project", "Console Trim Project", "Cup Holder Project", "Armrest Project"];
-  const topics = (projectLibrary.length ? projectLibrary : fallback).slice(0, 10);
+function makeProjectPracticeSessions(
+  projectLibrary = [],
+  customPracticeSessions = [],
+) {
+  if (Array.isArray(customPracticeSessions) && customPracticeSessions.length)
+    return customPracticeSessions;
+  const fallback = [
+    "Map Pocket Project",
+    "Seat Recliner Cover Project",
+    "Fuse Box Cover Project",
+    "Front Bumper Project",
+    "Door Trim Project",
+    "B-Pillar Upper Project",
+    "IP Trim Project",
+    "Console Trim Project",
+    "Cup Holder Project",
+    "Armrest Project",
+  ];
+  const topics = (projectLibrary.length ? projectLibrary : fallback).slice(
+    0,
+    10,
+  );
   return topics.map((topic, index) => ({
     no: 51 + index,
     title: topic.toLowerCase().includes("project") ? topic : `${topic} Project`,
@@ -169,16 +267,27 @@ function makeProjectPracticeSessions(projectLibrary = [], customPracticeSessions
 
 function SectionHead({ eyebrow, title, highlight, copy, center = false }) {
   return (
-    <div className={center ? "dct-course-center-head" : "dct-course-section-head"}>
+    <div
+      className={center ? "dct-course-center-head" : "dct-course-section-head"}
+    >
       {eyebrow && <span className="dct-course-label">{eyebrow}</span>}
-      <h2 className="dct-course-section-title">{title} {highlight && <span>{highlight}</span>}</h2>
+      <h2 className="dct-course-section-title">
+        {title} {highlight && <span>{highlight}</span>}
+      </h2>
       {copy && <p className="dct-course-section-copy">{copy}</p>}
     </div>
   );
 }
 
 function RichAnswer({ answer }) {
-  if (Array.isArray(answer)) return <ul>{answer.map((a) => <li key={a}>{a}</li>)}</ul>;
+  if (Array.isArray(answer))
+    return (
+      <ul>
+        {answer.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
+    );
   return <p>{answer}</p>;
 }
 
@@ -194,16 +303,23 @@ export default function CoursePage({ course }) {
 
   useEffect(() => {
     let mounted = true;
-    courseApi.list().then((res) => {
-      if (!mounted) return;
-      const found = (res.data || []).find((item) => item.slug === course.slug);
-      if (!found) return;
-      setLiveCourse(found);
-      return courseApi.getBatches(found.id).then((batchRes) => {
-        if (mounted) setLiveBatches(batchRes.data || []);
-      });
-    }).catch(() => {});
-    return () => { mounted = false; };
+    courseApi
+      .list()
+      .then((res) => {
+        if (!mounted) return;
+        const found = (res.data || []).find(
+          (item) => item.slug === course.slug,
+        );
+        if (!found) return;
+        setLiveCourse(found);
+        return courseApi.getBatches(found.id).then((batchRes) => {
+          if (mounted) setLiveBatches(batchRes.data || []);
+        });
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, [course.slug]);
 
   useEffect(() => {
@@ -220,13 +336,25 @@ export default function CoursePage({ course }) {
     const firstFifty = sessions.slice(0, 50);
     for (let start = 0; start < firstFifty.length; start += 10) {
       const chunk = firstFifty.slice(start, start + 10);
-      if (chunk.length) ranges.push({ label: `Sessions ${chunk[0].no}–${chunk[chunk.length - 1].no}`, short: `${chunk[0].no}–${chunk[chunk.length - 1].no}`, items: chunk });
+      if (chunk.length)
+        ranges.push({
+          label: `Sessions ${chunk[0].no}–${chunk[chunk.length - 1].no}`,
+          short: `${chunk[0].no}–${chunk[chunk.length - 1].no}`,
+          items: chunk,
+        });
     }
-    const projectPractice = makeProjectPracticeSessions(projectLibrary, course.projectPracticeSessions || []);
+    const projectPractice = makeProjectPracticeSessions(
+      projectLibrary,
+      course.projectPracticeSessions || [],
+    );
     if (projectPractice.length) {
       const firstNo = projectPractice[0]?.no || 51;
       const lastNo = projectPractice[projectPractice.length - 1]?.no || firstNo;
-      ranges.push({ label: `Sessions ${firstNo}–${lastNo}`, short: `${firstNo}–${lastNo}`, items: projectPractice });
+      ranges.push({
+        label: `Sessions ${firstNo}–${lastNo}`,
+        short: `${firstNo}–${lastNo}`,
+        items: projectPractice,
+      });
     }
     return ranges;
   }, [sessions, projectLibrary, course.projectPracticeSessions]);
@@ -235,26 +363,62 @@ export default function CoursePage({ course }) {
   const placements = course.placements || [];
   const nearestBatch = getNearestBatch(liveBatches);
 
-  const offerStart = nearestBatch?.offer_start_at ? new Date(nearestBatch.offer_start_at) : null;
-  const offerEnd = nearestBatch?.offer_end_at ? new Date(nearestBatch.offer_end_at) : null;
-  const isOfferLive = offerStart && offerEnd && now >= offerStart && now <= offerEnd;
+  const offerStart = nearestBatch?.offer_start_at
+    ? new Date(nearestBatch.offer_start_at)
+    : null;
+  const offerEnd = nearestBatch?.offer_end_at
+    ? new Date(nearestBatch.offer_end_at)
+    : null;
+  const isOfferLive =
+    offerStart && offerEnd && now >= offerStart && now <= offerEnd;
 
-  const regularPrice = Number(nearestBatch?.regular_offer_price || course.regularOfferPrice || course.regularPrice || 20999);
-  const currentPrice = isOfferLive ? Number(nearestBatch?.offer_price || regularPrice) : regularPrice;
-  const originalPrice = Number(nearestBatch?.original_price || liveCourse?.original_price || liveCourse?.slash_price || course.slashPrice || currentPrice);
-  const batchSlotText = nearestBatch?.time_slots?.length > 0 ? nearestBatch.time_slots.join(", ") : "Batch timing will be updated soon";
-  const offerName = nearestBatch?.offer_name || liveCourse?.offer_name || course.offerName || "Limited Batch Offer";
+  const regularPrice = Number(
+    nearestBatch?.regular_offer_price ||
+      course.regularOfferPrice ||
+      course.regularPrice ||
+      20999,
+  );
+  const currentPrice = isOfferLive
+    ? Number(nearestBatch?.offer_price || regularPrice)
+    : regularPrice;
+  const originalPrice = Number(
+    nearestBatch?.original_price ||
+      liveCourse?.original_price ||
+      liveCourse?.slash_price ||
+      course.slashPrice ||
+      currentPrice,
+  );
+  const batchSlotText =
+    nearestBatch?.time_slots?.length > 0
+      ? nearestBatch.time_slots.join(", ")
+      : "Batch timing will be updated soon";
+  const offerName =
+    nearestBatch?.offer_name ||
+    liveCourse?.offer_name ||
+    course.offerName ||
+    "Limited Batch Offer";
   const offerState = getOfferState(nearestBatch, now);
   const emiPlan = getEmiPlan(nearestBatch?.start_date, currentPrice);
   const saved = Math.max(0, originalPrice - currentPrice);
-  const discount = originalPrice ? Math.round((saved / originalPrice) * 100) : 0;
-  const displayBatchStartText = nearestBatch?.start_date ? formatDate(nearestBatch.start_date) : "New batch opening soon";
-  const demoUrl = course.demoYoutubeUrl || course.youtubeDemoUrl || course.demoUrl || "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
+  const discount = originalPrice
+    ? Math.round((saved / originalPrice) * 100)
+    : 0;
+  const displayBatchStartText = nearestBatch?.start_date
+    ? formatDate(nearestBatch.start_date)
+    : "New batch opening soon";
+  const demoUrl =
+    course.demoYoutubeUrl ||
+    course.youtubeDemoUrl ||
+    course.demoUrl ||
+    "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
   const demoEmbedUrl = getYoutubeEmbedUrl(demoUrl);
   const companyList = placements.length >= 50 ? placements : DEFAULT_COMPANIES;
   const companyStart = companyPage * 10;
   const visibleCompanies = companyList.slice(companyStart, companyStart + 10);
-  const nextCompanyPage = () => setCompanyPage((page) => (page + 1) * 10 >= companyList.length ? 0 : page + 1);
+  const nextCompanyPage = () =>
+    setCompanyPage((page) =>
+      (page + 1) * 10 >= companyList.length ? 0 : page + 1,
+    );
   const handleEnroll = () => navigate(`/auth/register?course=${course.slug}`);
   const offerInfoItems = course.offerInfoItems || DEFAULT_INFO_ITEMS;
 
@@ -263,9 +427,32 @@ export default function CoursePage({ course }) {
       <style>{PAGE_CSS}</style>
       <nav className="dct-course-nav">
         <div className="dct-course-shell dct-course-nav-inner">
-          <button className="dct-course-logo" onClick={() => navigate("/")} type="button"><img src="/images/real_dct_logo.png" alt="Digital CAD Training" className="nav-logo-img" /></button>
+          <button
+            className="dct-course-logo"
+            onClick={() => navigate("/")}
+            type="button"
+          >
+            <img
+              src="/images/real_dct_logo.png"
+              alt="Digital CAD Training"
+              className="nav-logo-img"
+            />
+          </button>
           <div className="dct-course-nav-links">
-            <button onClick={() => navigate("/")} type="button">Home</button><a href="#roadmap">Roadmap</a><a href="#projects">Projects</a><a href="#demo">Watch Demo</a><a href="#faq">FAQ</a><button onClick={handleEnroll} className="dct-course-nav-cta" type="button">Register Now</button>
+            <button onClick={() => navigate("/")} type="button">
+              Home
+            </button>
+            <a href="#roadmap">Roadmap</a>
+            <a href="#projects">Projects</a>
+            <a href="#demo">Watch Demo</a>
+            <a href="#faq">FAQ</a>
+            <button
+              onClick={handleEnroll}
+              className="dct-course-nav-cta"
+              type="button"
+            >
+              Register Now
+            </button>
           </div>
         </div>
       </nav>
@@ -273,50 +460,511 @@ export default function CoursePage({ course }) {
       <section className="dct-course-hero">
         <div className="dct-course-shell dct-course-hero-inner">
           <div>
-            {course.badge && <div className="dct-course-kicker">{course.badge}</div>}
-            <span className="dct-course-eyebrow">{course.eyebrow || "Automotive Design Career Program"}</span>
+            {course.badge && (
+              <div className="dct-course-kicker">{course.badge}</div>
+            )}
+            <span className="dct-course-eyebrow">
+              {course.eyebrow || "Automotive Design Career Program"}
+            </span>
             <h1 className="dct-course-title">{course.name}</h1>
             <h2 className="dct-course-tagline">{course.tagline}</h2>
-            <p className="dct-course-desc">{course.heroCopy || "Practical automotive design training with live sessions, industry projects, portfolio guidance and placement-focused interview preparation."}</p>
-            <div className="dct-course-actions"><button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register Now</button><a className="dct-course-btn secondary" href="#roadmap">View Roadmap</a></div>
-            <div className="dct-course-pills dct-course-pills-premium"><span className="dct-course-pill"><span className="dct-course-stars">★★★★★</span><strong>4.9 rating</strong></span><span className="dct-course-pill"><strong>312 reviews</strong></span><span className="dct-course-pill"><strong>1000+ learnt and placed</strong></span></div>
+            <p className="dct-course-desc">
+              {course.heroCopy ||
+                "Practical automotive design training with live sessions, industry projects, portfolio guidance and placement-focused interview preparation."}
+            </p>
+            <div className="dct-course-actions">
+              <button
+                type="button"
+                onClick={handleEnroll}
+                className="dct-course-btn primary"
+              >
+                Register Now
+              </button>
+              <a className="dct-course-btn secondary" href="#roadmap">
+                View Roadmap
+              </a>
+            </div>
+            <div className="dct-course-pills dct-course-pills-premium">
+              <span className="dct-course-pill">
+                <span className="dct-course-stars">★★★★★</span>
+                <strong>4.9 rating</strong>
+              </span>
+              <span className="dct-course-pill">
+                <strong>312 reviews</strong>
+              </span>
+              <span className="dct-course-pill">
+                <strong>1000+ learnt and placed</strong>
+              </span>
+            </div>
           </div>
 
           <aside className="dct-course-offer-card">
-            <div className="dct-course-offer-top"><span className="dct-course-offer-label">{offerName}</span>{discount > 0 && <span className="dct-course-save">Save {discount}%</span>}</div>
-            <div className="dct-course-price-row"><span className="dct-course-price">₹{formatINR(currentPrice)}</span>{originalPrice > currentPrice && <span className="dct-course-slash">₹{formatINR(originalPrice)}</span>}</div>
-            {saved > 0 && <p className="dct-course-saving">You save ₹{formatINR(saved)} on current admission.</p>}
-            {offerState.visible && <div className={`dct-course-fomo ${offerState.phase}`}><div className="dct-course-fomo-top"><span className="dct-course-fomo-kicker">{offerState.phase === "scheduled" ? "⏳ Offer Scheduled" : "🔥 FOMO Deal Live"}</span><span className="dct-course-fomo-time">{offerState.time}</span></div><p className="dct-course-fomo-copy"><strong>{offerState.title}</strong> · {offerState.copy}</p><div className="dct-course-fomo-track"><div className="dct-course-fomo-fill" style={{ width: `${offerState.progress}%` }} /></div></div>}
-            <div className="dct-course-emi"><button type="button" className="dct-course-emi-btn" onClick={() => setEmiOpen((v) => !v)}><span>YES, EMI available</span><span>{emiOpen ? "−" : "+"}</span></button>{emiOpen && <div className="dct-course-emi-panel"><div className="dct-course-emi-row"><span>Lock price now</span><strong>₹{formatINR(emiPlan.registrationFee)}</strong></div><div className="dct-course-emi-row"><span>First EMI · {formatShortDate(emiPlan.firstDate)}</span><strong>₹{formatINR(emiPlan.firstEmi)}</strong></div><div className="dct-course-emi-row"><span>Second EMI · {formatShortDate(emiPlan.secondDate)}</span><strong>₹{formatINR(emiPlan.secondEmi)}</strong></div><p className="dct-course-emi-note">Course enrollment is subject to timely EMI payments on shown dates.</p></div>}</div>
-            <div className="dct-course-offer-actions"><button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register / Enroll Now</button></div>
+            <div className="dct-course-offer-top">
+              <span className="dct-course-offer-label">{offerName}</span>
+              {discount > 0 && (
+                <span className="dct-course-save">Save {discount}%</span>
+              )}
+            </div>
+            <div className="dct-course-price-row">
+              <span className="dct-course-price">
+                ₹{formatINR(currentPrice)}
+              </span>
+              {originalPrice > currentPrice && (
+                <span className="dct-course-slash">
+                  ₹{formatINR(originalPrice)}
+                </span>
+              )}
+            </div>
+            {saved > 0 && (
+              <p className="dct-course-saving">
+                You save ₹{formatINR(saved)} on current admission.
+              </p>
+            )}
+            {offerState.visible && (
+              <div className={`dct-course-fomo ${offerState.phase}`}>
+                <div className="dct-course-fomo-top">
+                  <span className="dct-course-fomo-kicker">
+                    {offerState.phase === "scheduled"
+                      ? "⏳ Offer Scheduled"
+                      : "🔥 FOMO Deal Live"}
+                  </span>
+                  <span className="dct-course-fomo-time">
+                    {offerState.time}
+                  </span>
+                </div>
+                <p className="dct-course-fomo-copy">
+                  <strong>{offerState.title}</strong> · {offerState.copy}
+                </p>
+                <div className="dct-course-fomo-track">
+                  <div
+                    className="dct-course-fomo-fill"
+                    style={{ width: `${offerState.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="dct-course-emi">
+              <button
+                type="button"
+                className="dct-course-emi-btn"
+                onClick={() => setEmiOpen((v) => !v)}
+              >
+                <span>YES, EMI available</span>
+                <span>{emiOpen ? "−" : "+"}</span>
+              </button>
+              {emiOpen && (
+                <div className="dct-course-emi-panel">
+                  <div className="dct-course-emi-row">
+                    <span>Lock price now</span>
+                    <strong>₹{formatINR(emiPlan.registrationFee)}</strong>
+                  </div>
+                  <div className="dct-course-emi-row">
+                    <span>
+                      First EMI · {formatShortDate(emiPlan.firstDate)}
+                    </span>
+                    <strong>₹{formatINR(emiPlan.firstEmi)}</strong>
+                  </div>
+                  <div className="dct-course-emi-row">
+                    <span>
+                      Second EMI · {formatShortDate(emiPlan.secondDate)}
+                    </span>
+                    <strong>₹{formatINR(emiPlan.secondEmi)}</strong>
+                  </div>
+                  <p className="dct-course-emi-note">
+                    Course enrollment is subject to timely EMI payments on shown
+                    dates.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="dct-course-offer-actions">
+              <button
+                type="button"
+                onClick={handleEnroll}
+                className="dct-course-btn primary"
+              >
+                Register / Enroll Now
+              </button>
+            </div>
             <div className="dct-course-info-panel">
-              {offerInfoItems.map((item) => <div className="dct-course-info-item" key={item.title}><strong>{item.title}</strong><span>{item.text}</span></div>)}
-              <div className="dct-course-info-item"><strong>Live session fixed slot</strong><span>{batchSlotText}</span></div>
-              <div className="dct-course-info-item"><strong>New Batch Starts</strong><span>{displayBatchStartText}</span></div>
+              {offerInfoItems.map((item) => (
+                <div className="dct-course-info-item" key={item.title}>
+                  <strong>{item.title}</strong>
+                  <span>{item.text}</span>
+                </div>
+              ))}
+              <div className="dct-course-info-item">
+                <strong>Live session fixed slot</strong>
+                <span>{batchSlotText}</span>
+              </div>
+              <div className="dct-course-info-item">
+                <strong>New Batch Starts</strong>
+                <span>{displayBatchStartText}</span>
+              </div>
             </div>
           </aside>
         </div>
       </section>
 
-      <div className="dct-course-stats-strip"><div className="dct-course-shell dct-course-stats-grid"><div className="dct-course-stat"><strong>{course.duration}</strong><span>Job-focused duration</span></div><div className="dct-course-stat"><strong>{course.sessions}</strong><span>Live + recorded sessions</span></div><div className="dct-course-stat"><strong>{course.projectCount || projects.length}</strong><span>Industry portfolio projects</span></div><div className="dct-course-stat"><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance range</span></div></div></div>
+      <div className="dct-course-stats-strip">
+        <div className="dct-course-shell dct-course-stats-grid">
+          <div className="dct-course-stat">
+            <strong>{course.duration}</strong>
+            <span>Job-focused duration</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.sessions}</strong>
+            <span>Live + recorded sessions</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.projectCount || projects.length}</strong>
+            <span>Industry portfolio projects</span>
+          </div>
+          <div className="dct-course-stat">
+            <strong>{course.packageRange || "3–16 LPA"}</strong>
+            <span>Package guidance range</span>
+          </div>
+        </div>
+      </div>
 
-      <section className="dct-course-section alt"><div className="dct-course-shell"><div className="dct-course-trust-grid"><div className="dct-course-trust-panel"><span className="dct-course-trust-eyebrow">Trust before registration</span><h2>Built for students who want real hiring confidence.</h2><p>{course.trustCopy || "Course outcomes, projects and interview preparation are aligned to practical automotive company expectations."}</p><div className="dct-course-trust-mini-stats"><div><strong>{course.trustYears || "7+"}</strong><span>Years trust connection</span></div><div><strong>PAN India</strong><span>MNC / OEM / Tier-1 network</span></div><div><strong>{course.packageRange || "3–16 LPA"}</strong><span>Package guidance</span></div></div></div><div className="dct-course-proof-list">{(course.trustProofs || []).map((item) => <div className="dct-course-proof-card" key={item.title}><strong>{item.title}</strong><p>{item.text}</p></div>)}</div></div><div className="dct-course-package-band"><div><h3>Register after understanding the career path clearly.</h3><p>{course.packageNote || "We show the course outcome, package guidance, company target segment and project roadmap before registration so students know what they are joining."}</p></div><button type="button" onClick={handleEnroll} className="dct-course-btn primary">Register Now</button></div></div></section>
+      <section className="dct-course-section alt">
+        <div className="dct-course-shell">
+          <div className="dct-course-trust-grid">
+            <div className="dct-course-trust-panel">
+              <span className="dct-course-trust-eyebrow">
+                Trust before registration
+              </span>
+              <h2>Built for students who want real hiring confidence.</h2>
+              <p>
+                {course.trustCopy ||
+                  "Course outcomes, projects and interview preparation are aligned to practical automotive company expectations."}
+              </p>
+              <div className="dct-course-trust-mini-stats">
+                <div>
+                  <strong>{course.trustYears || "7+"}</strong>
+                  <span>Years trust connection</span>
+                </div>
+                <div>
+                  <strong>PAN India</strong>
+                  <span>MNC / OEM / Tier-1 network</span>
+                </div>
+                <div>
+                  <strong>{course.packageRange || "3–16 LPA"}</strong>
+                  <span>Package guidance</span>
+                </div>
+              </div>
+            </div>
+            <div className="dct-course-proof-list">
+              {(course.trustProofs || []).map((item) => (
+                <div className="dct-course-proof-card" key={item.title}>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="dct-course-package-band">
+            <div>
+              <h3>Register after understanding the career path clearly.</h3>
+              <p>
+                {course.packageNote ||
+                  "We show the course outcome, package guidance, company target segment and project roadmap before registration so students know what they are joining."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleEnroll}
+              className="dct-course-btn primary"
+            >
+              Register Now
+            </button>
+          </div>
+        </div>
+      </section>
 
-      <section className="dct-course-section"><div className="dct-course-shell"><SectionHead eyebrow="Who can join" title="Built for engineers who want a" highlight="design career" copy="The course is structured for freshers, production/quality engineers, CAD users and mechanical professionals who want practical automotive project exposure." /><div className="dct-course-join-grid">{(course.whoCanJoin || ["Mechanical freshers","Diploma engineers","Production/Quality switchers","CAD beginners","Career gap students"]).map((item, i) => <div className="dct-course-card" key={item}><div className="dct-course-card-icon">{i + 1}</div><h3>{item}</h3><p>Learn step-by-step with real automotive design workflow.</p></div>)}</div></div></section>
+      <section className="dct-course-section">
+        <div className="dct-course-shell">
+          <SectionHead
+            eyebrow="Who can join"
+            title="Built for engineers who want a"
+            highlight="design career"
+            copy="The course is structured for freshers, production/quality engineers, CAD users and mechanical professionals who want practical automotive project exposure."
+          />
+          <div className="dct-course-join-grid">
+            {(
+              course.whoCanJoin || [
+                "Mechanical freshers",
+                "Diploma engineers",
+                "Production/Quality switchers",
+                "CAD beginners",
+                "Career gap students",
+              ]
+            ).map((item, i) => (
+              <div className="dct-course-card" key={item}>
+                <div className="dct-course-card-icon">{i + 1}</div>
+                <h3>{item}</h3>
+                <p>Learn step-by-step with real automotive design workflow.</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <section className="dct-course-section alt"><div className="dct-course-shell"><SectionHead eyebrow="Learning outcome" title="What you will be able to" highlight="do confidently" /><div className="dct-course-outcome-grid">{(course.outcomes || []).map((outcome) => <div className="dct-course-card" key={outcome}><div className="dct-course-card-icon">✓</div><h3>{outcome}</h3><p>{course.outcomeSub || "Every topic is connected with practical CAD and automotive interview expectations."}</p></div>)}</div></div></section>
+      <section className="dct-course-section alt">
+        <div className="dct-course-shell">
+          <SectionHead
+            eyebrow="Learning outcome"
+            title="What you will be able to"
+            highlight="do confidently"
+          />
+          <div className="dct-course-outcome-grid">
+            {(course.outcomes || []).map((outcome) => (
+              <div className="dct-course-card" key={outcome}>
+                <div className="dct-course-card-icon">✓</div>
+                <h3>{outcome}</h3>
+                <p>
+                  {course.outcomeSub ||
+                    "Every topic is connected with practical CAD and automotive interview expectations."}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {sessionRanges.length > 0 && <section id="roadmap" className="dct-course-section"><div className="dct-course-shell"><SectionHead center eyebrow="Complete syllabus" title={course.roadmapLabel || `${course.sessions || sessions.length}-session training roadmap`} copy={course.roadmapCopy || "Structured roadmap with live sessions and project practice as per course requirements."} />{course.syllabusPdf && <div className="dct-course-syllabus-action"><a className="dct-course-download-btn" href={asset(course.syllabusPdf)} download>Download Complete Detailed Syllabus PDF</a></div>}<div className="dct-course-roadmap"><div className="dct-course-range-tabs">{sessionRanges.map((range, i) => <button key={range.short} className={`dct-course-range-tab ${activeRange === i ? "active" : ""}`} onClick={() => setActiveRange(i)} type="button">{range.short}</button>)}</div><div className="dct-course-session-list">{sessionRanges[activeRange]?.items.map((session) => <div className="dct-course-session-row" key={`${session.no}-${session.title}`}><div className="dct-course-session-no">{session.no}</div><div><h4>{session.title}</h4><p>{session.trainer || "Industry Expert"}</p></div><span className="dct-course-session-chip">{session.category}</span></div>)}</div></div></div></section>}
+      {sessionRanges.length > 0 && (
+        <section id="roadmap" className="dct-course-section">
+          <div className="dct-course-shell">
+            <SectionHead
+              center
+              eyebrow="Complete syllabus"
+              title={
+                course.roadmapLabel ||
+                `${course.sessions || sessions.length}-session training roadmap`
+              }
+              copy={
+                course.roadmapCopy ||
+                "Structured roadmap with live sessions and project practice as per course requirements."
+              }
+            />
+            {course.syllabusPdf && (
+              <div className="dct-course-syllabus-action">
+                <a
+                  className="dct-course-download-btn"
+                  href={asset(course.syllabusPdf)}
+                  download
+                >
+                  Download Complete Detailed Syllabus PDF
+                </a>
+              </div>
+            )}
+            <div className="dct-course-roadmap">
+              <div className="dct-course-range-tabs">
+                {sessionRanges.map((range, i) => (
+                  <button
+                    key={range.short}
+                    className={`dct-course-range-tab ${activeRange === i ? "active" : ""}`}
+                    onClick={() => setActiveRange(i)}
+                    type="button"
+                  >
+                    {range.short}
+                  </button>
+                ))}
+              </div>
+              <div className="dct-course-session-list">
+                {sessionRanges[activeRange]?.items.map((session) => (
+                  <div
+                    className="dct-course-session-row"
+                    key={`${session.no}-${session.title}`}
+                  >
+                    <div className="dct-course-session-no">{session.no}</div>
+                    <div>
+                      <h4>{session.title}</h4>
+                      <p>{session.trainer || "Industry Expert"}</p>
+                    </div>
+                    <span className="dct-course-session-chip">
+                      {session.category}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
-      {projects.length > 0 && <section id="projects" className="dct-course-section dark"><div className="dct-course-shell"><SectionHead eyebrow="Portfolio projects" title="Project proof students can" highlight="show in interviews" copy="Real project practice helps students explain design thinking, CAD steps and project logic clearly." /><div className="dct-course-project-grid">{projects.map((project) => <article className="dct-course-project-card" key={project.title}><div className="dct-course-project-visual"><div className="dct-course-project-dual">{project.frontImage && <div><span className="dct-course-project-image-label">CAD View</span><img src={asset(project.frontImage)} alt={`${project.title} CAD`} /></div>}{project.backImage && <div><span className="dct-course-project-image-label">Vehicle Reference</span><img src={asset(project.backImage)} alt={`${project.title} vehicle reference`} /></div>}</div></div><div className="dct-course-project-body"><h3>{project.title}</h3><p>{project.desc || project.short}</p><div className="dct-course-project-meta"><span>{project.area || project.tag}</span><span>Project {project.no}</span></div></div></article>)}</div><p className="dct-course-project-slider-note">Swipe / scroll to view all projects →</p></div></section>}
+      {projects.length > 0 && (
+        <section id="projects" className="dct-course-section dark">
+          <div className="dct-course-shell">
+            <SectionHead
+              eyebrow="Portfolio projects"
+              title="Project proof students can"
+              highlight="show in interviews"
+              copy="Real project practice helps students explain design thinking, CAD steps and project logic clearly."
+            />
+            <div className="dct-course-project-grid">
+              {projects.map((project) => (
+                <article
+                  className="dct-course-project-card"
+                  key={project.title}
+                >
+                  <div className="dct-course-project-visual">
+                    <div className="dct-course-project-dual">
+                      {project.frontImage && (
+                        <div>
+                          <span className="dct-course-project-image-label">
+                            CAD View
+                          </span>
+                          <img
+                            src={asset(project.frontImage)}
+                            alt={`${project.title} CAD`}
+                          />
+                        </div>
+                      )}
+                      {project.backImage && (
+                        <div>
+                          <span className="dct-course-project-image-label">
+                            Vehicle Reference
+                          </span>
+                          <img
+                            src={asset(project.backImage)}
+                            alt={`${project.title} vehicle reference`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="dct-course-project-body">
+                    <h3>{project.title}</h3>
+                    <p>{project.desc || project.short}</p>
+                    <div className="dct-course-project-meta">
+                      <span>{project.area || project.tag}</span>
+                      <span>Project {project.no}</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <p className="dct-course-project-slider-note">
+              Swipe / scroll to view all projects →
+            </p>
+          </div>
+        </section>
+      )}
 
-      <section id="demo" className="dct-course-section"><div className="dct-course-shell"><div className="dct-course-demo-head"><span className="dct-course-label">Watch demo</span><h2>Watch project demo <span>before registration</span></h2><p>Play the demo directly on this page and understand the project explanation style before joining.</p></div><div className="dct-course-video-frame"><iframe src={demoEmbedUrl} title="Digital CAD Training project demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><div className="dct-course-demo-open"><a href={demoUrl} target="_blank" rel="noreferrer">Open on YouTube</a></div></div></section>
+      <section id="demo" className="dct-course-section">
+        <div className="dct-course-shell">
+          <div className="dct-course-demo-head">
+            <span className="dct-course-label">Watch demo</span>
+            <h2>
+              Watch project demo <span>before registration</span>
+            </h2>
+            <p>
+              Play the demo directly on this page and understand the project
+              explanation style before joining.
+            </p>
+          </div>
+          <div className="dct-course-video-frame">
+            <iframe
+              src={demoEmbedUrl}
+              title="Digital CAD Training project demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <div className="dct-course-demo-open">
+            <a href={demoUrl} target="_blank" rel="noreferrer">
+              Open on YouTube
+            </a>
+          </div>
+        </div>
+      </section>
 
-      <section className="dct-course-section alt"><div className="dct-course-shell"><SectionHead center eyebrow="Placement direction" title="Companies students prepare" highlight="for" copy="Known MNC, OEM, Tier-1 and engineering service companies are shown 10 at a time for easier mobile viewing." /><div className="dct-course-company-toolbar"><span>Showing {companyStart + 1}–{Math.min(companyStart + 10, companyList.length)} of {companyList.length} companies</span><button className="dct-course-company-next" type="button" onClick={nextCompanyPage}>View {companyStart + 10 >= companyList.length ? "1–10" : `${companyStart + 11}–${Math.min(companyStart + 20, companyList.length)}`} Companies</button></div><div className="dct-course-company-grid">{visibleCompanies.map((company) => <div className="dct-course-company" key={company}>{company}</div>)}</div></div></section>
+      <section className="dct-course-section alt">
+        <div className="dct-course-shell">
+          <SectionHead
+            center
+            eyebrow="Placement direction"
+            title="Companies students prepare"
+            highlight="for"
+            copy="Known MNC, OEM, Tier-1 and engineering service companies are shown 10 at a time for easier mobile viewing."
+          />
+          <div className="dct-course-company-toolbar">
+            <span>
+              Showing {companyStart + 1}–
+              {Math.min(companyStart + 10, companyList.length)} of{" "}
+              {companyList.length} companies
+            </span>
+            <button
+              className="dct-course-company-next"
+              type="button"
+              onClick={nextCompanyPage}
+            >
+              View{" "}
+              {companyStart + 10 >= companyList.length
+                ? "1–10"
+                : `${companyStart + 11}–${Math.min(companyStart + 20, companyList.length)}`}{" "}
+              Companies
+            </button>
+          </div>
+          <div className="dct-course-company-grid">
+            {visibleCompanies.map((company) => (
+              <div className="dct-course-company" key={company}>
+                {company}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {faqs.length > 0 && <section id="faq" className="dct-course-section"><div className="dct-course-shell"><SectionHead center eyebrow="FAQs" title="Common questions before" highlight="registration" /><div className="dct-course-faq-list">{faqs.map((faq, index) => <div className={`dct-course-faq-item ${openFaq === index ? "open" : ""}`} key={faq.q}><button className="dct-course-faq-btn" onClick={() => setOpenFaq(openFaq === index ? -1 : index)} type="button"><span>{faq.q}</span><span className="dct-course-faq-icon">+</span></button><div className="dct-course-faq-content"><div className="dct-course-faq-answer"><RichAnswer answer={faq.a} /></div></div></div>)}</div></div></section>}
+      {faqs.length > 0 && (
+        <section id="faq" className="dct-course-section">
+          <div className="dct-course-shell">
+            <SectionHead
+              center
+              eyebrow="FAQs"
+              title="Common questions before"
+              highlight="registration"
+            />
+            <div className="dct-course-faq-list">
+              {faqs.map((faq, index) => (
+                <div
+                  className={`dct-course-faq-item ${openFaq === index ? "open" : ""}`}
+                  key={faq.q}
+                >
+                  <button
+                    className="dct-course-faq-btn"
+                    onClick={() => setOpenFaq(openFaq === index ? -1 : index)}
+                    type="button"
+                  >
+                    <span>{faq.q}</span>
+                    <span className="dct-course-faq-icon">+</span>
+                  </button>
+                  <div className="dct-course-faq-content">
+                    <div className="dct-course-faq-answer">
+                      <RichAnswer answer={faq.a} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
-      <div className="dct-course-bottom-cta"><div><strong>{course.name}</strong><span>New Batch Starts: {displayBatchStartText}</span></div><button className="dct-course-btn primary" type="button" onClick={handleEnroll}>Register</button></div>
+      <div className="dct-course-bottom-cta">
+        <div>
+          <strong>{course.name}</strong>
+          <span>New Batch Starts: {displayBatchStartText}</span>
+        </div>
+        <button
+          className="dct-course-btn primary"
+          type="button"
+          onClick={handleEnroll}
+        >
+          Register
+        </button>
+      </div>
     </div>
   );
 }
