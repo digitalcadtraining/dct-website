@@ -178,8 +178,22 @@ const resetPassword = async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(new_password, 10);
 
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: normalizedPhone },
+          { phone: `91${normalizedPhone}` },
+          { phone: String(phone).replace(/\D/g, "") },
+        ],
+      },
+    });
+
+    if (!user) {
+      return error(res, 404, "Account not found.");
+    }
+
     await prisma.user.update({
-      where: { phone: normalizedPhone },
+      where: { id: user.id },
       data: { password_hash: passwordHash },
     });
 
@@ -196,8 +210,14 @@ const login = async (req, res, next) => {
 
     const isPhone = /^\d+$/.test(email_or_phone.replace(/[\s\-\+]/g, ""));
     const user = isPhone
-      ? await prisma.user.findUnique({
-          where: { phone: normalizePhone(email_or_phone) },
+      ? await prisma.user.findFirst({
+          where: {
+            OR: [
+              { phone: normalizePhone(email_or_phone) },
+              { phone: `91${normalizePhone(email_or_phone)}` },
+              { phone: String(email_or_phone).replace(/\D/g, "") },
+            ],
+          },
         })
       : await prisma.user.findUnique({
           where: { email: email_or_phone.toLowerCase() },

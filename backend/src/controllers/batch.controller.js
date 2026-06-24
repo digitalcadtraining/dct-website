@@ -562,6 +562,11 @@ const getEnrolledBatches = async (req, res, next) => {
         enrolled_at: e.enrolled_at,
         payment_status: e.payment_status,
         progress,
+        enrolled_price: e.enrolled_price,
+        original_price: e.original_price,
+        discount_code: e.discount_code,
+        emi_first_due: e.emi_first_due,
+        emi_second_due: e.emi_second_due,
         batch: {
           ...cleanBatch,
           recorded_projects: projectMap.get(key) || [],
@@ -713,7 +718,6 @@ const getCourseBatchesForRegistration = async (req, res, next) => {
     next(err);
   }
 };
-
 
 module.exports = {
   createBatch,

@@ -5,18 +5,26 @@ const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
 const { normalizePhone, hashString } = require("../utils/helpers");
 const { ROLES, REFRESH_TOKEN_EXPIRES_MS } = require("../config/constants");
-const { createPaymentRequest, getPaymentRequest, isPaymentSuccessful } = require("../services/instamojo.service");
+const {
+  createPaymentRequest,
+  getPaymentRequest,
+  isPaymentSuccessful,
+} = require("../services/instamojo.service");
 
 const REGISTRATION_AMOUNT = Number(process.env.REGISTRATION_FEE_AMOUNT || 999);
 
 function frontendBase() {
-  const frontend = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
+  const frontend = (
+    process.env.FRONTEND_URL || "http://localhost:5173"
+  ).replace(/\/+$/, "");
   const appBase = (process.env.FRONTEND_APP_BASE || "/dct").replace(/\/+$/, "");
   return frontend.endsWith(appBase) ? frontend : `${frontend}${appBase}`;
 }
 
 function backendBase(req) {
-  return (process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`).replace(/\/+$/, "");
+  return (
+    process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`
+  ).replace(/\/+$/, "");
 }
 
 function setStudentRefreshCookie(res, token) {
@@ -36,16 +44,24 @@ async function generateTokens(user) {
   const accessToken = jwt.sign(
     { ...payload, tokenType: "access" },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m", jwtid: crypto.randomUUID() }
+    {
+      expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
+      jwtid: crypto.randomUUID(),
+    },
   );
 
   const rawRefreshToken = jwt.sign(
     { ...payload, tokenType: "refresh" },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d", jwtid: crypto.randomUUID() }
+    {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
+      jwtid: crypto.randomUUID(),
+    },
   );
 
-  await prisma.refreshToken.deleteMany({ where: { user_id: user.id } }).catch(() => {});
+  await prisma.refreshToken
+    .deleteMany({ where: { user_id: user.id } })
+    .catch(() => {});
 
   await prisma.refreshToken.create({
     data: {
@@ -60,9 +76,27 @@ async function generateTokens(user) {
 
 async function startRegistrationPayment(req, res, next) {
   try {
-    const { name, email, phone, password, course_id, batch_id, phone_token } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      course_id,
+      batch_id,
+      phone_token,
+      selected_course_price,
+      discount_code,
+    } = req.body;
 
-    if (!name || !email || !phone || !password || !course_id || !batch_id || !phone_token) {
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !password ||
+      !course_id ||
+      !batch_id ||
+      !phone_token
+    ) {
       return error(res, 400, "All fields are required before payment.");
     }
 
@@ -70,13 +104,22 @@ async function startRegistrationPayment(req, res, next) {
     try {
       decoded = jwt.verify(phone_token, process.env.JWT_ACCESS_SECRET);
     } catch {
-      return error(res, 400, "Phone verification expired. Please verify OTP again.");
+      return error(
+        res,
+        400,
+        "Phone verification expired. Please verify OTP again.",
+      );
     }
 
     const normalizedPhone = normalizePhone(phone);
-    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedEmail = String(email || "")
+      .trim()
+      .toLowerCase();
 
-    if (decoded.phone !== normalizedPhone || decoded.purpose !== "STUDENT_REGISTER") {
+    if (
+      decoded.phone !== normalizedPhone ||
+      decoded.purpose !== "STUDENT_REGISTER"
+    ) {
       return error(res, 400, "Invalid phone verification token.");
     }
 
@@ -85,19 +128,40 @@ async function startRegistrationPayment(req, res, next) {
       prisma.user.findUnique({ where: { phone: normalizedPhone } }),
     ]);
 
-    if (existingEmail) return error(res, 409, "Email already registered. Please login instead.");
-    if (existingPhone) return error(res, 409, "Phone number already registered. Please login instead.");
+    if (existingEmail)
+      return error(res, 409, "Email already registered. Please login instead.");
+    if (existingPhone)
+      return error(
+        res,
+        409,
+        "Phone number already registered. Please login instead.",
+      );
 
     const batch = await prisma.batch.findFirst({
-      where: { id: batch_id, course_id, status: { in: ["UPCOMING", "ACTIVE"] } },
+      where: {
+        id: batch_id,
+        course_id,
+        status: { in: ["UPCOMING", "ACTIVE"] },
+      },
       include: { course: { select: { name: true, slug: true } } },
     });
 
-    if (!batch) return error(res, 404, "Selected batch not found or no longer available.");
+    if (!batch)
+      return error(
+        res,
+        404,
+        "Selected batch not found or no longer available.",
+      );
 
-    const enrollmentCount = await prisma.enrollment.count({ where: { batch_id } });
+    const enrollmentCount = await prisma.enrollment.count({
+      where: { batch_id },
+    });
     if (enrollmentCount >= batch.max_students) {
-      return error(res, 409, "This batch is full. Please choose another batch.");
+      return error(
+        res,
+        409,
+        "This batch is full. Please choose another batch.",
+      );
     }
 
     const password_hash = await bcrypt.hash(password, 12);
@@ -133,6 +197,15 @@ async function startRegistrationPayment(req, res, next) {
           course_id,
           batch_id,
           payment_status: "PENDING",
+          enrolled_price: selected_course_price || null,
+          original_price: selected_course_price || null,
+          discount_code: discount_code || null,
+          emi_first_due: new Date(
+            new Date(batch.start_date).getTime() + 2 * 24 * 60 * 60 * 1000,
+          ),
+          emi_second_due: new Date(
+            new Date(batch.start_date).getTime() + 33 * 24 * 60 * 60 * 1000,
+          ),
         },
       });
     }
@@ -196,19 +269,33 @@ async function getExistingPaidUserForPending(pending) {
   return enrollment?.payment_status === "PAID" ? user : null;
 }
 
-async function finalizePaidRegistration(pending, paymentRequestId, paymentId, rawResponse, res) {
+async function finalizePaidRegistration(
+  pending,
+  paymentRequestId,
+  paymentId,
+  rawResponse,
+  res,
+) {
   if (pending.payment_status === "PAID") {
     const existingUser = await getExistingPaidUserForPending(pending);
     if (existingUser) {
       const tokens = await generateTokens(existingUser);
       setStudentRefreshCookie(res, tokens.refreshToken);
-      return { user: existingUser, access_token: tokens.accessToken, already_created: true };
+      return {
+        user: existingUser,
+        access_token: tokens.accessToken,
+        already_created: true,
+      };
     }
   }
 
   const result = await prisma.$transaction(async (tx) => {
     const batch = await tx.batch.findFirst({
-      where: { id: pending.batch_id, course_id: pending.course_id, status: { in: ["UPCOMING", "ACTIVE"] } },
+      where: {
+        id: pending.batch_id,
+        course_id: pending.course_id,
+        status: { in: ["UPCOMING", "ACTIVE"] },
+      },
       include: { course: { select: { name: true } } },
     });
 
@@ -220,9 +307,13 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
     });
 
     if (!user) {
-      const count = await tx.enrollment.count({ where: { batch_id: pending.batch_id } });
+      const count = await tx.enrollment.count({
+        where: { batch_id: pending.batch_id },
+      });
       if (count >= batch.max_students) {
-        throw new Error("This batch is full. Contact DCT support for manual confirmation.");
+        throw new Error(
+          "This batch is full. Contact DCT support for manual confirmation.",
+        );
       }
 
       user = await tx.user.create({
@@ -251,7 +342,10 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
     if (existingEnrollment) {
       await tx.enrollment.update({
         where: { id: existingEnrollment.id },
-        data: { payment_status: "PAID", payment_ref: paymentId || paymentRequestId },
+        data: {
+          payment_status: "PAID",
+          payment_ref: paymentId || paymentRequestId,
+        },
       });
     } else {
       await tx.enrollment.create({
@@ -260,6 +354,11 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
           batch_id: pending.batch_id,
           payment_status: "PAID",
           payment_ref: paymentId || paymentRequestId,
+          enrolled_price: pending.enrolled_price,
+          original_price: pending.original_price,
+          discount_code: pending.discount_code,
+          emi_first_due: pending.emi_first_due,
+          emi_second_due: pending.emi_second_due,
         },
       });
     }
@@ -288,13 +387,17 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
 
 async function verifyRegistrationPayment(req, res, next) {
   try {
-    const registrationId = req.body.registration_id || req.query.registration_id;
-    const paymentRequestId = req.body.payment_request_id || req.query.payment_request_id;
+    const registrationId =
+      req.body.registration_id || req.query.registration_id;
+    const paymentRequestId =
+      req.body.payment_request_id || req.query.payment_request_id;
     const paymentId = req.body.payment_id || req.query.payment_id;
 
     if (!registrationId) return error(res, 400, "Registration ID is required.");
 
-    const pending = await prisma.pendingRegistration.findUnique({ where: { id: registrationId } });
+    const pending = await prisma.pendingRegistration.findUnique({
+      where: { id: registrationId },
+    });
     if (!pending) return error(res, 404, "Pending registration not found.");
 
     const requestId = paymentRequestId || pending.payment_request_id;
@@ -308,14 +411,37 @@ async function verifyRegistrationPayment(req, res, next) {
         data: { raw_response: paymentData || {} },
       });
 
-      return error(res, 402, "Payment is not successful yet. Please complete payment or try again.");
+      return error(
+        res,
+        402,
+        "Payment is not successful yet. Please complete payment or try again.",
+      );
     }
 
-    const data = await finalizePaidRegistration(pending, requestId, paymentId, paymentData, res);
-    return success(res, 200, "Payment verified. Student account activated.", data);
+    const data = await finalizePaidRegistration(
+      pending,
+      requestId,
+      paymentId,
+      paymentData,
+      res,
+    );
+    return success(
+      res,
+      200,
+      "Payment verified. Student account activated.",
+      data,
+    );
   } catch (err) {
-    if (String(err?.message || "").toLowerCase().includes("token already exists")) {
-      return error(res, 409, "Session token conflict. Please click Try Again once or login with your registered phone/email.");
+    if (
+      String(err?.message || "")
+        .toLowerCase()
+        .includes("token already exists")
+    ) {
+      return error(
+        res,
+        409,
+        "Session token conflict. Please click Try Again once or login with your registered phone/email.",
+      );
     }
     next(err);
   }
@@ -323,10 +449,12 @@ async function verifyRegistrationPayment(req, res, next) {
 
 async function instamojoWebhook(req, res, next) {
   try {
-    const paymentRequestId = req.body.payment_request_id || req.body.payment_request;
+    const paymentRequestId =
+      req.body.payment_request_id || req.body.payment_request;
     const paymentId = req.body.payment_id || req.body.payment;
 
-    if (!paymentRequestId) return res.status(200).json({ success: true, ignored: true });
+    if (!paymentRequestId)
+      return res.status(200).json({ success: true, ignored: true });
 
     const pending = await prisma.pendingRegistration.findFirst({
       where: { payment_request_id: paymentRequestId },
@@ -337,19 +465,13 @@ async function instamojoWebhook(req, res, next) {
     const paymentData = await getPaymentRequest(paymentRequestId);
 
     if (isPaymentSuccessful(paymentData, paymentId)) {
-      await prisma.pendingRegistration.update({
-        where: { id: pending.id },
-        data: { payment_status: "PAID", payment_id: paymentId || null },
-      });
-
-      await prisma.registrationPayment.updateMany({
-        where: { pending_registration_id: pending.id },
-        data: {
-          status: "PAID",
-          payment_id: paymentId || null,
-          raw_response: paymentData || {},
-        },
-      });
+      await finalizePaidRegistration(
+        pending,
+        paymentRequestId,
+        paymentId,
+        paymentData,
+        res,
+      );
     }
 
     return res.status(200).json({ success: true });
@@ -358,4 +480,8 @@ async function instamojoWebhook(req, res, next) {
   }
 }
 
-module.exports = { startRegistrationPayment, verifyRegistrationPayment, instamojoWebhook };
+module.exports = {
+  startRegistrationPayment,
+  verifyRegistrationPayment,
+  instamojoWebhook,
+};

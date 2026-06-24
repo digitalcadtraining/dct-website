@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { authApi, courseApi, registrationPaymentApi } from "../../services/api.js";
+import {
+  authApi,
+  courseApi,
+  registrationPaymentApi,
+} from "../../services/api.js";
 import { Input, Button } from "../../components/ui/index.jsx";
 import AuthHero from "../../components/shared/AuthHero.jsx";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,11 +43,15 @@ function getSoftwarePricing(selected = []) {
 }
 
 function getBatchPrice(batch, course) {
-  return Number(batch?.offer_price || course?.offer_price || course?.price || 0);
+  return Number(
+    batch?.offer_price || course?.offer_price || course?.price || 0,
+  );
 }
 
 function getBatchOriginalPrice(batch, course) {
-  return Number(batch?.original_price || course?.original_price || course?.price || 0);
+  return Number(
+    batch?.original_price || course?.original_price || course?.price || 0,
+  );
 }
 
 function getDisplayPrice(value) {
@@ -54,7 +62,8 @@ function findSoftwareBatch(batches = [], primaryTool, selectedTools = []) {
   const target = primaryTool || selectedTools[0] || "catia-v5";
   const keywords = SOFTWARE_TOOL_BATCH_KEYWORDS[target] || [];
   const found = batches.find((batch) => {
-    const text = `${batch.name || ""} ${(batch.time_slots || []).join(" ")}`.toLowerCase();
+    const text =
+      `${batch.name || ""} ${(batch.time_slots || []).join(" ")}`.toLowerCase();
     return keywords.some((keyword) => text.includes(keyword));
   });
   return found || batches[0];
@@ -84,7 +93,8 @@ export default function RegisterPage() {
     .filter(Boolean);
 
   const isSoftwareToolsRegistration =
-    slugFromUrl === SOFTWARE_TOOL_COURSE_SLUG || softwareToolsFromUrl.length > 0;
+    slugFromUrl === SOFTWARE_TOOL_COURSE_SLUG ||
+    softwareToolsFromUrl.length > 0;
 
   const [form, setForm] = useState({
     name: "",
@@ -121,7 +131,7 @@ export default function RegisterPage() {
       const matched = courses.find(
         (c) =>
           c.slug === slugFromUrl ||
-          c.name.toLowerCase().replace(/\s+/g, "-") === slugFromUrl
+          c.name.toLowerCase().replace(/\s+/g, "-") === slugFromUrl,
       );
       if (matched) setForm((f) => ({ ...f, course_id: matched.id }));
     }
@@ -160,7 +170,10 @@ export default function RegisterPage() {
 
   const softwarePricing = getSoftwarePricing(form.software_tools);
   const selectedBatchPrice = getBatchPrice(selectedBatch, selectedCourse);
-  const selectedBatchOriginalPrice = getBatchOriginalPrice(selectedBatch, selectedCourse);
+  const selectedBatchOriginalPrice = getBatchOriginalPrice(
+    selectedBatch,
+    selectedCourse,
+  );
 
   const payableAmount = isSoftwareToolsRegistration
     ? softwarePricing.amount
@@ -193,8 +206,10 @@ export default function RegisterPage() {
         : "Please select a batch.";
     }
 
-    if (form.password.length < 8) return "Password must be at least 8 characters.";
-    if (form.password !== form.confirm_password) return "Passwords do not match.";
+    if (form.password.length < 8)
+      return "Password must be at least 8 characters.";
+    if (form.password !== form.confirm_password)
+      return "Passwords do not match.";
 
     return null;
   };
@@ -226,7 +241,11 @@ export default function RegisterPage() {
     setErr("");
 
     try {
-      const verifyRes = await authApi.verifyOtp(form.phone, otpString, "STUDENT_REGISTER");
+      const verifyRes = await authApi.verifyOtp(
+        form.phone,
+        otpString,
+        "STUDENT_REGISTER",
+      );
       setPhoneToken(verifyRes.data.phone_token);
       setStep(3);
     } catch (e) {
@@ -252,7 +271,8 @@ export default function RegisterPage() {
         software_tools: form.software_tools,
         training_mode: form.training_mode,
         batch_start_date: form.batch_start_date,
-        payable_amount: payableAmount,
+        payable_amount: REGISTRATION_FEE,
+        selected_course_price: payableAmount,
       });
 
       const url = paymentRes?.data?.payment_url;
@@ -292,7 +312,9 @@ export default function RegisterPage() {
           <Link to="/" className="flex flex-col items-center mb-6">
             <div
               className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-lg"
-              style={{ background: "linear-gradient(135deg, #007BBF, #003C6E)" }}
+              style={{
+                background: "linear-gradient(135deg, #007BBF, #003C6E)",
+              }}
             >
               D
             </div>
@@ -310,15 +332,23 @@ export default function RegisterPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
               >
-                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Create Account</h1>
+                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">
+                  Create Account
+                </h1>
                 <p className="text-sm text-dct-lightgray text-center mb-6">
                   {isSoftwareToolsRegistration ? (
                     <>
-                      Enrolling in <strong className="text-dct-primary">Software Tools Training</strong>
+                      Enrolling in{" "}
+                      <strong className="text-dct-primary">
+                        Software Tools Training
+                      </strong>
                     </>
                   ) : selectedCourse ? (
                     <>
-                      Enrolling in <strong className="text-dct-primary">{selectedCourse.name}</strong>
+                      Enrolling in{" "}
+                      <strong className="text-dct-primary">
+                        {selectedCourse.name}
+                      </strong>
                     </>
                   ) : (
                     "Join DigitalCAD Training"
@@ -328,14 +358,16 @@ export default function RegisterPage() {
                 <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-dct-gray">
                   <p className="font-bold text-dct-primary">
                     {payableLabel}: ₹{payableAmount.toLocaleString("en-IN")}
-                    {!isSoftwareToolsRegistration && selectedBatchOriginalPrice > payableAmount && (
-                      <span className="ml-2 text-dct-gray line-through">
-                        ₹{selectedBatchOriginalPrice.toLocaleString("en-IN")}
-                      </span>
-                    )}
+                    {!isSoftwareToolsRegistration &&
+                      selectedBatchOriginalPrice > payableAmount && (
+                        <span className="ml-2 text-dct-gray line-through">
+                          ₹{selectedBatchOriginalPrice.toLocaleString("en-IN")}
+                        </span>
+                      )}
                   </p>
                   <p className="mt-1">
-                    Your dashboard access starts only after WhatsApp OTP verification and successful payment.
+                    Your dashboard access starts only after WhatsApp OTP
+                    verification and successful payment.
                   </p>
                 </div>
 
@@ -390,7 +422,9 @@ export default function RegisterPage() {
                         </label>
                         <select
                           value={form.training_mode}
-                          onChange={(e) => update("training_mode", e.target.value)}
+                          onChange={(e) =>
+                            update("training_mode", e.target.value)
+                          }
                           className="dct-input w-full"
                         >
                           {DELIVERY_MODES.map((mode) => (
@@ -413,15 +447,22 @@ export default function RegisterPage() {
                             color: "#9a3412",
                           }}
                         >
-                          <span className="font-semibold text-sm">{form.batch_start_date}</span>
-                          <span className="text-xs font-semibold">Fixed Batch</span>
+                          <span className="font-semibold text-sm">
+                            {form.batch_start_date}
+                          </span>
+                          <span className="text-xs font-semibold">
+                            Fixed Batch
+                          </span>
                         </div>
                       </div>
 
                       {selectedBatch && (
                         <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-xs text-green-800">
-                          Batch auto-selected: <strong>{selectedBatch.name}</strong>
-                          {selectedBatch.time_slots?.length > 0 ? ` · ${selectedBatch.time_slots.join(", ")}` : ""}
+                          Batch auto-selected:{" "}
+                          <strong>{selectedBatch.name}</strong>
+                          {selectedBatch.time_slots?.length > 0
+                            ? ` · ${selectedBatch.time_slots.join(", ")}`
+                            : ""}
                         </div>
                       )}
                     </>
@@ -440,8 +481,12 @@ export default function RegisterPage() {
                             color: "#024981",
                           }}
                         >
-                          <span className="font-semibold text-sm">{selectedCourse.name}</span>
-                          <span className="text-xs text-blue-400 font-semibold">Pre-selected</span>
+                          <span className="font-semibold text-sm">
+                            {selectedCourse.name}
+                          </span>
+                          <span className="text-xs text-blue-400 font-semibold">
+                            Pre-selected
+                          </span>
                         </div>
                       ) : (
                         <select
@@ -450,7 +495,9 @@ export default function RegisterPage() {
                           className="dct-input w-full"
                         >
                           <option value="">
-                            {courses.length === 0 ? "Loading courses…" : "Choose a course…"}
+                            {courses.length === 0
+                              ? "Loading courses…"
+                              : "Choose a course…"}
                           </option>
                           {courses.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -463,7 +510,10 @@ export default function RegisterPage() {
                   )}
 
                   {!isSoftwareToolsRegistration && form.course_id && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                    >
                       <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">
                         Select Batch
                       </label>
@@ -480,11 +530,21 @@ export default function RegisterPage() {
                         >
                           <option value="">Choose a batch…</option>
                           {batches.map((b) => (
-                            <option key={b.id} value={b.id} disabled={b.is_full}>
+                            <option
+                              key={b.id}
+                              value={b.id}
+                              disabled={b.is_full}
+                            >
                               {b.name}
-                              {b.offer_price ? ` — ₹${getDisplayPrice(b.offer_price)}` : ""}
-                              {b.is_full ? " — FULL" : ` — ${b.available_seats} seats left`}
-                              {b.time_slots?.length > 0 ? ` · ${b.time_slots[0]}` : ""}
+                              {b.offer_price
+                                ? ` — ₹${getDisplayPrice(b.offer_price)}`
+                                : ""}
+                              {b.is_full
+                                ? " — FULL"
+                                : ` — ${b.available_seats} seats left`}
+                              {b.time_slots?.length > 0
+                                ? ` · ${b.time_slots[0]}`
+                                : ""}
                             </option>
                           ))}
                         </select>
@@ -494,7 +554,9 @@ export default function RegisterPage() {
                         <div className="mt-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-dct-gray space-y-1">
                           <p>
                             <strong>Starts:</strong>{" "}
-                            {new Date(selectedBatch.start_date).toLocaleDateString("en-IN", {
+                            {new Date(
+                              selectedBatch.start_date,
+                            ).toLocaleDateString("en-IN", {
                               day: "numeric",
                               month: "long",
                               year: "numeric",
@@ -502,15 +564,19 @@ export default function RegisterPage() {
                           </p>
                           {selectedBatch.time_slots?.length > 0 && (
                             <p>
-                              <strong>Timing:</strong> {selectedBatch.time_slots.join(", ")}
+                              <strong>Timing:</strong>{" "}
+                              {selectedBatch.time_slots.join(", ")}
                             </p>
                           )}
                           <p>
-                            <strong>Tutor:</strong> {selectedBatch.tutor_name || "Industry Expert"}
+                            <strong>Tutor:</strong>{" "}
+                            {selectedBatch.tutor_name || "Industry Expert"}
                           </p>
                           <p>
-                            <strong>Course Fee:</strong> ₹{getDisplayPrice(selectedBatchPrice)}
-                            {selectedBatchOriginalPrice > selectedBatchPrice && (
+                            <strong>Course Fee:</strong> ₹
+                            {getDisplayPrice(selectedBatchPrice)}
+                            {selectedBatchOriginalPrice >
+                              selectedBatchPrice && (
                               <span className="ml-1 line-through text-dct-lightgray">
                                 ₹{getDisplayPrice(selectedBatchOriginalPrice)}
                               </span>
@@ -539,14 +605,24 @@ export default function RegisterPage() {
 
                   {err && <ErrorBox message={err} />}
 
-                  <Button fullWidth size="lg" onClick={handleSendOtp} disabled={otpLoading}>
-                    {otpLoading ? "Sending OTP…" : "Send WhatsApp OTP & Continue"}
+                  <Button
+                    fullWidth
+                    size="lg"
+                    onClick={handleSendOtp}
+                    disabled={otpLoading}
+                  >
+                    {otpLoading
+                      ? "Sending OTP…"
+                      : "Send WhatsApp OTP & Continue"}
                   </Button>
                 </div>
 
                 <p className="text-center text-sm text-dct-gray mt-5">
                   Already have an account?{" "}
-                  <Link to="/auth/login" className="text-dct-primary font-bold hover:underline">
+                  <Link
+                    to="/auth/login"
+                    className="text-dct-primary font-bold hover:underline"
+                  >
                     Sign In
                   </Link>
                 </p>
@@ -571,12 +647,16 @@ export default function RegisterPage() {
                   ← Back
                 </button>
 
-                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Verify Phone</h1>
+                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">
+                  Verify Phone
+                </h1>
                 <p className="text-sm text-dct-lightgray text-center mb-2">
-                  OTP sent to <strong className="text-dct-dark">+91 {form.phone}</strong>
+                  OTP sent to{" "}
+                  <strong className="text-dct-dark">+91 {form.phone}</strong>
                 </p>
                 <p className="text-xs text-dct-lightgray text-center mb-6">
-                  Development mode: check backend terminal for OTP. Production: connect WhatsApp/SMS provider.
+                  Development mode: check backend terminal for OTP. Production:
+                  connect WhatsApp/SMS provider.
                 </p>
 
                 <form onSubmit={verifyOtpOnly} className="space-y-6">
@@ -636,7 +716,9 @@ export default function RegisterPage() {
                   ← Back
                 </button>
 
-                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Confirm Registration</h1>
+                <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">
+                  Confirm Registration
+                </h1>
                 <p className="text-sm text-dct-lightgray text-center mb-6">
                   Pay to activate your student dashboard.
                 </p>
@@ -644,8 +726,12 @@ export default function RegisterPage() {
                 <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm space-y-4">
                   <div className="flex items-center justify-between border-b border-blue-100 pb-4">
                     <div>
-                      <p className="text-xs uppercase tracking-wider text-dct-gray font-bold">{payableLabel}</p>
-                      <p className="text-4xl font-black text-dct-primary">₹{payableAmount.toLocaleString("en-IN")}</p>
+                      <p className="text-xs uppercase tracking-wider text-dct-gray font-bold">
+                        {payableLabel}
+                      </p>
+                      <p className="text-4xl font-black text-dct-primary">
+                        ₹{payableAmount.toLocaleString("en-IN")}
+                      </p>
                     </div>
                     <div className="h-14 w-14 rounded-2xl bg-dct-primary text-white grid place-items-center font-black">
                       D
@@ -666,11 +752,14 @@ export default function RegisterPage() {
                     {isSoftwareToolsRegistration && (
                       <>
                         <p>
-                          <strong>Software Courses:</strong> {selectedSoftwareNames.join(" + ")}
+                          <strong>Software Courses:</strong>{" "}
+                          {selectedSoftwareNames.join(" + ")}
                         </p>
                         <p>
                           <strong>Training Mode:</strong>{" "}
-                          {DELIVERY_MODES.find((m) => m.id === form.training_mode)?.label || form.training_mode}
+                          {DELIVERY_MODES.find(
+                            (m) => m.id === form.training_mode,
+                          )?.label || form.training_mode}
                         </p>
                         <p>
                           <strong>Batch Start:</strong> {form.batch_start_date}
@@ -679,7 +768,8 @@ export default function RegisterPage() {
                     )}
 
                     <p>
-                      <strong>Batch:</strong> {selectedBatch?.name || "Selected batch"}
+                      <strong>Batch:</strong>{" "}
+                      {selectedBatch?.name || "Selected batch"}
                     </p>
                     <p>
                       <strong>Phone:</strong> +91 {form.phone}
@@ -687,7 +777,8 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="rounded-2xl bg-white border border-blue-100 p-3 text-xs text-dct-gray">
-                    After Instamojo confirms payment, your account will be created automatically and you will get dashboard access.
+                    After Instamojo confirms payment, your account will be
+                    created automatically and you will get dashboard access.
                   </div>
                 </div>
 
@@ -697,8 +788,16 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                <Button fullWidth size="lg" onClick={startPayment} disabled={loading} className="mt-5">
-                  {loading ? "Opening Payment…" : `Pay ₹${payableAmount.toLocaleString("en-IN")} & Register`}
+                <Button
+                  fullWidth
+                  size="lg"
+                  onClick={startPayment}
+                  disabled={loading}
+                  className="mt-5"
+                >
+                  {loading
+                    ? "Opening Payment…"
+                    : `Pay ₹${REGISTRATION_FEE.toLocaleString("en-IN")} & Register`}
                 </Button>
               </motion.div>
             )}
