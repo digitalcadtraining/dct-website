@@ -224,7 +224,6 @@ model Batch {
   @@index([start_date])
   @@map("batches")
 }
-
 model Enrollment {
   id             String        @id @default(cuid())
   student_id     String
@@ -235,6 +234,12 @@ model Enrollment {
   payment_status PaymentStatus @default(PENDING)
   payment_ref    String?
   progress       Int           @default(0)
+
+  enrolled_price Decimal?      @db.Decimal(10, 2)
+  original_price Decimal?      @db.Decimal(10, 2)
+  discount_code  String?
+  emi_first_due  DateTime?
+  emi_second_due DateTime?
 
   @@unique([student_id, batch_id])
   @@index([student_id])

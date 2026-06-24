@@ -86,18 +86,21 @@ const DEFAULT_COURSES = [
     lessons: [
       [
         1,
-        "NX Interface & File Workflow",
-        "Open, save, navigate and understand the NX part environment.",
+        "NX Sketchers Introduction",
+        "its not required now, after 3 months you can learn",
+        "https://player.vimeo.com/video/997012965",
       ],
       [
         2,
-        "NX Sketching Fundamentals",
-        "Use sketch tools, constraints, dimensions and references.",
+        "NX Part-Design",
+        "its not required now, after 3 months you can learn",
+        "https://player.vimeo.com/video/997173059",
       ],
       [
         3,
-        "NX 3D Modeling Commands",
-        "Extrude, revolve, hole, shell and edge blend basics.",
+        "NX Assembly Workbench",
+        "its not required now, after 3 months you can learn",
+        "https://player.vimeo.com/video/707301515",
       ],
       [
         4,
