@@ -91,6 +91,7 @@ model User {
   queries               Query[]
   refresh_tokens        RefreshToken[]
   prerequisite_progress PrerequisiteProgress[]
+  discount_codes        DiscountCode[]         @relation("DiscountCodeCreatedBy")
 
   @@index([role])
   @@index([is_active])
@@ -129,6 +130,7 @@ model Course {
 
   batches            Batch[]
   tutor_applications TutorApplication[]
+  discount_codes     DiscountCode[]
 
   @@index([is_active])
   @@map("courses")
@@ -217,6 +219,7 @@ model Batch {
   scheduled_sessions ScheduledSession[]
   assignments        Assignment[]
   queries            Query[]
+  discount_codes     DiscountCode[]
 
   @@index([course_id])
   @@index([tutor_id])
@@ -224,6 +227,7 @@ model Batch {
   @@index([start_date])
   @@map("batches")
 }
+
 model Enrollment {
   id             String        @id @default(cuid())
   student_id     String
@@ -337,7 +341,6 @@ model Query {
   @@map("queries")
 }
 
-
 model PendingRegistration {
   id                 String        @id @default(cuid())
   name               String
@@ -350,6 +353,13 @@ model PendingRegistration {
   payment_status     PaymentStatus @default(PENDING)
   payment_request_id String?       @unique
   payment_id         String?
+
+  enrolled_price     Decimal?      @db.Decimal(10, 2)
+  original_price     Decimal?      @db.Decimal(10, 2)
+  discount_code      String?
+  emi_first_due      DateTime?
+  emi_second_due     DateTime?
+
   created_at         DateTime      @default(now())
   updated_at         DateTime      @updatedAt
 
@@ -361,12 +371,6 @@ model PendingRegistration {
   @@index([batch_id])
   @@index([payment_status])
   @@map("pending_registrations")
-
-  enrolled_price Decimal? @db.Decimal(10, 2)
-original_price Decimal? @db.Decimal(10, 2)
-discount_code  String?
-emi_first_due  DateTime?
-emi_second_due DateTime?
 }
 
 model RegistrationPayment {
@@ -385,6 +389,34 @@ model RegistrationPayment {
   @@index([pending_registration_id])
   @@index([status])
   @@map("registration_payments")
+}
+
+model DiscountCode {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  purpose        String?
+  discount_price Decimal  @db.Decimal(10, 2)
+  original_price Decimal? @db.Decimal(10, 2)
+  course_id      String?
+  course         Course?  @relation(fields: [course_id], references: [id])
+  batch_id       String?
+  batch          Batch?   @relation(fields: [batch_id], references: [id])
+  starts_at      DateTime?
+  expires_at     DateTime
+  max_uses       Int?
+  used_count     Int      @default(0)
+  is_active      Boolean  @default(true)
+  created_by_id  String?
+  created_by     User?    @relation("DiscountCodeCreatedBy", fields: [created_by_id], references: [id])
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@index([code])
+  @@index([course_id])
+  @@index([batch_id])
+  @@index([expires_at])
+  @@index([is_active])
+  @@map("discount_codes")
 }
 
 model PrerequisiteCourse {
@@ -407,18 +439,18 @@ model PrerequisiteCourse {
 }
 
 model PrerequisiteLesson {
-  id               String             @id @default(cuid())
-  course_id         String
-  course            PrerequisiteCourse @relation(fields: [course_id], references: [id], onDelete: Cascade)
-  order_number      Int
-  title             String
-  description       String?
-  vimeo_url         String
-  duration_seconds  Int                @default(600)
-  completion_percent Int               @default(90)
-  is_active         Boolean            @default(true)
-  created_at        DateTime           @default(now())
-  updated_at        DateTime           @updatedAt
+  id                 String             @id @default(cuid())
+  course_id          String
+  course             PrerequisiteCourse @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  order_number       Int
+  title              String
+  description        String?
+  vimeo_url          String
+  duration_seconds   Int                @default(600)
+  completion_percent Int                @default(90)
+  is_active          Boolean            @default(true)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
 
   progress PrerequisiteProgress[]
 

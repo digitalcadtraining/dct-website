@@ -30,6 +30,7 @@ import AdminStudents from "../pages/admin/AdminStudents.jsx";
 import AdminBatches from "../pages/admin/AdminBatches.jsx";
 import AdminQueries from "../pages/admin/AdminQueries.jsx";
 import AdminPrerequisiteProgress from "../pages/admin/AdminPrerequisiteProgress.jsx";
+import AdminDiscountCodes from "../pages/admin/AdminDiscountCodes.jsx";
 
 export default function AppRoutes() {
   return (
@@ -74,6 +75,7 @@ export default function AppRoutes() {
       <Route path="/admin/students" element={<ProtectedRoute roles={["admin"]}><AdminStudents /></ProtectedRoute>} />
       <Route path="/admin/prerequisite-progress" element={<ProtectedRoute roles={["admin"]}><AdminPrerequisiteProgress /></ProtectedRoute>} />
       <Route path="/admin/batches" element={<ProtectedRoute roles={["admin"]}><AdminBatches /></ProtectedRoute>} />
+      <Route path="/admin/discount-codes" element={<ProtectedRoute roles={["admin"]}><AdminDiscountCodes /></ProtectedRoute>} />
       <Route path="/admin/queries" element={<ProtectedRoute roles={["admin"]}><AdminQueries /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
