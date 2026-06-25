@@ -173,17 +173,19 @@ function CourseCard({ enrollment, index }) {
             ["Assignments", batch._count?.assignments || 0],
             [
               "First EMI",
+              enrollment.emi_first_due ? `₹${money(firstEmi)}` : "—",
               enrollment.emi_first_due
-                ? `₹${money(firstEmi)} · ${fmt(enrollment.emi_first_due)}`
-                : "—",
+                ? `Due on ${fmt(enrollment.emi_first_due)}`
+                : "",
             ],
             [
               "Second EMI",
+              enrollment.emi_second_due ? `₹${money(secondEmi)}` : "—",
               enrollment.emi_second_due
-                ? `₹${money(secondEmi)} · ${fmt(enrollment.emi_second_due)}`
-                : "—",
+                ? `Due on ${fmt(enrollment.emi_second_due)}`
+                : "",
             ],
-          ].map(([l, v]) => (
+          ].map(([l, v, sub]) => (
             <div
               key={l}
               style={{
@@ -195,7 +197,7 @@ function CourseCard({ enrollment, index }) {
               <p style={{ fontSize: 12, fontWeight: 700, color: C.dark }}>
                 {v}
               </p>
-              <p style={{ fontSize: 10, color: C.lg }}>{l}</p>
+              <p style={{ fontSize: 10, color: C.lg }}>{sub || l}</p>
             </div>
           ))}
         </div>
@@ -211,9 +213,7 @@ function CourseCard({ enrollment, index }) {
           <p style={{ fontSize: 12, fontWeight: 800, color: C.blue }}>
             Enrolled price: ₹{money(enrollment.enrolled_price)}
           </p>
-          <p style={{ fontSize: 10, color: C.lg }}>
-            Registration paid: ₹999 · EMI dates are based on batch start date.
-          </p>
+          <p style={{ fontSize: 10, color: C.lg }}>Registration paid: ₹999</p>
         </div>
         <div style={{ marginBottom: 12 }}>
           <div
@@ -223,7 +223,7 @@ function CourseCard({ enrollment, index }) {
               marginBottom: 4,
             }}
           >
-            <span style={{ fontSize: 11, color: C.gray }}>Progress</span>
+            <span style={{ fontSize: 11, color: C.gray }}>Your Progress</span>
             <span style={{ fontSize: 11, fontWeight: 700, color: C.primary }}>
               {pct}%
             </span>
@@ -381,9 +381,9 @@ export default function MyCourses() {
           >
             Refer and{" "}
             <span style={{ color: "#fde047", textDecoration: "underline" }}>
-              Earn ₹500
+              Earn ₹2000/-
             </span>{" "}
-            Cash points.
+            reference bonus.
           </h2>
           <p
             style={{

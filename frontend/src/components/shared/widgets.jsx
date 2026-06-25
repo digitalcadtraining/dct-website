@@ -84,9 +84,9 @@ export function ReferWidget({ onGetReward }) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-white text-sm font-semibold leading-snug mb-1">
-              Refer and <span className="text-yellow-300 underline font-bold">Earn ₹500</span>
+              Refer and <span className="text-yellow-300 underline font-bold">Earn ₹2000/-</span>
             </p>
-            <p className="text-white/80 text-xs mb-4">Cash points.</p>
+            <p className="text-white/80 text-xs mb-4">Referance Bonus.</p>
             <div className="flex gap-2">
               <button onClick={onGetReward} className="bg-dct-primary hover:bg-dct-blue text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">
                 Get Reward
