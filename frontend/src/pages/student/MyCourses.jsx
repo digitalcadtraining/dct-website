@@ -52,6 +52,7 @@ function CourseCard({ enrollment, index }) {
   const batch = enrollment.batch || {};
   const course = batch.course || {};
   const tutor = batch.tutor || {};
+  const total = batch._count?.scheduled_sessions || 0;
   const pct = safeProgress(enrollment.progress);
   const fmt = (d) =>
     d
