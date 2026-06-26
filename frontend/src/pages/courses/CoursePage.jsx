@@ -429,7 +429,7 @@ export default function CoursePage({ course }) {
         <div className="dct-course-shell dct-course-nav-inner">
           <button
             className="dct-course-logo"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/", { replace: true })}
             type="button"
           >
             <img
@@ -439,7 +439,7 @@ export default function CoursePage({ course }) {
             />
           </button>
           <div className="dct-course-nav-links">
-            <button onClick={() => navigate("/")} type="button">
+            <button onClick={() => navigate("/", { replace: true })} type="button">
               Home
             </button>
             <a href="#roadmap">Roadmap</a>
