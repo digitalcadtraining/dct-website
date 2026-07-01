@@ -62,7 +62,7 @@ const homepageHtml = `
     <div><strong>CADPOINT</strong><span>Partner & Authorized Training Direction</span></div>
     <div><strong>PAN India</strong><span>MNC / OEM / Tier-1 Hiring Exposure</span></div>
     <div><strong>7+ Years</strong><span>Trust Connection For Career Support</span></div>
-    <div><strong>₹3.5–9 LPA</strong><span>Course-wise Package Guidance</span></div>
+    <div><strong>₹3.5–16 LPA</strong><span>Course-wise Package Guidance</span></div>
   </div>
   <div class="courses-grid courses-grid-four">
     <div class="course-card"><div class="card-img-wrap">
@@ -371,16 +371,16 @@ export default function HomePage() {
             </a>
           </li>
           <li>
-            <a href="#">About</a>
+            <a href="#about">About</a>
           </li>
           <li>
             <a href="#courses">Courses</a>
           </li>
           <li>
-            <a href="#">Contact Us</a>
+            <a href="contact">Contact Us</a>
           </li>
           <li>
-            <a href="/auth/tutor-register">Tutor</a>
+            <a href="#trust-verified">Social Media Trust</a>
           </li>
         </ul>
         <div className="nav-right">

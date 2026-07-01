@@ -18,7 +18,7 @@ const COURSE = {
   sessions: "85",
   projectCount: "10",
   tools: ["ANSYS Workbench", "Static Structural", "Meshing", "Modal", "Thermal", "CAE Reports"],
-  packageRange: "₹4–9 LPA",
+  packageRange: "₹4–20 LPA",
   trustYears: "7+",
   partnerLine: "Digital CAD Training is partner and authorized by CADPOINT for professional CAD training direction.",
   trustCopy: "Students see the complete syllabus, project roadmap, career path and registration value clearly before joining. The program is structured for 2–3 years experience-level practical confidence.",
