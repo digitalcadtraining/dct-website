@@ -6,7 +6,7 @@ import { Input, Button } from "../../components/ui/index.jsx";
 import AuthHero from "../../components/shared/AuthHero.jsx";
 import { motion } from "framer-motion";
 
-export default function LoginPage() {
+export default function TutorLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [emailOrPhone, setEmailOrPhone] = useState("");
@@ -29,11 +29,11 @@ export default function LoginPage() {
       const role = String(res.data?.user?.role || "student").toLowerCase();
 
       if (role === "admin") return setErr("Please use the admin login portal.");
-      if (role === "tutor") return setErr("This is a tutor account. Please use Tutor Login below.");
-      if (role !== "student") return setErr("This login is only for students.");
+      if (role === "student") return setErr("This is a student account. Please use Student Login.");
+      if (role !== "tutor") return setErr("This login is only for tutors.");
 
       login(res.data, role);
-      navigate("/student/courses", { replace: true });
+      navigate("/tutor/dashboard", { replace: true });
     } catch (e) {
       setErr(e.message || "Login failed. Please check your credentials.");
     } finally {
@@ -51,10 +51,7 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-sm">
           <Link to="/" className="flex flex-col items-center mb-8">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl text-white mb-3 shadow-lg"
-              style={{ background: "linear-gradient(135deg, #007BBF, #003C6E)" }}
-            >
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl text-white mb-3 shadow-lg" style={{ background: "linear-gradient(135deg, #007BBF, #003C6E)" }}>
               D
             </div>
             <p className="text-sm font-bold tracking-widest text-dct-dark">
@@ -63,34 +60,25 @@ export default function LoginPage() {
             </p>
           </Link>
 
-          <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Student Login</h1>
-          <p className="text-sm text-dct-lightgray text-center mb-6">Sign in to continue learning</p>
+          <h1 className="text-2xl font-bold text-dct-dark mb-1 text-center">Tutor Login</h1>
+          <p className="text-sm text-dct-lightgray text-center mb-6">Sign in to manage batches and sessions</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <Input label="Email or Phone" type="text" placeholder="Email or mobile number" value={emailOrPhone} onChange={(e) => setEmailOrPhone(e.target.value)} />
+            <Input label="Email or Phone" type="text" placeholder="Tutor email or mobile number" value={emailOrPhone} onChange={(e) => setEmailOrPhone(e.target.value)} />
             <Input label="Password" type="password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
             {err && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3"><p className="text-red-600 text-sm text-center">{err}</p></div>}
 
-            <div className="flex justify-end">
-              <button type="button" onClick={() => navigate("/auth/forgot-password")} className="text-sm font-semibold text-dct-primary hover:underline bg-transparent border-0 cursor-pointer">
-                Forgot Password?
-              </button>
-            </div>
-
-            <Button type="submit" fullWidth size="lg" disabled={loading}>{loading ? "Signing in…" : "Sign In"}</Button>
+            <Button type="submit" fullWidth size="lg" disabled={loading}>{loading ? "Signing in…" : "Sign In as Tutor"}</Button>
           </form>
 
           <p className="text-center text-sm text-dct-gray mt-5">
-            New student? <Link to="/auth/register" className="text-dct-primary font-bold hover:underline">Create Account</Link>
+            Student? <Link to="/auth/login" className="text-dct-primary font-bold hover:underline">Student Login</Link>
           </p>
 
-          <div className="mt-5 pt-5 border-t border-gray-100 text-center">
-            <p className="text-xs text-dct-lightgray mb-2">Are you a tutor?</p>
-            <Link to="/auth/tutor-login" className="inline-flex justify-center items-center w-full rounded-xl border border-dct-primary px-4 py-3 text-sm font-bold text-dct-primary hover:bg-blue-50 transition-colors">
-              Tutor Login
-            </Link>
-          </div>
+          <p className="text-center text-xs text-dct-lightgray mt-4">
+            Not a tutor yet? <Link to="/auth/tutor-register" className="text-dct-primary font-bold hover:underline">Apply as Tutor</Link>
+          </p>
         </div>
       </motion.div>
       <AuthHero />

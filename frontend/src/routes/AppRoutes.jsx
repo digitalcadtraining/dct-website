@@ -8,6 +8,7 @@ import MouldDesignPage from "../pages/courses/MouldDesign.jsx";
 import CADSoftwareToolsPage from "../pages/courses/CADSoftwareToolsPage.jsx";
 import AdminLoginPage from "../pages/auth/AdminLoginPage.jsx";
 import LoginPage from "../pages/auth/LoginPage.jsx";
+import TutorLoginPage from "../pages/auth/TutorLoginPage.jsx";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage.jsx";
 import RegisterPage from "../pages/auth/RegisterPage.jsx";
 import TutorRegisterPage from "../pages/auth/TutorRegisterPage.jsx";
@@ -44,6 +45,7 @@ export default function AppRoutes() {
       <Route path="/courses/nx-basic" element={<CADSoftwareToolsPage slug="nx-basic" />} />
       <Route path="/courses/solidworks-basic" element={<CADSoftwareToolsPage slug="solidworks-basic" />} />
       <Route path="/auth/login" element={<LoginPage />} />
+      <Route path="/auth/tutor-login" element={<TutorLoginPage />} />
       <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/auth/register" element={<RegisterPage />} />
       <Route path="/auth/payment-success" element={<RegisterPaymentSuccessPage />} />
