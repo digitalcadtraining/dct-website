@@ -81,6 +81,7 @@ model User {
   is_verified   Boolean  @default(false)
   is_active     Boolean  @default(true)
   avatar_url    String?
+  referral_code String?  @unique
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
@@ -92,9 +93,12 @@ model User {
   refresh_tokens        RefreshToken[]
   prerequisite_progress PrerequisiteProgress[]
   discount_codes        DiscountCode[]         @relation("DiscountCodeCreatedBy")
+  referrals_made        ReferralReward[]       @relation("ReferralsMade")
+  referrals_received    ReferralReward[]       @relation("ReferralsReceived")
 
   @@index([role])
   @@index([is_active])
+  @@index([referral_code])
   @@map("users")
 }
 
@@ -252,6 +256,30 @@ model Enrollment {
   @@map("enrollments")
 }
 
+model ReferralReward {
+  id                      String   @id @default(cuid())
+  referrer_id             String
+  referrer                User     @relation("ReferralsMade", fields: [referrer_id], references: [id], onDelete: Cascade)
+  referred_student_id     String?  @unique
+  referred_student        User?    @relation("ReferralsReceived", fields: [referred_student_id], references: [id], onDelete: SetNull)
+  pending_registration_id String?
+  enrollment_id           String?
+  referral_code           String
+  reward_amount           Decimal  @default(2000) @db.Decimal(10, 2)
+  status                  String   @default("PENDING")
+  eligible_at             DateTime?
+  credited_at             DateTime?
+  notes                   String?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@index([referrer_id])
+  @@index([referred_student_id])
+  @@index([status])
+  @@index([eligible_at])
+  @@map("referral_rewards")
+}
+
 model ScheduledSession {
   id               String                 @id @default(cuid())
   batch_id         String
@@ -357,6 +385,7 @@ model PendingRegistration {
   enrolled_price     Decimal?      @db.Decimal(10, 2)
   original_price     Decimal?      @db.Decimal(10, 2)
   discount_code      String?
+  referral_code      String?
   emi_first_due      DateTime?
   emi_second_due     DateTime?
 
@@ -370,6 +399,7 @@ model PendingRegistration {
   @@index([course_id])
   @@index([batch_id])
   @@index([payment_status])
+  @@index([referral_code])
   @@map("pending_registrations")
 }
 

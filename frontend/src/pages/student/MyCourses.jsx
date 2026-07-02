@@ -394,20 +394,21 @@ export default function MyCourses() {
           >
             Feel free to recommend your friend
           </p>
-          <button
+          <Link
+            to="/student/refer"
             style={{
+              display: "inline-block",
               background: "#1E2023",
               color: "#fff",
               fontSize: 13,
               fontWeight: 700,
               padding: "10px 20px",
               borderRadius: 12,
-              border: "none",
-              cursor: "pointer",
+              textDecoration: "none",
             }}
           >
             Get Reward
-          </button>
+          </Link>
         </motion.div>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl font-bold text-dct-dark">My Courses</h2>

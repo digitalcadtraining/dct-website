@@ -1,67 +1,34 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   authApi,
   courseApi,
   registrationPaymentApi,
   discountCodeApi,
+  referralApi,
 } from "../../services/api.js";
 import { Input, Button } from "../../components/ui/index.jsx";
 import AuthHero from "../../components/shared/AuthHero.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
 const REGISTRATION_FEE = 999;
-const SOFTWARE_TOOL_COURSE_SLUG = "cad-software-tools";
-const BATCH_START_DATE = "5 July 2026";
-const DELIVERY_MODES = [
-  { id: "online", label: "Online Live" },
-  { id: "offline-pune-nigdi", label: "Offline - Pune Nigdi" },
-  { id: "hybrid", label: "Hybrid" },
-];
-const SOFTWARE_TOOL_LABELS = {
-  "catia-v5": "CATIA V5",
-  "ug-nx": "UG NX",
-  solidworks: "SolidWorks",
-};
-const SOFTWARE_TOOL_BATCH_KEYWORDS = {
-  "catia-v5": ["catia", "11 am", "11:00"],
-  "ug-nx": ["nx", "ug", "12 pm", "12:00"],
-  solidworks: ["solidworks", "solid", "1 pm", "1:00"],
-};
-const SOFTWARE_PRICING = {
-  1: { amount: 10000, label: "Any 1 Software Course" },
-  2: { amount: 14000, label: "Any 2 Software Courses" },
-  3: { amount: 15000, label: "All 3 Software Courses" },
-};
-const COURSE_CURRENT_PRICE_OVERRIDES = {
-  "plastic-product-design": 20999,
-};
-
-function getSoftwarePricing(selected = []) {
-  const count = Math.max(1, Math.min(3, selected.length || 1));
-  return SOFTWARE_PRICING[count];
-}
+const COURSE_CURRENT_PRICE_OVERRIDES = { "plastic-product-design": 20999 };
 function isOfferLive(batch) {
   if (!batch?.offer_start_at || !batch?.offer_end_at) return false;
-  const now = new Date();
-  const start = new Date(batch.offer_start_at);
-  const end = new Date(batch.offer_end_at);
-  return now >= start && now <= end;
+  const n = new Date(),
+    s = new Date(batch.offer_start_at),
+    e = new Date(batch.offer_end_at);
+  return n >= s && n <= e;
 }
 function getBatchPrice(batch, course) {
-  if (isOfferLive(batch) && Number(batch?.offer_price) > 0) {
+  if (isOfferLive(batch) && Number(batch?.offer_price) > 0)
     return Number(batch.offer_price);
-  }
-
-  const overridePrice = COURSE_CURRENT_PRICE_OVERRIDES[course?.slug];
-
+  const override = COURSE_CURRENT_PRICE_OVERRIDES[course?.slug];
   return Number(
     batch?.current_price ||
       batch?.course_price ||
       course?.current_price ||
-      course?.regular_offer_price ||
-      overridePrice ||
-      batch?.regular_offer_price ||
+      override ||
       batch?.price ||
       course?.price ||
       0,
@@ -69,11 +36,7 @@ function getBatchPrice(batch, course) {
 }
 function getBatchOriginalPrice(batch, course) {
   return Number(
-    batch?.original_price ||
-      course?.original_price ||
-      course?.slash_price ||
-      course?.price ||
-      0,
+    batch?.original_price || course?.original_price || course?.slash_price || 0,
   );
 }
 function getDisplayPrice(value) {
@@ -93,45 +56,28 @@ function addDays(value, days) {
   d.setDate(d.getDate() + days);
   return d;
 }
-function findSoftwareBatch(batches = [], primaryTool, selectedTools = []) {
-  const target = primaryTool || selectedTools[0] || "catia-v5";
-  const keywords = SOFTWARE_TOOL_BATCH_KEYWORDS[target] || [];
-  const found = batches.find((batch) => {
-    const text =
-      `${batch.name || ""} ${(batch.time_slots || []).join(" ")}`.toLowerCase();
-    return keywords.some((keyword) => text.includes(keyword));
-  });
-  return found || batches[0];
-}
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState(1);
-  const [courses, setCourses] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [discountLoading, setDiscountLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [countdown, setCountdown] = useState(0);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [phoneToken, setPhoneToken] = useState("");
-  const [discountInput, setDiscountInput] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState(null);
-  const [discountMsg, setDiscountMsg] = useState("");
-
+  const [step, setStep] = useState(1),
+    [courses, setCourses] = useState([]),
+    [batches, setBatches] = useState([]),
+    [loading, setLoading] = useState(false),
+    [otpLoading, setOtpLoading] = useState(false),
+    [discountLoading, setDiscountLoading] = useState(false),
+    [refLoading, setRefLoading] = useState(false),
+    [err, setErr] = useState(""),
+    [countdown, setCountdown] = useState(0),
+    [otp, setOtp] = useState(["", "", "", "", "", ""]),
+    [phoneToken, setPhoneToken] = useState(""),
+    [discountInput, setDiscountInput] = useState(""),
+    [appliedDiscount, setAppliedDiscount] = useState(null),
+    [discountMsg, setDiscountMsg] = useState(""),
+    [referralMsg, setReferralMsg] = useState("");
   const slugFromUrl = searchParams.get("course");
   const courseIdFromUrl = searchParams.get("course_id");
-  const primaryToolFromUrl = searchParams.get("primary") || "";
-  const softwareToolsFromUrl = (searchParams.get("tools") || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const isSoftwareToolsRegistration =
-    slugFromUrl === SOFTWARE_TOOL_COURSE_SLUG ||
-    softwareToolsFromUrl.length > 0;
-
+  const refFromUrl = searchParams.get("ref") || "";
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -140,12 +86,9 @@ export default function RegisterPage() {
     confirm_password: "",
     course_id: courseIdFromUrl || "",
     batch_id: "",
-    software_tools: softwareToolsFromUrl,
-    training_mode: searchParams.get("mode") || "online",
-    batch_start_date: searchParams.get("batchStart") || BATCH_START_DATE,
+    referral_code: refFromUrl.toUpperCase(),
   });
   const courseLocked = Boolean(slugFromUrl || courseIdFromUrl);
-
   useEffect(() => {
     courseApi
       .list()
@@ -154,11 +97,6 @@ export default function RegisterPage() {
   }, []);
   useEffect(() => {
     if (!courses.length) return;
-    if (isSoftwareToolsRegistration && !form.course_id) {
-      const matched = courses.find((c) => c.slug === SOFTWARE_TOOL_COURSE_SLUG);
-      if (matched) setForm((f) => ({ ...f, course_id: matched.id }));
-      return;
-    }
     if (slugFromUrl && !form.course_id) {
       const matched = courses.find(
         (c) =>
@@ -167,7 +105,7 @@ export default function RegisterPage() {
       );
       if (matched) setForm((f) => ({ ...f, course_id: matched.id }));
     }
-  }, [courses, slugFromUrl, isSoftwareToolsRegistration, form.course_id]);
+  }, [courses, slugFromUrl, form.course_id]);
   useEffect(() => {
     if (!form.course_id) {
       setBatches([]);
@@ -183,81 +121,39 @@ export default function RegisterPage() {
     setDiscountMsg("");
   }, [form.course_id]);
   useEffect(() => {
-    if (isSoftwareToolsRegistration && batches.length && !form.batch_id) {
-      const b = findSoftwareBatch(
-        batches,
-        primaryToolFromUrl,
-        form.software_tools,
-      );
+    if (courseLocked && batches.length && !form.batch_id) {
+      const b = batches.find((x) => !x.is_full) || batches[0];
       if (b) setForm((f) => ({ ...f, batch_id: b.id }));
     }
-  }, [
-    batches,
-    isSoftwareToolsRegistration,
-    primaryToolFromUrl,
-    form.software_tools,
-    form.batch_id,
-  ]);
-  useEffect(() => {
-    if (
-      !isSoftwareToolsRegistration &&
-      courseLocked &&
-      batches.length &&
-      !form.batch_id
-    ) {
-      const availableBatch = batches.find((batch) => !batch.is_full) || batches[0];
-      if (availableBatch) {
-        setForm((f) => ({ ...f, batch_id: availableBatch.id }));
-      }
-    }
-  }, [batches, isSoftwareToolsRegistration, courseLocked, form.batch_id]);
-
+  }, [courseLocked, batches, form.batch_id]);
   useEffect(() => {
     if (countdown > 0) {
       const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
       return () => clearTimeout(t);
     }
   }, [countdown]);
-
-  const update = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const selectedCourse = courses.find((c) => c.id === form.course_id);
   const selectedBatch = batches.find((b) => b.id === form.batch_id);
-  const selectedSoftwareNames =
-    form.software_tools.length > 0
-      ? form.software_tools.map((id) => SOFTWARE_TOOL_LABELS[id] || id)
-      : ["Selected software course"];
-  const softwarePricing = getSoftwarePricing(form.software_tools);
   const selectedBatchPrice = getBatchPrice(selectedBatch, selectedCourse);
   const selectedBatchOriginalPrice = selectedBatch
     ? getBatchOriginalPrice(selectedBatch, selectedCourse)
     : 0;
-  const baseCoursePrice = isSoftwareToolsRegistration
-    ? softwarePricing.amount
-    : selectedBatch
-      ? selectedBatchPrice
-      : REGISTRATION_FEE;
+  const baseCoursePrice = selectedBatch ? selectedBatchPrice : REGISTRATION_FEE;
   const payableAmount = appliedDiscount?.final_price
     ? Number(appliedDiscount.final_price)
     : baseCoursePrice;
-  const payableLabel = isSoftwareToolsRegistration
-    ? softwarePricing.label
-    : selectedBatch
-      ? "Course Fee"
-      : "Registration Fee";
+  const payableLabel = selectedBatch ? "Course Fee" : "Registration Fee";
   const firstEmiDate = selectedBatch?.start_date
     ? addDays(selectedBatch.start_date, 2)
     : null;
   const secondEmiDate = firstEmiDate ? addDays(firstEmiDate, 31) : null;
-
   const validate = () => {
     if (!form.name.trim()) return "Full name is required.";
     if (!form.email.trim()) return "Email is required.";
     const digits = form.phone.replace(/\D/g, "");
     if (digits.length < 10) return "Enter a valid 10-digit phone number.";
-    if (!form.course_id)
-      return isSoftwareToolsRegistration
-        ? "Software tools course not found. Please contact support."
-        : "Please select a course.";
+    if (!form.course_id) return "Please select a course.";
     if (!form.batch_id)
       return batches.length === 0
         ? "No upcoming batches available for this course right now."
@@ -268,7 +164,6 @@ export default function RegisterPage() {
       return "Passwords do not match.";
     return null;
   };
-
   const applyDiscount = async () => {
     setErr("");
     setDiscountMsg("");
@@ -295,7 +190,21 @@ export default function RegisterPage() {
       setDiscountLoading(false);
     }
   };
-
+  const checkReferral = async () => {
+    setReferralMsg("");
+    const code = form.referral_code.trim();
+    if (!code)
+      return setReferralMsg("Paste referral code if your friend shared one.");
+    setRefLoading(true);
+    try {
+      const res = await referralApi.validate(code);
+      setReferralMsg(`Referral verified: ${res.data.referrer_name}.`);
+    } catch (e) {
+      setReferralMsg(e.message || "Invalid referral code.");
+    } finally {
+      setRefLoading(false);
+    }
+  };
   const handleSendOtp = async () => {
     setErr("");
     const validErr = validate();
@@ -343,12 +252,10 @@ export default function RegisterPage() {
         course_id: form.course_id,
         batch_id: form.batch_id,
         phone_token: phoneToken,
-        software_tools: form.software_tools,
-        training_mode: form.training_mode,
-        batch_start_date: form.batch_start_date,
         payable_amount: REGISTRATION_FEE,
         selected_course_price: payableAmount,
         discount_code: appliedDiscount?.code || discountInput.trim() || null,
+        referral_code: form.referral_code.trim() || null,
       });
       const url = paymentRes?.data?.payment_url;
       if (!url) throw new Error("Payment URL not received from Instamojo.");
@@ -370,7 +277,6 @@ export default function RegisterPage() {
     if (e.key === "Backspace" && !otp[idx] && idx > 0)
       document.getElementById(`otp-${idx - 1}`)?.focus();
   };
-
   return (
     <div className="min-h-screen w-screen flex">
       <motion.div
@@ -399,16 +305,9 @@ export default function RegisterPage() {
                   Create Account
                 </h1>
                 <p className="text-sm text-dct-lightgray text-center mb-6">
-                  {isSoftwareToolsRegistration ? (
+                  {selectedCourse ? (
                     <>
-                      Enrolling in{" "}
-                      <strong className="text-dct-primary">
-                        Software Tools Training
-                      </strong>
-                    </>
-                  ) : selectedCourse ? (
-                    <>
-                      Enrolling in{" "}
+                      <span>Enrolling in </span>
                       <strong className="text-dct-primary">
                         {selectedCourse.name}
                       </strong>
@@ -447,34 +346,35 @@ export default function RegisterPage() {
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
                   />
-                  {isSoftwareToolsRegistration ? (
-                    <SoftwareFields
-                      form={form}
-                      update={update}
-                      selectedSoftwareNames={selectedSoftwareNames}
-                      selectedBatch={selectedBatch}
+                  <CourseBatchFields
+                    courseLocked={courseLocked}
+                    courses={courses}
+                    selectedCourse={selectedCourse}
+                    form={form}
+                    update={update}
+                    batches={batches}
+                    selectedBatch={selectedBatch}
+                    selectedBatchPrice={selectedBatchPrice}
+                    selectedBatchOriginalPrice={selectedBatchOriginalPrice}
+                  />
+                  {form.referral_code ? (
+                    <ReferralCodeBox
+                      value={form.referral_code}
+                      setValue={(v) => update("referral_code", v.toUpperCase())}
+                      onCheck={checkReferral}
+                      loading={refLoading}
+                      message={referralMsg}
                     />
                   ) : (
-                    <CourseBatchFields
-                      courseLocked={courseLocked}
-                      courses={courses}
-                      selectedCourse={selectedCourse}
-                      form={form}
-                      update={update}
-                      batches={batches}
-                      selectedBatch={selectedBatch}
-                      selectedBatchPrice={selectedBatchPrice}
-                      selectedBatchOriginalPrice={selectedBatchOriginalPrice}
+                    <DiscountCodeBox
+                      value={discountInput}
+                      setValue={setDiscountInput}
+                      onApply={applyDiscount}
+                      loading={discountLoading}
+                      message={discountMsg}
+                      applied={appliedDiscount}
                     />
                   )}
-                  <DiscountCodeBox
-                    value={discountInput}
-                    setValue={setDiscountInput}
-                    onApply={applyDiscount}
-                    loading={discountLoading}
-                    message={discountMsg}
-                    applied={appliedDiscount}
-                  />
                   <Input
                     label="Password"
                     type="password"
@@ -617,24 +517,8 @@ export default function RegisterPage() {
                     </p>
                     <p>
                       <strong>Course:</strong>{" "}
-                      {isSoftwareToolsRegistration
-                        ? "Software Tools Training"
-                        : selectedCourse?.name || "Selected course"}
+                      {selectedCourse?.name || "Selected course"}
                     </p>
-                    {isSoftwareToolsRegistration && (
-                      <>
-                        <p>
-                          <strong>Software Courses:</strong>{" "}
-                          {selectedSoftwareNames.join(" + ")}
-                        </p>
-                        <p>
-                          <strong>Training Mode:</strong>{" "}
-                          {DELIVERY_MODES.find(
-                            (m) => m.id === form.training_mode,
-                          )?.label || form.training_mode}
-                        </p>
-                      </>
-                    )}
                     <p>
                       <strong>Batch:</strong>{" "}
                       {selectedBatch?.name || "Selected batch"}
@@ -645,6 +529,11 @@ export default function RegisterPage() {
                     {appliedDiscount && (
                       <p>
                         <strong>Discount Code:</strong> {appliedDiscount.code}
+                      </p>
+                    )}
+                    {form.referral_code && (
+                      <p>
+                        <strong>Referral Code:</strong> {form.referral_code}
                       </p>
                     )}
                     <p>
@@ -697,7 +586,6 @@ export default function RegisterPage() {
     </div>
   );
 }
-
 function PriceBox({
   payableLabel,
   payableAmount,
@@ -707,47 +595,44 @@ function PriceBox({
   firstEmiDate,
   secondEmiDate,
 }) {
-  const courseFee = Number(payableAmount || 0);
-  const hasCoursePrice = courseFee > registrationFee;
-  const hasEmiDates = Boolean(firstEmiDate && secondEmiDate);
-  const remaining = Math.max(0, courseFee - registrationFee);
+  const remaining = Math.max(0, Number(payableAmount || 0) - registrationFee);
   const firstEmi = Math.ceil(remaining / 2);
   const secondEmi = Math.max(0, remaining - firstEmi);
-
+  const hasCoursePrice = Number(payableAmount || 0) > registrationFee;
+  const hasEmiDates = firstEmiDate && secondEmiDate;
   return (
     <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-dct-gray">
       <p className="font-bold text-dct-primary">
-        {hasCoursePrice ? payableLabel : "Registration Fee"}: ₹
-        {getDisplayPrice(hasCoursePrice ? courseFee : registrationFee)}
-        {hasCoursePrice && originalPrice > courseFee && (
+        {payableLabel}: ₹{getDisplayPrice(payableAmount)}
+        {originalPrice > payableAmount && (
           <span className="ml-2 text-dct-gray line-through">
             ₹{getDisplayPrice(originalPrice)}
           </span>
         )}
       </p>
-
       {appliedDiscount && (
         <p className="mt-1 text-green-700 font-semibold">
           Discount code {appliedDiscount.code} applied.
         </p>
       )}
-
       {hasCoursePrice && hasEmiDates ? (
         <div className="mt-2 space-y-1">
           <p>
             <strong>Pay now:</strong> ₹{getDisplayPrice(registrationFee)}
           </p>
           <p>
-            <strong>First EMI:</strong> ₹{getDisplayPrice(firstEmi)} · {" "}
+            <strong>First EMI:</strong> ₹{getDisplayPrice(firstEmi)} ·{" "}
             {fmtDate(firstEmiDate)}
           </p>
           <p>
-            <strong>Second EMI:</strong> ₹{getDisplayPrice(secondEmi)} · {" "}
+            <strong>Second EMI:</strong> ₹{getDisplayPrice(secondEmi)} ·{" "}
             {fmtDate(secondEmiDate)}
           </p>
         </div>
       ) : (
-        <p className="mt-2">Select batch to view current course fee and EMI dates.</p>
+        <p className="mt-2">
+          Select batch to view current course fee and EMI dates.
+        </p>
       )}
     </div>
   );
@@ -791,57 +676,37 @@ function DiscountCodeBox({
     </div>
   );
 }
-function SoftwareFields({
-  form,
-  update,
-  selectedSoftwareNames,
-  selectedBatch,
-}) {
+function ReferralCodeBox({ value, setValue, onCheck, loading, message }) {
   return (
-    <>
-      <div>
-        <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">
-          Select Software Courses
-        </label>
-        <div
+    <div>
+      <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">
+        Referral Code{" "}
+        <span className="normal-case text-dct-lightgray">(optional)</span>
+      </label>
+      <div className="flex gap-2">
+        <input
           className="dct-input w-full"
-          style={{
-            background: "#f0f7ff",
-            borderColor: "#bfdbfe",
-            color: "#024981",
-            minHeight: 48,
-          }}
+          placeholder="Friend referral code"
+          value={value}
+          onChange={(e) => setValue(e.target.value.toUpperCase())}
+        />
+        <button
+          type="button"
+          onClick={onCheck}
+          disabled={loading || !value.trim()}
+          className="px-4 rounded-xl bg-[#1E2023] text-white text-sm font-bold disabled:opacity-60"
         >
-          <span className="font-semibold text-sm">
-            {selectedSoftwareNames.join(" + ")}
-          </span>
-        </div>
+          {loading ? "Checking…" : "Check"}
+        </button>
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-dct-gray mb-1.5 uppercase tracking-wider">
-          Training Mode
-        </label>
-        <select
-          value={form.training_mode}
-          onChange={(e) => update("training_mode", e.target.value)}
-          className="dct-input w-full"
+      {message && (
+        <p
+          className={`text-xs mt-1 font-semibold ${message.toLowerCase().includes("verified") ? "text-green-700" : "text-dct-gray"}`}
         >
-          {DELIVERY_MODES.map((mode) => (
-            <option key={mode.id} value={mode.id}>
-              {mode.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      {selectedBatch && (
-        <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-xs text-green-800">
-          Batch auto-selected: <strong>{selectedBatch.name}</strong>
-          {selectedBatch.time_slots?.length > 0
-            ? ` · ${selectedBatch.time_slots.join(", ")}`
-            : ""}
-        </div>
+          {message}
+        </p>
       )}
-    </>
+    </div>
   );
 }
 function CourseBatchFields({

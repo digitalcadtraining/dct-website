@@ -7,6 +7,7 @@ const { normalizePhone, hashString } = require("../utils/helpers");
 const { ROLES, REFRESH_TOKEN_EXPIRES_MS } = require("../config/constants");
 const { createPaymentRequest, getPaymentRequest, isPaymentSuccessful } = require("../services/instamojo.service");
 const { normalizeCode, isCodeUsable } = require("./discountCode.controller");
+const { normalizeReferralCode, createReferralReward } = require("./referral.controller");
 
 const REGISTRATION_AMOUNT = Number(process.env.REGISTRATION_FEE_AMOUNT || 999);
 
@@ -106,6 +107,30 @@ async function resolveFinalCoursePrice({ batch, selectedCoursePrice, discountCod
   };
 }
 
+async function validateReferralBeforePayment(referralCode, normalizedPhone, normalizedEmail) {
+  const clean = normalizeReferralCode(referralCode);
+  if (!clean) return null;
+
+  const referrer = await prisma.user.findFirst({
+    where: { referral_code: clean, role: "STUDENT", is_active: true },
+    select: { id: true, email: true, phone: true, referral_code: true },
+  });
+
+  if (!referrer) {
+    const err = new Error("Invalid referral code.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (referrer.phone === normalizedPhone || referrer.email === normalizedEmail) {
+    const err = new Error("You cannot use your own referral code.");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return referrer.referral_code;
+}
+
 async function startRegistrationPayment(req, res, next) {
   try {
     const {
@@ -118,6 +143,7 @@ async function startRegistrationPayment(req, res, next) {
       phone_token,
       selected_course_price,
       discount_code,
+      referral_code,
     } = req.body;
 
     if (!name || !email || !phone || !password || !course_id || !batch_id || !phone_token) {
@@ -158,6 +184,7 @@ async function startRegistrationPayment(req, res, next) {
       return error(res, 409, "This batch is full. Please choose another batch.");
     }
 
+    const cleanReferralCode = await validateReferralBeforePayment(referral_code, normalizedPhone, normalizedEmail);
     const pricing = await resolveFinalCoursePrice({ batch, selectedCoursePrice: selected_course_price, discountCode: discount_code });
     const emi = buildEmiDates(batch.start_date);
     const password_hash = await bcrypt.hash(password, 12);
@@ -184,6 +211,7 @@ async function startRegistrationPayment(req, res, next) {
       enrolled_price: pricing.enrolled_price,
       original_price: pricing.original_price,
       discount_code: pricing.discount_code,
+      referral_code: cleanReferralCode,
       emi_first_due: emi.first,
       emi_second_due: emi.second,
     };
@@ -231,6 +259,7 @@ async function startRegistrationPayment(req, res, next) {
       enrolled_price: pricing.enrolled_price,
       original_price: pricing.original_price,
       discount_code: pricing.discount_code,
+      referral_code: cleanReferralCode,
       emi_first_due: emi.first,
       emi_second_due: emi.second,
       payment_request_id: payment.payment_request_id,
@@ -324,10 +353,11 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
       },
     });
 
+    let enrollment;
     if (existingEnrollment) {
-      await tx.enrollment.update({ where: { id: existingEnrollment.id }, data: enrollmentData });
+      enrollment = await tx.enrollment.update({ where: { id: existingEnrollment.id }, data: enrollmentData });
     } else {
-      await tx.enrollment.create({
+      enrollment = await tx.enrollment.create({
         data: {
           student_id: user.id,
           batch_id: pending.batch_id,
@@ -335,6 +365,8 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
         },
       });
     }
+
+    await createReferralReward(tx, { pending, user, enrollmentId: enrollment.id });
 
     await tx.pendingRegistration.update({
       where: { id: pending.id },

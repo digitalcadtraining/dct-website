@@ -13,6 +13,7 @@ router.use("/assignments",        require("./assignment.routes"));
 router.use("/queries",            require("./query.routes"));
 router.use("/registration-payments", require("./registrationPayment.routes"));
 router.use("/discount-codes",     require("./discountCode.routes"));
+router.use("/referrals",          require("./referral.routes"));
 router.use("/prerequisites",      require("./prerequisite.routes"));
 router.use("/tutor-applications", require("./tutor.routes"));
 router.use("/admin",              require("./admin.routes"));
@@ -30,6 +31,7 @@ router.get("/", (req, res) => {
       queries: "/api/v1/queries",
       registrationPayments: "/api/v1/registration-payments",
       discountCodes: "/api/v1/discount-codes",
+      referrals: "/api/v1/referrals",
       prerequisites: "/api/v1/prerequisites",
       tutorApplications: "/api/v1/tutor-applications",
       admin: "/api/v1/admin",
