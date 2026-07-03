@@ -77,6 +77,18 @@ function buildEmiDates(batchStartDate) {
   return { first, second };
 }
 
+function buildPaymentSchedule(batchStartDate, isCadSoftwareTools = false) {
+  if (isCadSoftwareTools) {
+    return { first: new Date(batchStartDate || Date.now()), second: null };
+  }
+  return buildEmiDates(batchStartDate);
+}
+
+function normalizeSelectedTools(value) {
+  if (Array.isArray(value)) return value.map((v) => String(v || "").trim()).filter(Boolean);
+  return String(value || "").split(",").map((v) => v.trim()).filter(Boolean);
+}
+
 async function resolveFinalCoursePrice({ batch, selectedCoursePrice, discountCode }) {
   const basePrice = toMoney(selectedCoursePrice, Number(batch?.course?.price || 0));
   const cleanCode = normalizeCode(discountCode);
@@ -144,6 +156,10 @@ async function startRegistrationPayment(req, res, next) {
       selected_course_price,
       discount_code,
       referral_code,
+      is_cad_software_tools = false,
+      selected_tools = [],
+      software_mode,
+      payment_plan,
     } = req.body;
 
     if (!name || !email || !phone || !password || !course_id || !batch_id || !phone_token) {
@@ -185,8 +201,14 @@ async function startRegistrationPayment(req, res, next) {
     }
 
     const cleanReferralCode = await validateReferralBeforePayment(referral_code, normalizedPhone, normalizedEmail);
-    const pricing = await resolveFinalCoursePrice({ batch, selectedCoursePrice: selected_course_price, discountCode: discount_code });
-    const emi = buildEmiDates(batch.start_date);
+    const cadToolsRegistration = Boolean(is_cad_software_tools || payment_plan === "ONE_BALANCE_ON_BATCH_START");
+    const pricing = await resolveFinalCoursePrice({
+      batch,
+      selectedCoursePrice: selected_course_price,
+      discountCode: cadToolsRegistration ? null : discount_code,
+    });
+    const emi = buildPaymentSchedule(batch.start_date, cadToolsRegistration);
+    const selectedTools = normalizeSelectedTools(selected_tools);
     const password_hash = await bcrypt.hash(password, 12);
 
     let pending = await prisma.pendingRegistration.findFirst({
@@ -262,6 +284,9 @@ async function startRegistrationPayment(req, res, next) {
       referral_code: cleanReferralCode,
       emi_first_due: emi.first,
       emi_second_due: emi.second,
+      payment_plan: cadToolsRegistration ? "ONE_BALANCE_ON_BATCH_START" : "EMI",
+      selected_tools: selectedTools,
+      software_mode: software_mode || null,
       payment_request_id: payment.payment_request_id,
       payment_url: payment.payment_url,
     });
