@@ -101,7 +101,14 @@ const homepageHtml = `
         <div class="cad-software-body">
           <h3>CATIA V5 Basic Software Training</h3>
           <p>Learn CATIA V5 interface, Sketcher, Part Design, Assembly and Drafting workflow with structured practice.</p>
-          <div class="cad-software-actions"><a href="/courses/catia-basic">View Course</a><a class="secondary" href="/downloads/catia-v5-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+          <div class="cad-software-actions"><a href="/courses/catia-basic">View Course</a><a
+  className="secondary"
+  href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Download Syllabus
+</a></div>
         </div>
       </article>
       <article class="cad-software-card">
@@ -109,7 +116,14 @@ const homepageHtml = `
         <div class="cad-software-body">
           <h3>UG NX Basic Software Training</h3>
           <p>Learn NX sketching, modeling, synchronous edits, assembly and drafting basics with practice tasks.</p>
-          <div class="cad-software-actions"><a href="/courses/nx-basic">View Course</a><a class="secondary" href="/downloads/ug-nx-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+          <div class="cad-software-actions"><a href="/courses/nx-basic">View Course</a><a
+  className="secondary"
+  href="/downloads/DCT_NX12_45_Days_Syllabus.pdf"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Download Syllabus
+</a></div>
         </div>
       </article>
       <article class="cad-software-card">
@@ -117,7 +131,14 @@ const homepageHtml = `
         <div class="cad-software-body">
           <h3>SolidWorks Basic Software Training</h3>
           <p>Learn SolidWorks sketching, parametric modeling, assemblies and drawing creation from basics.</p>
-          <div class="cad-software-actions"><a href="/courses/solidworks-basic">View Course</a><a class="secondary" href="/downloads/solidworks-basic-syllabus.pdf" target="_blank">Download Syllabus</a></div>
+          <div class="cad-software-actions"><a href="/courses/solidworks-basic">View Course</a><a
+  className="secondary"
+  href="/downloads/DCT_SolidWorks_40_Days_Syllabus.pdf"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Download Syllabus
+</a></div>
         </div>
       </article>
     </div>
