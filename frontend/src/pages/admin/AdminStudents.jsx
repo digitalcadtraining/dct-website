@@ -68,7 +68,11 @@ function buildGroups(students = [], search = "") {
       const batchKey = "unassigned-batch";
 
       if (!map.has(courseKey)) {
-        map.set(courseKey, { id: courseKey, name: "No Course Assigned", batches: new Map() });
+        map.set(courseKey, {
+          id: courseKey,
+          name: "No Course Assigned",
+          batches: new Map(),
+        });
       }
 
       const course = map.get(courseKey);
@@ -124,7 +128,7 @@ function buildGroups(students = [], search = "") {
     .map((course) => ({
       ...course,
       batches: Array.from(course.batches.values()).sort((a, b) =>
-        String(a.name).localeCompare(String(b.name))
+        String(a.name).localeCompare(String(b.name)),
       ),
     }))
     .sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -146,7 +150,10 @@ function StatCard({ label, value }) {
 function StudentRow({ student, enrollment, onToggleStatus, index }) {
   const batch = enrollment?.batch || {};
   const tutor = batch.tutor || {};
-  const progress = Math.max(0, Math.min(100, Number(enrollment?.progress || 0)));
+  const progress = Math.max(
+    0,
+    Math.min(100, Number(enrollment?.progress || 0)),
+  );
 
   return (
     <motion.div
@@ -158,7 +165,9 @@ function StudentRow({ student, enrollment, onToggleStatus, index }) {
       <div className="xl:col-span-3 flex items-center gap-3 min-w-0">
         <div
           className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-          style={{ background: `linear-gradient(135deg,${C.blue},${C.primary})` }}
+          style={{
+            background: `linear-gradient(135deg,${C.blue},${C.primary})`,
+          }}
         >
           {student.name?.[0]?.toUpperCase() || "S"}
         </div>
@@ -210,7 +219,10 @@ function StudentRow({ student, enrollment, onToggleStatus, index }) {
               }}
             />
           </div>
-          <span className="text-[11px] font-black flex-shrink-0" style={{ color: C.primary }}>
+          <span
+            className="text-[11px] font-black flex-shrink-0"
+            style={{ color: C.primary }}
+          >
             {progress}%
           </span>
         </div>
@@ -232,7 +244,10 @@ function StudentRow({ student, enrollment, onToggleStatus, index }) {
           title="Toggle student status"
           type="button"
         >
-          <Power size={13} style={{ color: student.is_active ? "#dc2626" : "#16a34a" }} />
+          <Power
+            size={13}
+            style={{ color: student.is_active ? "#dc2626" : "#16a34a" }}
+          />
         </button>
       </div>
     </motion.div>
@@ -241,7 +256,10 @@ function StudentRow({ student, enrollment, onToggleStatus, index }) {
 
 function BatchGroup({ batch, onToggleStatus }) {
   const [open, setOpen] = useState(true);
-  const paid = batch.students.filter((x) => x.enrollment?.payment_status === "PAID").length;
+  const active = batch.students.filter((x) => x.student.is_active).length;
+  const paid = batch.students.filter(
+    (x) => x.enrollment?.payment_status === "PAID",
+  ).length;
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
@@ -253,18 +271,22 @@ function BatchGroup({ batch, onToggleStatus }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <h3 className="text-sm font-black truncate" style={{ color: C.dark }}>
+            <h3
+              className="text-sm font-black truncate"
+              style={{ color: C.dark }}
+            >
               {batch.name}
             </h3>
             <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-blue-50 text-dct-primary">
-              {batch.students.length} students
+              {active} active students
             </span>
             <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-green-50 text-green-700">
               {paid} paid
             </span>
           </div>
           <p className="text-xs mt-1" style={{ color: C.gray }}>
-            Tutor: {batch.tutorName} · {fmtDate(batch.startDate)} → {fmtDate(batch.endDate)}
+            Tutor: {batch.tutorName} · {fmtDate(batch.startDate)} →{" "}
+            {fmtDate(batch.endDate)}
           </p>
         </div>
       </button>
@@ -272,21 +294,23 @@ function BatchGroup({ batch, onToggleStatus }) {
       {open && (
         <div>
           <div className="hidden xl:grid grid-cols-12 gap-3 px-4 py-3 bg-gray-50 border-t border-gray-100">
-            {["Student", "Tutor", "Payment", "Price", "Progress", "Status"].map((h, i) => (
-              <p
-                key={h}
-                className={`text-[10px] font-black uppercase tracking-wider ${
-                  i === 0
-                    ? "col-span-3"
-                    : i === 1 || i === 2 || i === 3 || i === 4
-                      ? "col-span-2"
-                      : "col-span-1"
-                }`}
-                style={{ color: C.lg }}
-              >
-                {h}
-              </p>
-            ))}
+            {["Student", "Tutor", "Payment", "Price", "Progress", "Status"].map(
+              (h, i) => (
+                <p
+                  key={h}
+                  className={`text-[10px] font-black uppercase tracking-wider ${
+                    i === 0
+                      ? "col-span-3"
+                      : i === 1 || i === 2 || i === 3 || i === 4
+                        ? "col-span-2"
+                        : "col-span-1"
+                  }`}
+                  style={{ color: C.lg }}
+                >
+                  {h}
+                </p>
+              ),
+            )}
           </div>
           {batch.students.map((item, i) => (
             <StudentRow
@@ -305,7 +329,11 @@ function BatchGroup({ batch, onToggleStatus }) {
 
 function CourseGroup({ course, onToggleStatus }) {
   const [open, setOpen] = useState(true);
-  const studentCount = course.batches.reduce((sum, b) => sum + b.students.length, 0);
+  const studentCount = course.batches.reduce(
+    (sum, b) =>
+      sum + b.students.filter((x) => x.student.is_active).length,
+    0,
+  );
 
   return (
     <section className="space-y-3">
@@ -317,12 +345,17 @@ function CourseGroup({ course, onToggleStatus }) {
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-            style={{ background: `linear-gradient(135deg,${C.blue},${C.primary})` }}
+            style={{
+              background: `linear-gradient(135deg,${C.blue},${C.primary})`,
+            }}
           >
             <GraduationCap size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-black truncate" style={{ color: C.dark }}>
+            <h2
+              className="text-lg font-black truncate"
+              style={{ color: C.dark }}
+            >
               {course.name}
             </h2>
             <p className="text-xs font-semibold" style={{ color: C.gray }}>
@@ -336,7 +369,11 @@ function CourseGroup({ course, onToggleStatus }) {
       {open && (
         <div className="space-y-4">
           {course.batches.map((batch) => (
-            <BatchGroup key={batch.id} batch={batch} onToggleStatus={onToggleStatus} />
+            <BatchGroup
+              key={batch.id}
+              batch={batch}
+              onToggleStatus={onToggleStatus}
+            />
           ))}
         </div>
       )}
@@ -367,25 +404,38 @@ export default function AdminStudents() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  const grouped = useMemo(() => buildGroups(students, search), [students, search]);
+  const activeStudents = useMemo(
+    () => students.filter((s) => s.is_active),
+    [students],
+  );
+
+  const grouped = useMemo(
+    () => buildGroups(activeStudents, search),
+    [activeStudents, search],
+  );
 
   const stats = useMemo(() => {
-    const enrollmentCount = students.reduce((sum, s) => sum + enrollmentsOf(s).length, 0);
-    const activeCount = students.filter((s) => s.is_active).length;
+    const enrollmentCount = activeStudents.reduce(
+      (sum, s) => sum + enrollmentsOf(s).length,
+      0,
+    );
+
     return {
-      students: students.length,
+      students: activeStudents.length,
       enrollments: enrollmentCount,
-      active: activeCount,
+      active: activeStudents.length,
       courses: grouped.length,
     };
-  }, [students, grouped.length]);
+  }, [activeStudents, grouped.length]);
 
   const toggleStatus = async (id) => {
     try {
       const res = await adminApi.toggleUserStatus(id);
       const updated = res.data;
       setStudents((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, is_active: updated.is_active } : s))
+        prev.map((s) =>
+          s.id === id ? { ...s, is_active: updated.is_active } : s,
+        ),
       );
     } catch (e) {
       alert(e.message || "Failed to update user status.");
@@ -397,7 +447,10 @@ export default function AdminStudents() {
       <PageWrapper>
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-extrabold mb-1" style={{ color: C.dark }}>
+            <h1
+              className="text-2xl font-extrabold mb-1"
+              style={{ color: C.dark }}
+            >
               Student Management
             </h1>
             <p className="text-sm" style={{ color: C.gray }}>
@@ -446,7 +499,10 @@ export default function AdminStudents() {
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-36 bg-gray-50 rounded-3xl animate-pulse" />
+              <div
+                key={i}
+                className="h-36 bg-gray-50 rounded-3xl animate-pulse"
+              />
             ))}
           </div>
         )}
@@ -456,7 +512,11 @@ export default function AdminStudents() {
             className="bg-white rounded-3xl border border-gray-100 p-12 text-center"
             style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
           >
-            <Users size={34} className="mx-auto mb-3" style={{ color: "#d1d5db" }} />
+            <Users
+              size={34}
+              className="mx-auto mb-3"
+              style={{ color: "#d1d5db" }}
+            />
             <p className="font-black" style={{ color: C.dark }}>
               No students found
             </p>
@@ -469,7 +529,11 @@ export default function AdminStudents() {
         {!loading && !err && grouped.length > 0 && (
           <div className="space-y-6">
             {grouped.map((course) => (
-              <CourseGroup key={course.id} course={course} onToggleStatus={toggleStatus} />
+              <CourseGroup
+                key={course.id}
+                course={course}
+                onToggleStatus={toggleStatus}
+              />
             ))}
           </div>
         )}

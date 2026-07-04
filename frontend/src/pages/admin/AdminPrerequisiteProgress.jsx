@@ -387,24 +387,19 @@ export default function AdminPrerequisiteProgress() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  const grouped = useMemo(
-    () => buildGroups(rows, students, search),
-    [rows, students, search],
-  );
-
   const activeRows = useMemo(
     () => rows.filter((r) => r.is_active !== false),
     [rows],
   );
 
+  const activeStudents = useMemo(
+    () => students.filter((s) => s.is_active !== false),
+    [students],
+  );
+
   const grouped = useMemo(
-    () =>
-      buildGroups(
-        activeRows,
-        students.filter((s) => s.is_active !== false),
-        search,
-      ),
-    [activeRows, students, search],
+    () => buildGroups(activeRows, activeStudents, search),
+    [activeRows, activeStudents, search],
   );
 
   const totals = useMemo(() => {
