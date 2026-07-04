@@ -81,22 +81,28 @@ export function initHomePageScripts({ navigate }) {
   window.toggleAcc = (idx) => setDashboardPreview(idx);
   setDashboardPreview(0);
 
-  const handleInternalNav = (e) => {
-    const target = e.target.closest(
-      "a[href], .btn-enroll, .career-roadmap-btn",
-    );
-    if (!target) return;
-    const href = target.getAttribute("href");
-    if (!href || href.startsWith("#")) return;
-    if (href.startsWith("/downloads/")) {
-      return;
-    }
+const handleInternalNav = (e) => {
+  const target = e.target.closest(
+    "a[href], .btn-enroll, .career-roadmap-btn",
+  );
+  if (!target) return;
 
-    if (href.startsWith("/") && !href.startsWith("//")) {
-      e.preventDefault();
-      navigate(href);
-    }
-  };
+  const href = target.getAttribute("href");
+  if (!href || href.startsWith("#")) return;
+
+  // Allow/download PDF files directly. Do not send through React router.
+  if (href.startsWith("/downloads/") || href.toLowerCase().endsWith(".pdf")) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(href, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  if (href.startsWith("/") && !href.startsWith("//")) {
+    e.preventDefault();
+    navigate(href);
+  }
+};
   document.addEventListener("click", handleInternalNav);
   cleanupFns.push(() =>
     document.removeEventListener("click", handleInternalNav),
@@ -258,6 +264,18 @@ function initCareerRoadmap(add) {
   });
   setRoadStage(0);
 }
+
+setTimeout(() => {
+  const params = new URLSearchParams(window.location.search);
+  const section = params.get("section");
+
+  if (section) {
+    document.getElementById(section)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+}, 500);
 
 function initTestimonials(add) {
   const homeTestimonials = [
