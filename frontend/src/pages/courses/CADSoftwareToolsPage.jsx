@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const BATCH_START_DATE = "5 July 2026";
+const BATCH_START_DATE = "11 July 2026";
 const COURSE_SLUG = "cad-software-tools";
 
 const DELIVERY_MODES = [

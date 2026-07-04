@@ -22,7 +22,8 @@ const C = {
 };
 
 function statusFor(pct) {
-  if (pct >= 100) return { label: "Completed", bg: "#f0fdf4", color: "#16a34a" };
+  if (pct >= 100)
+    return { label: "Completed", bg: "#f0fdf4", color: "#16a34a" };
   if (pct > 0) return { label: "In Progress", bg: "#eff8ff", color: C.primary };
   return { label: "Not Started", bg: "#f3f4f6", color: C.gray };
 }
@@ -39,7 +40,9 @@ function fmtDate(d) {
 }
 
 function normalizePhone(value = "") {
-  return String(value).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
+  return String(value)
+    .replace(/\D/g, "")
+    .replace(/^91(?=\d{10}$)/, "");
 }
 
 function rowKey(row) {
@@ -94,7 +97,11 @@ function buildGroups(rows = [], students = [], search = "") {
       row.email,
       row.phone,
       ...(row.enrolled_courses || []),
-      ...enrollments.flatMap((e) => [e.batch?.name, e.batch?.course?.name, e.batch?.tutor?.name]),
+      ...enrollments.flatMap((e) => [
+        e.batch?.name,
+        e.batch?.course?.name,
+        e.batch?.tutor?.name,
+      ]),
     ]
       .filter(Boolean)
       .join(" ")
@@ -103,12 +110,17 @@ function buildGroups(rows = [], students = [], search = "") {
     if (q && !text.includes(q)) return;
 
     if (!enrollments.length) {
-      const fallbackCourseName = row.enrolled_courses?.[0] || "No Course Assigned";
+      const fallbackCourseName =
+        row.enrolled_courses?.[0] || "No Course Assigned";
       const courseKey = fallbackCourseName;
       const batchKey = "no-batch";
 
       if (!map.has(courseKey)) {
-        map.set(courseKey, { id: courseKey, name: fallbackCourseName, batches: new Map() });
+        map.set(courseKey, {
+          id: courseKey,
+          name: fallbackCourseName,
+          batches: new Map(),
+        });
       }
 
       const course = map.get(courseKey);
@@ -130,13 +142,18 @@ function buildGroups(rows = [], students = [], search = "") {
     enrollments.forEach((enrollment) => {
       const batch = enrollment.batch || {};
       const courseData = batch.course || {};
-      const courseKey = courseData.id || courseData.name || row.enrolled_courses?.[0] || "unknown-course";
+      const courseKey =
+        courseData.id ||
+        courseData.name ||
+        row.enrolled_courses?.[0] ||
+        "unknown-course";
       const batchKey = batch.id || batch.name || "unknown-batch";
 
       if (!map.has(courseKey)) {
         map.set(courseKey, {
           id: courseKey,
-          name: courseData.name || row.enrolled_courses?.[0] || "Unknown Course",
+          name:
+            courseData.name || row.enrolled_courses?.[0] || "Unknown Course",
           batches: new Map(),
         });
       }
@@ -161,7 +178,7 @@ function buildGroups(rows = [], students = [], search = "") {
     .map((course) => ({
       ...course,
       batches: Array.from(course.batches.values()).sort((a, b) =>
-        String(a.name).localeCompare(String(b.name))
+        String(a.name).localeCompare(String(b.name)),
       ),
     }))
     .sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -176,7 +193,9 @@ function StudentProgressRow({ row }) {
       <div className="lg:col-span-4 flex items-center gap-3">
         <div
           className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black"
-          style={{ background: `linear-gradient(135deg,${C.blue},${C.primary})` }}
+          style={{
+            background: `linear-gradient(135deg,${C.blue},${C.primary})`,
+          }}
         >
           {row.name?.[0]?.toUpperCase() || <User size={16} />}
         </div>
@@ -194,7 +213,8 @@ function StudentProgressRow({ row }) {
       <div className="lg:col-span-4">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-bold" style={{ color: C.gray }}>
-            {row.catia_completed_lessons || 0}/{row.catia_total_lessons || 10} videos
+            {row.catia_completed_lessons || 0}/{row.catia_total_lessons || 10}{" "}
+            videos
           </span>
           <span className="text-xs font-black" style={{ color: C.primary }}>
             {pct}%
@@ -213,7 +233,10 @@ function StudentProgressRow({ row }) {
       </div>
 
       <div className="lg:col-span-4 flex flex-wrap gap-2">
-        <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>
+        <span
+          className="text-xs font-black px-3 py-1 rounded-full"
+          style={{ background: st.bg, color: st.color }}
+        >
           {st.label}
         </span>
 
@@ -230,7 +253,9 @@ function StudentProgressRow({ row }) {
 
 function BatchProgressGroup({ batch }) {
   const [open, setOpen] = useState(true);
-  const completed = batch.rows.filter((r) => (r.catia_progress_percent || 0) >= 100).length;
+  const completed = batch.rows.filter(
+    (r) => (r.catia_progress_percent || 0) >= 100,
+  ).length;
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
@@ -242,7 +267,10 @@ function BatchProgressGroup({ batch }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <h3 className="text-sm font-black truncate" style={{ color: C.dark }}>
+            <h3
+              className="text-sm font-black truncate"
+              style={{ color: C.dark }}
+            >
               {batch.name}
             </h3>
             <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-blue-50 text-dct-primary">
@@ -253,7 +281,8 @@ function BatchProgressGroup({ batch }) {
             </span>
           </div>
           <p className="text-xs mt-1" style={{ color: C.gray }}>
-            Tutor: {batch.tutorName} · {fmtDate(batch.startDate)} → {fmtDate(batch.endDate)}
+            Tutor: {batch.tutorName} · {fmtDate(batch.startDate)} →{" "}
+            {fmtDate(batch.endDate)}
           </p>
         </div>
       </button>
@@ -261,9 +290,15 @@ function BatchProgressGroup({ batch }) {
       {open && (
         <div>
           <div className="hidden lg:grid grid-cols-12 gap-3 px-5 py-4 bg-blue-50 border-t border-blue-100">
-            <p className="col-span-4 text-xs font-black text-dct-dark">Student</p>
-            <p className="col-span-4 text-xs font-black text-dct-dark">CATIA Basics</p>
-            <p className="col-span-4 text-xs font-black text-dct-dark">Status</p>
+            <p className="col-span-4 text-xs font-black text-dct-dark">
+              Student
+            </p>
+            <p className="col-span-4 text-xs font-black text-dct-dark">
+              CATIA Basics
+            </p>
+            <p className="col-span-4 text-xs font-black text-dct-dark">
+              Status
+            </p>
           </div>
 
           {batch.rows.map((row) => (
@@ -289,12 +324,17 @@ function CourseProgressGroup({ course }) {
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-            style={{ background: `linear-gradient(135deg,${C.blue},${C.primary})` }}
+            style={{
+              background: `linear-gradient(135deg,${C.blue},${C.primary})`,
+            }}
           >
             <GraduationCap size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-black truncate" style={{ color: C.dark }}>
+            <h2
+              className="text-lg font-black truncate"
+              style={{ color: C.dark }}
+            >
               {course.name}
             </h2>
             <p className="text-xs font-semibold" style={{ color: C.gray }}>
@@ -332,7 +372,9 @@ export default function AdminPrerequisiteProgress() {
         setRows(progressRes.data || []);
         setStudents(studentRes.data || []);
       })
-      .catch((e) => setErr(e.message || "Failed to load prerequisite progress."))
+      .catch((e) =>
+        setErr(e.message || "Failed to load prerequisite progress."),
+      )
       .finally(() => setLoading(false));
   };
 
@@ -345,26 +387,51 @@ export default function AdminPrerequisiteProgress() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  const grouped = useMemo(() => buildGroups(rows, students, search), [rows, students, search]);
+  const grouped = useMemo(
+    () => buildGroups(rows, students, search),
+    [rows, students, search],
+  );
+
+  const activeRows = useMemo(
+    () => rows.filter((r) => r.is_active !== false),
+    [rows],
+  );
+
+  const grouped = useMemo(
+    () =>
+      buildGroups(
+        activeRows,
+        students.filter((s) => s.is_active !== false),
+        search,
+      ),
+    [activeRows, students, search],
+  );
 
   const totals = useMemo(() => {
-    const total = rows.length;
-    const completed = rows.filter((r) => (r.catia_progress_percent || 0) >= 100).length;
-    const started = rows.filter(
-      (r) => (r.catia_progress_percent || 0) > 0 && (r.catia_progress_percent || 0) < 100
+    const total = activeRows.length;
+    const completed = activeRows.filter(
+      (r) => (r.catia_progress_percent || 0) >= 100,
+    ).length;
+    const started = activeRows.filter(
+      (r) =>
+        (r.catia_progress_percent || 0) > 0 &&
+        (r.catia_progress_percent || 0) < 100,
     ).length;
 
     return { total, completed, started, groups: grouped.length };
-  }, [rows, grouped.length]);
+  }, [activeRows, grouped.length]);
 
   return (
     <AppShell>
       <PageWrapper>
         <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
           <div>
-            <h1 className="text-2xl font-black text-dct-dark">Pre-Requisite Progress</h1>
+            <h1 className="text-2xl font-black text-dct-dark">
+              Pre-Requisite Progress
+            </h1>
             <p className="text-sm text-dct-gray mt-1">
-              Batch-wise CATIA basics completion tracking for registered students.
+              Batch-wise CATIA basics completion tracking for registered
+              students.
             </p>
           </div>
 
@@ -386,11 +453,17 @@ export default function AdminPrerequisiteProgress() {
             ["Completed CATIA", totals.completed],
             ["Course Groups", totals.groups],
           ].map(([label, value]) => (
-            <div key={label} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div
+              key={label}
+              className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm"
+            >
               <p className="text-2xl font-black" style={{ color: C.dark }}>
                 {value}
               </p>
-              <p className="text-xs font-semibold mt-1" style={{ color: C.gray }}>
+              <p
+                className="text-xs font-semibold mt-1"
+                style={{ color: C.gray }}
+              >
                 {label}
               </p>
             </div>
@@ -422,7 +495,10 @@ export default function AdminPrerequisiteProgress() {
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-36 bg-gray-50 rounded-3xl animate-pulse" />
+              <div
+                key={i}
+                className="h-36 bg-gray-50 rounded-3xl animate-pulse"
+              />
             ))}
           </div>
         )}
@@ -432,7 +508,8 @@ export default function AdminPrerequisiteProgress() {
             <AlertCircle size={34} className="mx-auto mb-3 text-gray-300" />
             <p className="font-black text-dct-dark">No progress data yet</p>
             <p className="text-sm text-dct-gray mt-1">
-              Once a student marks CATIA videos complete, progress will appear here.
+              Once a student marks CATIA videos complete, progress will appear
+              here.
             </p>
           </div>
         )}
