@@ -582,9 +582,9 @@ function EditFullBatchModal({ batch, onClose, onSaved }) {
                   </label>
                   <input
                     type="date"
-                    className="dct-input"
                     value={form.end_date}
-                    onChange={(e) => set("end_date", e.target.value)}
+                    onChange={(e) => update("end_date", e.target.value)}
+                    required
                   />
                 </div>
                 <div>

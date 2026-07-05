@@ -225,12 +225,23 @@ const createBatch = async (req, res, next) => {
       Boolean(alt_days),
       Boolean(sunday_off),
     );
-    const endDate =
-      sessionDates.length > 0
-        ? sessionDates[sessionDates.length - 1]
-        : new Date(
-            new Date(start_date).setMonth(new Date(start_date).getMonth() + 4),
-          );
+
+    const parsedStartDate = new Date(start_date);
+
+if (Number.isNaN(parsedStartDate.getTime())) {
+  return error(res, 400, "Please select valid batch start date.");
+}
+
+const endDate =
+  sessionDates.length > 0
+    ? sessionDates[sessionDates.length - 1]
+    : new Date(parsedStartDate.setMonth(parsedStartDate.getMonth() + 4));
+
+if (!endDate || Number.isNaN(new Date(endDate).getTime())) {
+  return error(res, 400, "Could not calculate valid batch end date. Please check course sessions.");
+}
+
+
     const mainSlot = normalizedSlots[0];
     const recordedProjects = (application.syllabus_projects || [])
       .filter(isRecordedProject)
