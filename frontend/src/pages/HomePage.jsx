@@ -101,7 +101,7 @@ const homepageHtml = `
         <div class="cad-software-body">
           <h3>CATIA V5 Basic Software Training</h3>
           <p>Learn CATIA V5 interface, Sketcher, Part Design, Assembly and Drafting workflow with structured practice.</p>
-          <div class="cad-software-actions"><a href="/courses/catia-basic">View Course</a><a class="secondary" href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf" target="_blank" rel="noopener noreferrer">Download Syllabus</a>
+          <div class="cad-software-actions"><a href="/courses/catia-basic">View Course</a>
 </div>
         </div>
       </article>
