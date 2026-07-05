@@ -17,15 +17,29 @@ function parseSlotStart(slot) {
 function withSlotTime(dateValue, slot) {
   if (!dateValue) return null;
 
-  const base = String(dateValue).slice(0, 10);
-  const slotStart = parseSlotStart(slot);
+  let base = null;
 
+  if (dateValue instanceof Date) {
+    if (Number.isNaN(dateValue.getTime())) return null;
+    base = dateValue.toISOString().slice(0, 10);
+  } else {
+    const parsed = new Date(dateValue);
+    if (!Number.isNaN(parsed.getTime())) {
+      base = parsed.toISOString().slice(0, 10);
+    } else {
+      base = String(dateValue).slice(0, 10);
+    }
+  }
+
+  const slotStart = parseSlotStart(slot);
   const h = slotStart?.h ?? 0;
   const min = slotStart?.min ?? 0;
 
-  return new Date(
+  const finalDate = new Date(
     `${base}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00+05:30`,
   );
+
+  return Number.isNaN(finalDate.getTime()) ? null : finalDate;
 }
 
 function generateSessionDates(startDate, totalSessions, altDays, sundayOff) {
