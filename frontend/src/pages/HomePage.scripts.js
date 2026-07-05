@@ -129,6 +129,14 @@ const handleInternalNav = (e) => {
   };
 }
 
+document.querySelectorAll(".syllabus-download-btn").forEach((btn) => {
+  add(btn, "click", () => {
+    const pdf = btn.getAttribute("data-pdf");
+    if (!pdf) return;
+    window.location.href = pdf;
+  });
+});
+
 function getPublicUrl(path) {
   const base = import.meta.env.BASE_URL || "/";
   const cleanBase = base.endsWith("/") ? base : base + "/";
