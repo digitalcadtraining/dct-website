@@ -330,8 +330,7 @@ function BatchGroup({ batch, onToggleStatus }) {
 function CourseGroup({ course, onToggleStatus }) {
   const [open, setOpen] = useState(true);
   const studentCount = course.batches.reduce(
-    (sum, b) =>
-      sum + b.students.filter((x) => x.student.is_active).length,
+    (sum, b) => sum + b.students.filter((x) => x.student.is_active).length,
     0,
   );
 
@@ -410,8 +409,8 @@ export default function AdminStudents() {
   );
 
   const grouped = useMemo(
-    () => buildGroups(activeStudents, search),
-    [activeStudents, search],
+    () => buildGroups(students, search),
+    [students, search],
   );
 
   const stats = useMemo(() => {
