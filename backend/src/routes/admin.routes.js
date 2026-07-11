@@ -9,6 +9,10 @@ router.get("/applications", admin.listApplications);
 router.post("/applications/:id/approve", admin.approveApplication);
 router.post("/applications/:id/reject", admin.rejectApplication);
 router.get("/students", admin.listStudents);
+router.get("/installments/tracker", admin.feeTracker);
+router.patch("/installments/:id/paid", admin.markInstallmentPaid);
+router.patch("/installments/:id/pending", admin.markInstallmentPending);
+
 router.get("/tutors", admin.listTutors);
 router.get("/batches/pending", admin.listPendingBatches);
 router.get("/batches", admin.listAllBatches);

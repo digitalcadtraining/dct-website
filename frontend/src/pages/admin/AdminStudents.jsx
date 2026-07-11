@@ -1,30 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
-  Search,
-  Users,
-  RefreshCcw,
-  Power,
   ChevronDown,
   ChevronRight,
-  GraduationCap,
+  Power,
+  RefreshCcw,
+  Search,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { adminApi } from "../../services/api.js";
 
-const C = {
-  dark: "#1F1A17",
-  blue: "#024981",
-  primary: "#007BBF",
-  gray: "#6A6B6D",
-  lg: "#7E7F81",
-};
-
-const money = (v) => Number(v || 0).toLocaleString("en-IN");
-const fmtDate = (d) =>
-  d
-    ? new Date(d).toLocaleDateString("en-IN", {
+const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
+const fmtDate = (v) =>
+  v
+    ? new Date(v).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -32,506 +21,417 @@ const fmtDate = (d) =>
       })
     : "—";
 
-function enrollmentsOf(student) {
-  return Array.isArray(student?.enrollments) ? student.enrollments : [];
-}
-
-function searchable(student, enrollment = null) {
-  const batch = enrollment?.batch || {};
-  const course = batch.course || {};
-  const tutor = batch.tutor || {};
-  return [
-    student.name,
-    student.email,
-    student.phone,
-    course.name,
-    batch.name,
-    tutor.name,
-    enrollment?.discount_code,
-    enrollment?.payment_status,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function buildGroups(students = [], search = "") {
-  const q = search.trim().toLowerCase();
-  const map = new Map();
-
-  students.forEach((student) => {
-    const enrollments = enrollmentsOf(student);
-
-    if (!enrollments.length) {
-      if (q && !searchable(student).includes(q)) return;
-      const courseKey = "unassigned-course";
-      const batchKey = "unassigned-batch";
-
-      if (!map.has(courseKey)) {
-        map.set(courseKey, {
-          id: courseKey,
-          name: "No Course Assigned",
-          batches: new Map(),
-        });
-      }
-
-      const course = map.get(courseKey);
-      if (!course.batches.has(batchKey)) {
-        course.batches.set(batchKey, {
-          id: batchKey,
-          name: "No Batch Assigned",
-          tutorName: "—",
-          startDate: null,
-          endDate: null,
-          students: [],
-        });
-      }
-
-      course.batches.get(batchKey).students.push({ student, enrollment: null });
-      return;
-    }
-
-    enrollments.forEach((enrollment) => {
-      if (q && !searchable(student, enrollment).includes(q)) return;
-
-      const batch = enrollment.batch || {};
-      const courseData = batch.course || {};
-      const tutor = batch.tutor || {};
-      const courseKey = courseData.id || courseData.name || "unknown-course";
-      const batchKey = batch.id || batch.name || "unknown-batch";
-
-      if (!map.has(courseKey)) {
-        map.set(courseKey, {
-          id: courseKey,
-          name: courseData.name || "Unknown Course",
-          batches: new Map(),
-        });
-      }
-
-      const course = map.get(courseKey);
-      if (!course.batches.has(batchKey)) {
-        course.batches.set(batchKey, {
-          id: batchKey,
-          name: batch.name || "Unknown Batch",
-          tutorName: tutor.name || "—",
-          startDate: batch.start_date || null,
-          endDate: batch.end_date || null,
-          students: [],
-        });
-      }
-
-      course.batches.get(batchKey).students.push({ student, enrollment });
-    });
-  });
-
-  return Array.from(map.values())
-    .map((course) => ({
-      ...course,
-      batches: Array.from(course.batches.values()).sort((a, b) =>
-        String(a.name).localeCompare(String(b.name)),
-      ),
-    }))
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-}
-
-function StatCard({ label, value }) {
+function StatusPill({ status }) {
+  const styles = {
+    PAID: "bg-green-50 text-green-700 border-green-200",
+    DUE: "bg-red-50 text-red-700 border-red-200",
+    PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+  };
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-      <p className="text-2xl font-black" style={{ color: C.dark }}>
-        {value}
-      </p>
-      <p className="text-xs font-semibold mt-1" style={{ color: C.gray }}>
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function StudentRow({ student, enrollment, onToggleStatus, index }) {
-  const batch = enrollment?.batch || {};
-  const tutor = batch.tutor || {};
-  const progress = Math.max(
-    0,
-    Math.min(100, Number(enrollment?.progress || 0)),
-  );
-
-  return (
-    <motion.div
-      className="grid grid-cols-1 xl:grid-cols-12 gap-3 px-4 py-4 items-center border-t border-gray-50 hover:bg-gray-50/70 transition-colors"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: Math.min(index * 0.015, 0.2) }}
+    <span
+      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${styles[status] || styles.PENDING}`}
     >
-      <div className="xl:col-span-3 flex items-center gap-3 min-w-0">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-          style={{
-            background: `linear-gradient(135deg,${C.blue},${C.primary})`,
-          }}
-        >
-          {student.name?.[0]?.toUpperCase() || "S"}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-black truncate" style={{ color: C.dark }}>
-            {student.name || "Student"}
-          </p>
-          <p className="text-xs truncate" style={{ color: C.gray }}>
-            {student.email || "—"} · {student.phone || "—"}
-          </p>
-        </div>
-      </div>
-
-      <div className="xl:col-span-2">
-        <p className="text-xs font-bold" style={{ color: C.dark }}>
-          {tutor.name || "—"}
-        </p>
-        <p className="text-[11px]" style={{ color: C.lg }}>
-          Tutor
-        </p>
-      </div>
-
-      <div className="xl:col-span-2">
-        <p className="text-xs font-bold" style={{ color: C.dark }}>
-          {enrollment?.payment_status || "—"}
-        </p>
-        <p className="text-[11px]" style={{ color: C.lg }}>
-          Joined {fmtDate(enrollment?.enrolled_at || student.created_at)}
-        </p>
-      </div>
-
-      <div className="xl:col-span-2">
-        <p className="text-xs font-bold" style={{ color: C.blue }}>
-          ₹{money(enrollment?.enrolled_price)}
-        </p>
-        <p className="text-[11px]" style={{ color: C.lg }}>
-          Enrolled price
-        </p>
-      </div>
-
-      <div className="xl:col-span-2">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-gray-100">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${progress}%`,
-                background: `linear-gradient(90deg,${C.blue},${C.primary})`,
-              }}
-            />
-          </div>
-          <span
-            className="text-[11px] font-black flex-shrink-0"
-            style={{ color: C.primary }}
-          >
-            {progress}%
-          </span>
-        </div>
-      </div>
-
-      <div className="xl:col-span-1 flex items-center justify-between gap-2">
-        <span
-          className="text-[10px] font-black px-2.5 py-1 rounded-full"
-          style={{
-            background: student.is_active ? "#f0fdf4" : "#fee2e2",
-            color: student.is_active ? "#16a34a" : "#dc2626",
-          }}
-        >
-          {student.is_active ? "Active" : "Inactive"}
-        </span>
-        <button
-          onClick={() => onToggleStatus(student.id)}
-          className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50"
-          title="Toggle student status"
-          type="button"
-        >
-          <Power
-            size={13}
-            style={{ color: student.is_active ? "#dc2626" : "#16a34a" }}
-          />
-        </button>
-      </div>
-    </motion.div>
+      {status}
+    </span>
   );
 }
 
-function BatchGroup({ batch, onToggleStatus }) {
-  const [open, setOpen] = useState(true);
-  const active = batch.students.filter((x) => x.student.is_active).length;
-  const paid = batch.students.filter(
-    (x) => x.enrollment?.payment_status === "PAID",
-  ).length;
-
+function InstallmentCell({ item, onPaid, onPending }) {
+  if (!item) return <span className="text-xs text-gray-400">Not set</span>;
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-gray-50"
-      >
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <h3
-              className="text-sm font-black truncate"
-              style={{ color: C.dark }}
-            >
-              {batch.name}
-            </h3>
-            <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-blue-50 text-dct-primary">
-              {active} active students
-            </span>
-            <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-              {paid} paid
-            </span>
-          </div>
-          <p className="text-xs mt-1" style={{ color: C.gray }}>
-            Tutor: {batch.tutorName} · {fmtDate(batch.startDate)} →{" "}
-            {fmtDate(batch.endDate)}
-          </p>
-        </div>
-      </button>
-
-      {open && (
-        <div>
-          <div className="hidden xl:grid grid-cols-12 gap-3 px-4 py-3 bg-gray-50 border-t border-gray-100">
-            {["Student", "Tutor", "Payment", "Price", "Progress", "Status"].map(
-              (h, i) => (
-                <p
-                  key={h}
-                  className={`text-[10px] font-black uppercase tracking-wider ${
-                    i === 0
-                      ? "col-span-3"
-                      : i === 1 || i === 2 || i === 3 || i === 4
-                        ? "col-span-2"
-                        : "col-span-1"
-                  }`}
-                  style={{ color: C.lg }}
-                >
-                  {h}
-                </p>
-              ),
-            )}
-          </div>
-          {batch.students.map((item, i) => (
-            <StudentRow
-              key={`${item.student.id}-${item.enrollment?.id || i}`}
-              student={item.student}
-              enrollment={item.enrollment}
-              index={i}
-              onToggleStatus={onToggleStatus}
-            />
-          ))}
-        </div>
+    <div className="min-w-[130px]">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-black text-dct-dark">
+          {money(item.amount)}
+        </span>
+        <StatusPill status={item.display_status} />
+      </div>
+      <p className="mt-1 text-[10px] text-gray-500">
+        {item.display_status === "PAID"
+          ? `Paid ${fmtDate(item.paid_at)}`
+          : `Due ${fmtDate(item.due_date)}`}
+      </p>
+      {item.display_status === "PAID" ? (
+        <button
+          type="button"
+          onClick={() => onPending(item)}
+          className="mt-1 text-[10px] font-bold text-gray-500 underline"
+        >
+          Undo
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onPaid(item)}
+          className="mt-1 rounded-lg bg-dct-primary px-2 py-1 text-[10px] font-black text-white"
+        >
+          Mark Paid
+        </button>
       )}
     </div>
   );
 }
 
-function CourseGroup({ course, onToggleStatus }) {
+function BatchGroup({ batch, onPaid, onPending, onToggle }) {
   const [open, setOpen] = useState(true);
-  const studentCount = course.batches.reduce(
-    (sum, b) => sum + b.students.filter((x) => x.student.is_active).length,
-    0,
-  );
+  const active = batch.items.filter((x) => x.student.is_active).length;
+  const disabled = batch.items.length - active;
+const activeItems = batch.items.filter(
+  (item) => item.student.is_active,
+);
+
+const received = activeItems.reduce(
+  (sum, item) =>
+    sum +
+    Number(
+      item.enrollment.payment_summary
+        ?.installment_received || 0,
+    ),
+  0,
+);
+
+const pending = activeItems.reduce(
+  (sum, item) =>
+    sum +
+    Number(
+      item.enrollment.payment_summary?.pending || 0,
+    ),
+  0,
+);
+
+const overdue = activeItems.reduce(
+  (sum, item) =>
+    sum +
+    Number(
+      item.enrollment.payment_summary?.overdue || 0,
+    ),
+  0,
+);
 
   return (
-    <section className="space-y-3">
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full rounded-3xl border border-blue-100 bg-blue-50/70 px-5 py-4 flex items-center justify-between gap-4 text-left"
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-gray-50"
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg,${C.blue},${C.primary})`,
-            }}
-          >
-            <GraduationCap size={20} />
+        <div>
+          <div className="flex items-center gap-2">
+            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <h3 className="text-sm font-black text-dct-dark">{batch.name}</h3>
           </div>
-          <div className="min-w-0">
-            <h2
-              className="text-lg font-black truncate"
-              style={{ color: C.dark }}
-            >
-              {course.name}
-            </h2>
-            <p className="text-xs font-semibold" style={{ color: C.gray }}>
-              {course.batches.length} batches · {studentCount} students
-            </p>
-          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            {active} active · {disabled} disabled · EMI received{" "}
+            {money(received)} · Pending {money(pending)} · Overdue{" "}
+            {money(overdue)}
+          </p>
         </div>
-        {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
       </button>
 
       {open && (
-        <div className="space-y-4">
-          {course.batches.map((batch) => (
-            <BatchGroup
-              key={batch.id}
-              batch={batch}
-              onToggleStatus={onToggleStatus}
-            />
-          ))}
+        <div className="overflow-x-auto border-t border-gray-100">
+          <table className="w-full min-w-[1050px] text-left">
+            <thead className="bg-gray-50 text-[10px] uppercase tracking-wide text-gray-500">
+              <tr>
+                <th className="px-4 py-3">Student</th>
+                <th className="px-4 py-3">Course Price</th>
+                <th className="px-4 py-3">First EMI</th>
+                <th className="px-4 py-3">Second EMI</th>
+                <th className="px-4 py-3">Third EMI / Extra</th>
+                <th className="px-4 py-3">Balance</th>
+                <th className="px-4 py-3">Account</th>
+              </tr>
+            </thead>
+            <tbody>
+              {batch.items.map(({ student, enrollment }) => {
+                const installments = enrollment.installments || [];
+                return (
+                  <tr
+                    key={`${student.id}-${enrollment.id}`}
+                    className="border-t border-gray-50 align-top"
+                  >
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-black text-dct-dark">
+                        {student.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        {student.phone} · {student.email}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4 text-xs font-black text-dct-primary">
+                      {money(enrollment.enrolled_price)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <InstallmentCell
+                        item={installments.find((x) => x.installment_no === 1)}
+                        onPaid={onPaid}
+                        onPending={onPending}
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <InstallmentCell
+                        item={installments.find((x) => x.installment_no === 2)}
+                        onPaid={onPaid}
+                        onPending={onPending}
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <InstallmentCell
+                        item={installments.find((x) => x.installment_no === 3)}
+                        onPaid={onPaid}
+                        onPending={onPending}
+                      />
+                    </td>
+                    <td
+                      className={`px-4 py-4 text-xs font-black ${Number(enrollment.payment_summary?.balance || 0) > 0 ? "text-red-600" : "text-green-700"}`}
+                    >
+                      {money(enrollment.payment_summary?.balance)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-black ${student.is_active ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+                      >
+                        {student.is_active ? "Active" : "Disabled"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onToggle(student.id)}
+                        className="ml-2 rounded-lg border border-gray-200 p-2"
+                        title="Enable or disable student"
+                      >
+                        <Power size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
 export default function AdminStudents() {
+  const [payload, setPayload] = useState({ students: [], summary: {} });
   const [search, setSearch] = useState("");
-  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
 
-  const load = () => {
+  const [payingItem, setPayingItem] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
+  const [paymentRef, setPaymentRef] = useState("");
+  const [savingPayment, setSavingPayment] = useState(false);
+
+  const load = async () => {
     setLoading(true);
-    setErr("");
-    adminApi
-      .students()
-      .then((res) => setStudents(res.data || []))
-      .catch((e) => setErr(e.message || "Failed to load students."))
-      .finally(() => setLoading(false));
+    setError("");
+
+    try {
+      const res = await adminApi.feeTracker();
+      setPayload(res.data || { students: [], summary: {} });
+    } catch (err) {
+      setError(err.message || "Failed to load fee tracker.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     load();
-    const onFocus = () => load();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  const activeStudents = useMemo(
-    () => students.filter((s) => s.is_active),
-    [students],
-  );
+  const groups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const map = new Map();
+    for (const student of payload.students || []) {
+      for (const enrollment of student.enrollments || []) {
+        const batch = enrollment.batch || {};
+        const hay =
+          `${student.name} ${student.email} ${student.phone} ${batch.name} ${batch.course?.name}`.toLowerCase();
+        if (q && !hay.includes(q)) continue;
+        const key = batch.id || "unassigned";
+        if (!map.has(key))
+          map.set(key, { id: key, name: batch.name || "No Batch", items: [] });
+        map.get(key).items.push({ student, enrollment });
+      }
+    }
+    return Array.from(map.values());
+  }, [payload.students, search]);
 
-  const grouped = useMemo(
-    () => buildGroups(students, search),
-    [students, search],
-  );
+  const markPaid = (item) => {
+    setPayingItem(item);
+    setPaymentMethod("UPI");
+    setPaymentRef("");
+    setError("");
+  };
 
-  const stats = useMemo(() => {
-    const enrollmentCount = activeStudents.reduce(
-      (sum, s) => sum + enrollmentsOf(s).length,
-      0,
-    );
+  const submitPayment = async () => {
+    if (!payingItem) return;
 
-    return {
-      students: activeStudents.length,
-      enrollments: enrollmentCount,
-      active: activeStudents.length,
-      courses: grouped.length,
-    };
-  }, [activeStudents, grouped.length]);
-
-  const toggleStatus = async (id) => {
     try {
-      const res = await adminApi.toggleUserStatus(id);
-      const updated = res.data;
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === id ? { ...s, is_active: updated.is_active } : s,
-        ),
-      );
-    } catch (e) {
-      alert(e.message || "Failed to update user status.");
+      setSavingPayment(true);
+      setError("");
+
+      await adminApi.markInstallmentPaid(payingItem.id, {
+        payment_method: paymentMethod,
+        payment_ref: paymentRef,
+      });
+
+      setPayingItem(null);
+      setPaymentMethod("UPI");
+      setPaymentRef("");
+
+      await load();
+    } catch (err) {
+      setError(err.message || "Could not mark installment as paid.");
+    } finally {
+      setSavingPayment(false);
     }
   };
 
+  const markPending = async (item) => {
+    try {
+      if (!window.confirm(`Reset ${item.label} to pending?`)) return;
+
+      setError("");
+
+      await adminApi.markInstallmentPending(item.id);
+
+      await load();
+    } catch (err) {
+      setError(err.message || "Could not reset installment.");
+    }
+  };
+
+  const toggle = async (id) => {
+    await adminApi.toggleUserStatus(id);
+    await load();
+  };
+
+  const s = payload.summary || {};
   return (
     <AppShell>
+      {payingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-[420px] rounded-3xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-black mb-5">Mark Installment Paid</h2>
+
+            <div className="mb-4">
+              <label className="text-sm font-bold">Payment Method</label>
+
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="mt-2 w-full rounded-xl border p-3"
+              >
+                <option>UPI</option>
+                <option>CASH</option>
+                <option>BANK_TRANSFER</option>
+                <option>PHONEPE</option>
+                <option>GPAY</option>
+                <option>OTHER</option>
+              </select>
+            </div>
+
+            <div className="mb-5">
+              <label className="text-sm font-bold">UTR / Reference</label>
+
+              <input
+                value={paymentRef}
+                onChange={(e) => setPaymentRef(e.target.value)}
+                className="mt-2 w-full rounded-xl border p-3"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPayingItem(null)}
+                className="flex-1 rounded-xl border py-3 font-bold"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitPayment}
+                disabled={savingPayment}
+                className="flex-1 rounded-xl bg-dct-primary py-3 font-bold text-white"
+              >
+                {savingPayment ? "Saving..." : "Confirm Paid"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageWrapper>
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1
-              className="text-2xl font-extrabold mb-1"
-              style={{ color: C.dark }}
-            >
-              Student Management
+            <h1 className="text-2xl font-extrabold text-dct-dark">
+              Batch Fee Tracker
             </h1>
-            <p className="text-sm" style={{ color: C.gray }}>
-              Course → batch → student wise live database view.
+            <p className="text-sm text-gray-500">
+              All students remain visible, including disabled accounts.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2">
             <div className="relative">
               <Search
                 size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2"
-                style={{ color: C.lg }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search student, batch, course, tutor..."
-                className="pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none w-72 max-w-[72vw]"
-                style={{ borderColor: "#e5e7eb", color: C.dark }}
+                className="rounded-xl border border-gray-200 py-2.5 pl-9 pr-4 text-sm"
+                placeholder="Search student or batch"
               />
             </div>
             <button
-              onClick={load}
-              className="p-2.5 bg-white border border-gray-100 rounded-xl"
-              style={{ color: C.primary }}
               type="button"
+              onClick={load}
+              className="rounded-xl border border-gray-200 bg-white p-2.5"
             >
               <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Students" value={stats.students} />
-          <StatCard label="Total Enrollments" value={stats.enrollments} />
-          <StatCard label="Active Students" value={stats.active} />
-          <StatCard label="Course Groups" value={stats.courses} />
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
+          {[
+            ["Students", s.total_students],
+            ["Active", s.active_students],
+            ["Disabled", s.disabled_students],
+            ["Registration", money(s.registration_received)],
+            ["EMI Received", money(s.emi_received)],
+            ["Overdue", money(s.overdue_emi)],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+            >
+              <p className="text-lg font-black text-dct-dark">{value || 0}</p>
+              <p className="text-xs text-gray-500">{label}</p>
+            </div>
+          ))}
         </div>
 
-        {err && (
-          <div className="mb-5 rounded-2xl bg-red-50 border border-red-200 px-5 py-4 text-red-600 text-sm font-semibold">
-            {err}
+        {error && (
+          <div className="mb-4 rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">
+            {error}
           </div>
         )}
-
-        {loading && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-36 bg-gray-50 rounded-3xl animate-pulse"
-              />
-            ))}
-          </div>
-        )}
-
-        {!loading && !err && grouped.length === 0 && (
-          <div
-            className="bg-white rounded-3xl border border-gray-100 p-12 text-center"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}
-          >
-            <Users
-              size={34}
-              className="mx-auto mb-3"
-              style={{ color: "#d1d5db" }}
-            />
-            <p className="font-black" style={{ color: C.dark }}>
-              No students found
-            </p>
-            <p className="text-sm mt-1" style={{ color: C.lg }}>
-              Try another search.
-            </p>
-          </div>
-        )}
-
-        {!loading && !err && grouped.length > 0 && (
-          <div className="space-y-6">
-            {grouped.map((course) => (
-              <CourseGroup
-                key={course.id}
-                course={course}
-                onToggleStatus={toggleStatus}
+        {!loading && (
+          <div className="space-y-5">
+            {groups.map((batch) => (
+              <BatchGroup
+                key={batch.id}
+                batch={batch}
+                onPaid={markPaid}
+                onPending={markPending}
+                onToggle={toggle}
               />
             ))}
           </div>

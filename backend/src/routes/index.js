@@ -1,42 +1,22 @@
-/**
- * Routes Index
- * Mounts all route modules under /api/v1
- */
-
+/** Routes Index - mounts modules under /api/v1 */
 const router = require("express").Router();
 
-router.use("/auth",               require("./auth.routes"));
-router.use("/courses",            require("./course.routes"));
-router.use("/batches",            require("./batch.routes"));
-router.use("/sessions",           require("./session.routes"));
-router.use("/assignments",        require("./assignment.routes"));
-router.use("/queries",            require("./query.routes"));
+router.use("/auth", require("./auth.routes"));
+router.use("/courses", require("./course.routes"));
+router.use("/batches", require("./batch.routes"));
+router.use("/sessions", require("./session.routes"));
+router.use("/assignments", require("./assignment.routes"));
+router.use("/queries", require("./query.routes"));
 router.use("/registration-payments", require("./registrationPayment.routes"));
-router.use("/discount-codes",     require("./discountCode.routes"));
-router.use("/referrals",          require("./referral.routes"));
-router.use("/prerequisites",      require("./prerequisite.routes"));
+router.use("/discount-codes", require("./discountCode.routes"));
+router.use("/referrals", require("./referral.routes"));
+router.use("/prerequisites", require("./prerequisite.routes"));
 router.use("/tutor-applications", require("./tutor.routes"));
-router.use("/admin",              require("./admin.routes"));
+router.use("/installments", require("./installment.routes"));
+router.use("/admin", require("./admin.routes"));
 
 router.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "DigitalCAD Training API v1",
-    endpoints: {
-      auth: "/api/v1/auth",
-      courses: "/api/v1/courses",
-      batches: "/api/v1/batches",
-      sessions: "/api/v1/sessions",
-      assignments: "/api/v1/assignments",
-      queries: "/api/v1/queries",
-      registrationPayments: "/api/v1/registration-payments",
-      discountCodes: "/api/v1/discount-codes",
-      referrals: "/api/v1/referrals",
-      prerequisites: "/api/v1/prerequisites",
-      tutorApplications: "/api/v1/tutor-applications",
-      admin: "/api/v1/admin",
-    },
-  });
+  res.json({ success: true, message: "DigitalCAD Training API v1" });
 });
 
 module.exports = router;

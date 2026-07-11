@@ -63,10 +63,14 @@ function CourseCard({ enrollment, index }) {
         })
       : "—";
   const status = deriveBatchStatus(batch);
-  const firstEmi = emiAmount(enrollment);
-  const secondEmi = Math.max(
-    0,
-    Number(enrollment.enrolled_price || 0) - 999 - firstEmi,
+  const installments = enrollment.installments || [];
+
+  const firstInstallment = installments.find(
+    (item) => Number(item.installment_no) === 1,
+  );
+
+  const secondInstallment = installments.find(
+    (item) => Number(item.installment_no) === 2,
   );
 
   return (
@@ -173,31 +177,65 @@ function CourseCard({ enrollment, index }) {
             ["Assignments", batch._count?.assignments || 0],
             [
               "First EMI",
-              enrollment.emi_first_due ? `₹${money(firstEmi)}` : "—",
-              enrollment.emi_first_due
-                ? `Due on ${fmt(enrollment.emi_first_due)}`
-                : "",
+              firstInstallment ? `₹${money(firstInstallment.amount)}` : "—",
+              firstInstallment
+                ? firstInstallment.display_status === "PAID"
+                  ? `PAID · ${fmt(firstInstallment.paid_at)}`
+                  : firstInstallment.display_status === "DUE"
+                    ? `DUE · ${fmt(firstInstallment.due_date)}`
+                    : `Pending · ${fmt(firstInstallment.due_date)}`
+                : "Not set",
+              firstInstallment?.display_status,
             ],
             [
               "Second EMI",
-              enrollment.emi_second_due ? `₹${money(secondEmi)}` : "—",
-              enrollment.emi_second_due
-                ? `Due on ${fmt(enrollment.emi_second_due)}`
-                : "",
+              secondInstallment ? `₹${money(secondInstallment.amount)}` : "—",
+              secondInstallment
+                ? secondInstallment.display_status === "PAID"
+                  ? `PAID · ${fmt(secondInstallment.paid_at)}`
+                  : secondInstallment.display_status === "DUE"
+                    ? `DUE · ${fmt(secondInstallment.due_date)}`
+                    : `Pending · ${fmt(secondInstallment.due_date)}`
+                : "Not set",
+              secondInstallment?.display_status,
             ],
-          ].map(([l, v, sub]) => (
+          ].map(([l, v, sub, paymentStatus]) => (
             <div
               key={l}
               style={{
-                border: "1px solid #e8ecf0",
+                border:
+                  paymentStatus === "PAID"
+                    ? "1px solid #bbf7d0"
+                    : paymentStatus === "DUE"
+                      ? "1px solid #fecaca"
+                      : "1px solid #e8ecf0",
                 borderRadius: 9,
                 padding: "8px 10px",
+                background:
+                  paymentStatus === "PAID"
+                    ? "#f0fdf4"
+                    : paymentStatus === "DUE"
+                      ? "#fef2f2"
+                      : "#ffffff",
               }}
             >
               <p style={{ fontSize: 12, fontWeight: 700, color: C.dark }}>
                 {v}
               </p>
-              <p style={{ fontSize: 10, color: C.lg }}>{sub || l}</p>
+              <p
+                style={{
+                  fontSize: 10,
+                  color:
+                    paymentStatus === "PAID"
+                      ? "#15803d"
+                      : paymentStatus === "DUE"
+                        ? "#dc2626"
+                        : C.lg,
+                  fontWeight: paymentStatus ? 700 : 400,
+                }}
+              >
+                {sub || l}
+              </p>
             </div>
           ))}
         </div>

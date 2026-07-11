@@ -27,6 +27,49 @@ function normalizeDateTime(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function installmentDisplayStatus(item, now = new Date()) {
+  if (item?.status === "PAID" || item?.paid_at) return "PAID";
+
+  if (item?.due_date && new Date(item.due_date).getTime() < now.getTime()) {
+    return "DUE";
+  }
+
+  return "PENDING";
+}
+
+function decorateInstallments(installments = []) {
+  const now = new Date();
+
+  return installments.map((item) => ({
+    ...item,
+    display_status: installmentDisplayStatus(item, now),
+  }));
+}
+
+function buildPaymentSummary(enrollment) {
+  const installments = decorateInstallments(enrollment?.installments || []);
+
+  const installmentReceived = installments
+    .filter((item) => item.display_status === "PAID")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const overdue = installments
+    .filter((item) => item.display_status === "DUE")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const pending = installments
+    .filter((item) => item.display_status !== "PAID")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  return {
+    registration_received: enrollment?.payment_status === "PAID" ? 999 : 0,
+    installment_received: installmentReceived,
+    pending,
+    overdue,
+    balance: pending,
+  };
+}
+
 async function attachBatchPricing(batches = []) {
   if (!batches.length) return batches;
   const ids = batches.map((b) => b.id);
@@ -260,6 +303,9 @@ const listStudents = async (req, res, next) => {
           enrollments: {
             orderBy: { enrolled_at: "desc" },
             include: {
+              installments: {
+                orderBy: { installment_no: "asc" },
+              },
               batch: {
                 select: {
                   id: true,
@@ -277,7 +323,16 @@ const listStudents = async (req, res, next) => {
       }),
       prisma.user.count({ where }),
     ]);
-    return paginated(res, students, total, p, ps, "Students fetched.");
+    const result = students.map((student) => ({
+      ...student,
+      enrollments: (student.enrollments || []).map((enrollment) => ({
+        ...enrollment,
+        installments: decorateInstallments(enrollment.installments || []),
+        payment_summary: buildPaymentSummary(enrollment),
+      })),
+    }));
+
+    return paginated(res, result, total, p, ps, "Students fetched.");
   } catch (err) {
     next(err);
   }
@@ -543,6 +598,174 @@ const rejectBatch = async (req, res, next) => {
   }
 };
 
+const feeTracker = async (req, res, next) => {
+  try {
+    const students = await prisma.user.findMany({
+      where: { role: "STUDENT" },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        is_active: true,
+        created_at: true,
+        enrollments: {
+          orderBy: { enrolled_at: "desc" },
+          include: {
+            installments: {
+              orderBy: { installment_no: "asc" },
+            },
+            batch: {
+              select: {
+                id: true,
+                name: true,
+                start_date: true,
+                end_date: true,
+                status: true,
+                course: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    let registrationReceived = 0;
+    let emiReceived = 0;
+    let pendingEmi = 0;
+    let overdueEmi = 0;
+
+    const formattedStudents = students.map((student) => ({
+      ...student,
+      enrollments: (student.enrollments || []).map((enrollment) => {
+        const installments = decorateInstallments(
+          enrollment.installments || [],
+        );
+
+        const paymentSummary = buildPaymentSummary({
+          ...enrollment,
+          installments,
+        });
+
+if (student.is_active) {
+  registrationReceived +=
+    paymentSummary.registration_received;
+
+  emiReceived +=
+    paymentSummary.installment_received;
+
+  pendingEmi +=
+    paymentSummary.pending;
+
+  overdueEmi +=
+    paymentSummary.overdue;
+}
+
+        return {
+          ...enrollment,
+          installments,
+          payment_summary: paymentSummary,
+        };
+      }),
+    }));
+
+    const activeStudents = students.filter(
+      (student) => student.is_active,
+    ).length;
+
+    return success(res, 200, "Fee tracker fetched.", {
+      students: formattedStudents,
+      summary: {
+        total_students: students.length,
+        active_students: activeStudents,
+        disabled_students: students.length - activeStudents,
+        registration_received: registrationReceived,
+        emi_received: emiReceived,
+        pending_emi: pendingEmi,
+        overdue_emi: overdueEmi,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markInstallmentPaid = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { payment_method, payment_ref, notes, paid_at } = req.body;
+
+    const installment = await prisma.enrollmentInstallment.findUnique({
+      where: { id },
+    });
+
+    if (!installment) {
+      return error(res, 404, "Installment not found.");
+    }
+
+    const paidDate = paid_at ? new Date(paid_at) : new Date();
+
+    if (Number.isNaN(paidDate.getTime())) {
+      return error(res, 400, "Invalid paid date.");
+    }
+
+    const updated = await prisma.enrollmentInstallment.update({
+      where: { id },
+      data: {
+        status: "PAID",
+        paid_at: paidDate,
+        payment_method: String(payment_method || "").trim() || null,
+        payment_ref: String(payment_ref || "").trim() || null,
+        notes: String(notes || "").trim() || null,
+      },
+    });
+
+    return success(res, 200, "Installment marked as paid.", {
+      ...updated,
+      display_status: "PAID",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markInstallmentPending = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const installment = await prisma.enrollmentInstallment.findUnique({
+      where: { id },
+    });
+
+    if (!installment) {
+      return error(res, 404, "Installment not found.");
+    }
+
+    const updated = await prisma.enrollmentInstallment.update({
+      where: { id },
+      data: {
+        status: "PENDING",
+        paid_at: null,
+        payment_method: null,
+        payment_ref: null,
+      },
+    });
+
+    return success(res, 200, "Installment reset to pending.", {
+      ...updated,
+      display_status: installmentDisplayStatus(updated),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getStats,
   listApplications,
@@ -558,4 +781,7 @@ module.exports = {
   listPendingBatches,
   approveBatch,
   rejectBatch,
+  feeTracker,
+  markInstallmentPaid,
+  markInstallmentPending,
 };

@@ -42,6 +42,28 @@ function withSlotTime(dateValue, slot) {
   return Number.isNaN(finalDate.getTime()) ? null : finalDate;
 }
 
+function decorateStudentInstallments(installments = []) {
+  const now = new Date();
+
+  return installments.map((item) => {
+    let displayStatus = "PENDING";
+
+    if (item.status === "PAID" || item.paid_at) {
+      displayStatus = "PAID";
+    } else if (
+      item.due_date &&
+      new Date(item.due_date).getTime() < now.getTime()
+    ) {
+      displayStatus = "DUE";
+    }
+
+    return {
+      ...item,
+      display_status: displayStatus,
+    };
+  });
+}
+
 function generateSessionDates(startDate, totalSessions, altDays, sundayOff) {
   const dates = [];
   const current = new Date(startDate);
@@ -242,19 +264,22 @@ const createBatch = async (req, res, next) => {
 
     const parsedStartDate = new Date(start_date);
 
-if (Number.isNaN(parsedStartDate.getTime())) {
-  return error(res, 400, "Please select valid batch start date.");
-}
+    if (Number.isNaN(parsedStartDate.getTime())) {
+      return error(res, 400, "Please select valid batch start date.");
+    }
 
-const endDate =
-  sessionDates.length > 0
-    ? sessionDates[sessionDates.length - 1]
-    : new Date(parsedStartDate.setMonth(parsedStartDate.getMonth() + 4));
+    const endDate =
+      sessionDates.length > 0
+        ? sessionDates[sessionDates.length - 1]
+        : new Date(parsedStartDate.setMonth(parsedStartDate.getMonth() + 4));
 
-if (!endDate || Number.isNaN(new Date(endDate).getTime())) {
-  return error(res, 400, "Could not calculate valid batch end date. Please check course sessions.");
-}
-
+    if (!endDate || Number.isNaN(new Date(endDate).getTime())) {
+      return error(
+        res,
+        400,
+        "Could not calculate valid batch end date. Please check course sessions.",
+      );
+    }
 
     const mainSlot = normalizedSlots[0];
     const recordedProjects = (application.syllabus_projects || [])
@@ -489,53 +514,112 @@ function progressFromAssignments(batch, storedProgress = 0) {
 const getEnrolledBatches = async (req, res, next) => {
   try {
     const studentId = req.user.id;
+
     const enrollments = await prisma.enrollment.findMany({
       where: { student_id: studentId },
+      orderBy: { enrolled_at: "desc" },
       include: {
+        installments: {
+          orderBy: { installment_no: "asc" },
+        },
         batch: {
           include: {
             course: {
-              select: { id: true, name: true, slug: true, thumbnail_url: true },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                thumbnail_url: true,
+              },
             },
-            tutor: { select: { name: true } },
+            tutor: {
+              select: {
+                name: true,
+              },
+            },
             assignments: {
               select: {
                 id: true,
                 submissions: {
                   where: { student_id: studentId },
-                  select: { id: true, status: true, submitted_at: true },
+                  select: {
+                    id: true,
+                    status: true,
+                    submitted_at: true,
+                  },
                 },
               },
             },
-            _count: { select: { scheduled_sessions: true, assignments: true } },
+            _count: {
+              select: {
+                scheduled_sessions: true,
+                assignments: true,
+              },
+            },
           },
         },
       },
     });
+
     const projectMap = await getTutorCourseProjectMap(
-      enrollments.map((e) => ({
-        tutor_id: e.batch?.tutor_id,
-        course_id: e.batch?.course_id,
+      enrollments.map((enrollment) => ({
+        tutor_id: enrollment.batch?.tutor_id,
+        course_id: enrollment.batch?.course_id,
       })),
     );
-    const result = enrollments.map((e) => {
-      const batch = e.batch || {};
-      const progress = progressFromAssignments(batch, e.progress);
+
+    const result = enrollments.map((enrollment) => {
+      const batch = enrollment.batch || {};
+      const progress = progressFromAssignments(batch, enrollment.progress);
+
       const { assignments, ...cleanBatch } = batch;
-      const key = `${batch.tutor_id}:${batch.course_id}`;
+      const projectKey = `${batch.tutor_id}:${batch.course_id}`;
+
+      const installments = decorateStudentInstallments(
+        enrollment.installments || [],
+      );
+
+      const installmentReceived = installments
+        .filter((item) => item.display_status === "PAID")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const overdue = installments
+        .filter((item) => item.display_status === "DUE")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const pending = installments
+        .filter((item) => item.display_status !== "PAID")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
       return {
-        enrollment_id: e.id,
-        enrolled_at: e.enrolled_at,
-        payment_status: e.payment_status,
+        id: enrollment.id,
+        enrollment_id: enrollment.id,
+        enrolled_at: enrollment.enrolled_at,
+        payment_status: enrollment.payment_status,
         progress,
-        enrolled_price: e.enrolled_price,
-        original_price: e.original_price,
-        discount_code: e.discount_code,
-        emi_first_due: e.emi_first_due,
-        emi_second_due: e.emi_second_due,
-        batch: { ...cleanBatch, recorded_projects: projectMap.get(key) || [] },
+        enrolled_price: enrollment.enrolled_price,
+        original_price: enrollment.original_price,
+        discount_code: enrollment.discount_code,
+        emi_first_due: enrollment.emi_first_due,
+        emi_second_due: enrollment.emi_second_due,
+
+        installments,
+
+        payment_summary: {
+          registration_received: enrollment.payment_status === "PAID" ? 999 : 0,
+          installment_received: installmentReceived,
+          pending,
+          overdue,
+          balance: pending,
+        },
+
+        batch: {
+          ...cleanBatch,
+          recorded_projects: projectMap.get(projectKey) || [],
+        },
       };
     });
+
     return success(res, 200, "Your enrolled courses.", result);
   } catch (err) {
     next(err);
