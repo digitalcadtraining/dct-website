@@ -72,14 +72,6 @@ function uploadSingle(req, res, next) {
   });
 }
 
-router.post(
-  "/",
-  authenticate,
-  authorize("TUTOR"),
-  uploadSingle,
-  c.createAssignment,
-);
-
 router.get(
   "/tutor/submissions",
   authenticate,
@@ -92,8 +84,6 @@ router.get(
   authenticate,
   c.downloadSubmissionFile,
 );
-
-router.get("/:id/download", authenticate, c.downloadAssignmentFile);
 
 router.get("/batch/:batchId", authenticate, c.getBatchAssignments);
 
