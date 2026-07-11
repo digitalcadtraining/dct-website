@@ -6,8 +6,8 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { authenticate, authorize } = require("../middleware/auth");
 const {
-  ensureCompletedSessionAssignments,
-} = require("../middleware/autoAssignment.middleware");
+  resolveCompletedSessionAssignment,
+} = require("../middleware/sessionAssignment.middleware");
 const {
   assignmentController: c,
 } = require("../controllers/session.controller");
@@ -101,10 +101,26 @@ router.get(
 router.get(
   "/batch/:batchId",
   authenticate,
-  ensureCompletedSessionAssignments,
   c.getBatchAssignments,
 );
 
+/**
+ * New flow:
+ * Completed session -> student uploads directly.
+ * The middleware silently finds/creates the internal assignment record.
+ */
+router.post(
+  "/session/:sessionId/submit",
+  authenticate,
+  authorize("STUDENT"),
+  uploadSingle,
+  resolveCompletedSessionAssignment,
+  c.submitAssignment,
+);
+
+/**
+ * Keep old assignment-ID endpoint for existing assignment pages and records.
+ */
 router.post(
   "/:id/submit",
   authenticate,
