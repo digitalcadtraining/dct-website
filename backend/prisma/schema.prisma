@@ -243,13 +243,13 @@ model Enrollment {
   payment_ref    String?
   progress       Int           @default(0)
 
-  enrolled_price Decimal?      @db.Decimal(10, 2)
-  original_price Decimal?      @db.Decimal(10, 2)
+  enrolled_price Decimal?  @db.Decimal(10, 2)
+  original_price Decimal?  @db.Decimal(10, 2)
   discount_code  String?
   emi_first_due  DateTime?
   emi_second_due DateTime?
 
-installments EnrollmentInstallment[]
+  installments EnrollmentInstallment[]
 
   @@unique([student_id, batch_id])
   @@index([student_id])
@@ -259,24 +259,24 @@ installments EnrollmentInstallment[]
 }
 
 model EnrollmentInstallment {
-  id             String     @id @default(cuid())
-  enrollment_id  String
-  enrollment     Enrollment @relation(fields: [enrollment_id], references: [id], onDelete: Cascade)
+  id            String     @id @default(cuid())
+  enrollment_id String
+  enrollment    Enrollment @relation(fields: [enrollment_id], references: [id], onDelete: Cascade)
 
   installment_no Int
   label          String
-  amount         Decimal    @db.Decimal(10, 2)
+  amount         Decimal @db.Decimal(10, 2)
 
-  due_date       DateTime?
-  paid_at        DateTime?
+  due_date DateTime?
+  paid_at  DateTime?
 
-  status         String     @default("PENDING")
+  status         String  @default("PENDING")
   payment_method String?
   payment_ref    String?
   notes          String?
 
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@unique([enrollment_id, installment_no])
   @@index([enrollment_id])
@@ -286,21 +286,21 @@ model EnrollmentInstallment {
 }
 
 model ReferralReward {
-  id                      String   @id @default(cuid())
+  id                      String    @id @default(cuid())
   referrer_id             String
-  referrer                User     @relation("ReferralsMade", fields: [referrer_id], references: [id], onDelete: Cascade)
-  referred_student_id     String?  @unique
-  referred_student        User?    @relation("ReferralsReceived", fields: [referred_student_id], references: [id], onDelete: SetNull)
+  referrer                User      @relation("ReferralsMade", fields: [referrer_id], references: [id], onDelete: Cascade)
+  referred_student_id     String?   @unique
+  referred_student        User?     @relation("ReferralsReceived", fields: [referred_student_id], references: [id], onDelete: SetNull)
   pending_registration_id String?
   enrollment_id           String?
   referral_code           String
-  reward_amount           Decimal  @default(2000) @db.Decimal(10, 2)
-  status                  String   @default("PENDING")
+  reward_amount           Decimal   @default(2000) @db.Decimal(10, 2)
+  status                  String    @default("PENDING")
   eligible_at             DateTime?
   credited_at             DateTime?
   notes                   String?
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
 
   @@index([referrer_id])
   @@index([referred_student_id])
@@ -335,43 +335,60 @@ model ScheduledSession {
 }
 
 model Assignment {
-  id          String            @id @default(cuid())
-  batch_id    String
-  batch       Batch             @relation(fields: [batch_id], references: [id])
-  session_id  String?
-  session     ScheduledSession? @relation(fields: [session_id], references: [id])
-  title       String
-  description String?
-  file_url    String?
-  due_date    DateTime?
-  created_at  DateTime          @default(now())
+  id                String            @id @default(cuid())
+  batch_id          String
+  batch             Batch             @relation(fields: [batch_id], references: [id])
+  session_id        String?
+  session           ScheduledSession? @relation(fields: [session_id], references: [id])
+  title             String
+  description       String?
+  file_url          String?
+  storage_provider  String            @default("LOCAL")
+  drive_file_id     String?
+  original_filename String?
+  file_mime_type    String?
+  file_size         Int?
+  due_date          DateTime?
+  created_at        DateTime          @default(now())
 
   submissions AssignmentSubmission[]
 
   @@index([batch_id])
   @@index([session_id])
   @@index([due_date])
+  @@index([drive_file_id])
   @@map("assignments")
 }
 
 model AssignmentSubmission {
-  id            String           @id @default(cuid())
-  assignment_id String
-  assignment    Assignment       @relation(fields: [assignment_id], references: [id])
-  student_id    String
-  student       User             @relation(fields: [student_id], references: [id])
-  file_url      String
-  submitted_at  DateTime         @default(now())
-  status        SubmissionStatus @default(SUBMITTED)
-  grade         String?
-  feedback      String?
-  reviewed_at   DateTime?
+  id                 String           @id @default(cuid())
+  assignment_id      String
+  assignment         Assignment       @relation(fields: [assignment_id], references: [id])
+  student_id         String
+  student            User             @relation(fields: [student_id], references: [id])
+  file_url           String
+  storage_provider   String           @default("LOCAL")
+  drive_file_id      String?
+  original_filename  String?
+  file_mime_type     String?
+  file_size          Int?
+  first_submitted_at DateTime?
+  submitted_at       DateTime         @default(now())
+  editable_until     DateTime?
+  locked_at          DateTime?
+  replacement_count  Int              @default(0)
+  status             SubmissionStatus @default(SUBMITTED)
+  grade              String?
+  feedback           String?
+  reviewed_at        DateTime?
 
   @@unique([assignment_id, student_id])
   @@index([assignment_id])
   @@index([student_id])
   @@index([status])
   @@index([submitted_at])
+  @@index([editable_until])
+  @@index([drive_file_id])
   @@map("assignment_submissions")
 }
 
@@ -411,15 +428,15 @@ model PendingRegistration {
   payment_request_id String?       @unique
   payment_id         String?
 
-  enrolled_price     Decimal?      @db.Decimal(10, 2)
-  original_price     Decimal?      @db.Decimal(10, 2)
-  discount_code      String?
-  referral_code      String?
-  emi_first_due      DateTime?
-  emi_second_due     DateTime?
+  enrolled_price Decimal?  @db.Decimal(10, 2)
+  original_price Decimal?  @db.Decimal(10, 2)
+  discount_code  String?
+  referral_code  String?
+  emi_first_due  DateTime?
+  emi_second_due DateTime?
 
-  created_at         DateTime      @default(now())
-  updated_at         DateTime      @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   payments RegistrationPayment[]
 
@@ -438,7 +455,7 @@ model RegistrationPayment {
   pending_registration    PendingRegistration @relation(fields: [pending_registration_id], references: [id], onDelete: Cascade)
   provider                String              @default("instamojo")
   amount                  Decimal             @db.Decimal(10, 2)
-  status                  PaymentStatus        @default(PENDING)
+  status                  PaymentStatus       @default(PENDING)
   payment_request_id      String?             @unique
   payment_id              String?
   raw_response            Json?
@@ -451,24 +468,24 @@ model RegistrationPayment {
 }
 
 model DiscountCode {
-  id             String   @id @default(cuid())
-  code           String   @unique
+  id             String    @id @default(cuid())
+  code           String    @unique
   purpose        String?
-  discount_price Decimal  @db.Decimal(10, 2)
-  original_price Decimal? @db.Decimal(10, 2)
+  discount_price Decimal   @db.Decimal(10, 2)
+  original_price Decimal?  @db.Decimal(10, 2)
   course_id      String?
-  course         Course?  @relation(fields: [course_id], references: [id])
+  course         Course?   @relation(fields: [course_id], references: [id])
   batch_id       String?
-  batch          Batch?   @relation(fields: [batch_id], references: [id])
+  batch          Batch?    @relation(fields: [batch_id], references: [id])
   starts_at      DateTime?
   expires_at     DateTime
   max_uses       Int?
-  used_count     Int      @default(0)
-  is_active      Boolean  @default(true)
+  used_count     Int       @default(0)
+  is_active      Boolean   @default(true)
   created_by_id  String?
-  created_by     User?    @relation("DiscountCodeCreatedBy", fields: [created_by_id], references: [id])
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  created_by     User?     @relation("DiscountCodeCreatedBy", fields: [created_by_id], references: [id])
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
   @@index([code])
   @@index([course_id])
