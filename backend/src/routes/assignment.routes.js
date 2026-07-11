@@ -5,10 +5,16 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { authenticate, authorize } = require("../middleware/auth");
-const { assignmentController: c } = require("../controllers/session.controller");
+const {
+  ensureCompletedSessionAssignments,
+} = require("../middleware/autoAssignment.middleware");
+const {
+  assignmentController: c,
+} = require("../controllers/session.controller");
 
 const router = express.Router();
 const tempDir = path.join(os.tmpdir(), "dct-assignment-uploads");
+
 fs.mkdirSync(tempDir, { recursive: true });
 
 const blockedExtensions = new Set([
@@ -44,12 +50,16 @@ const maxFileMb = Math.max(
 
 const upload = multer({
   storage,
-  limits: { fileSize: maxFileMb * 1024 * 1024 },
+  limits: {
+    fileSize: maxFileMb * 1024 * 1024,
+  },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname || "").toLowerCase();
+
     if (blockedExtensions.has(ext)) {
       return cb(new Error("This file type is not allowed."));
     }
+
     return cb(null, true);
   },
 });
@@ -58,7 +68,10 @@ function uploadSingle(req, res, next) {
   upload.single("file")(req, res, (err) => {
     if (!err) return next();
 
-    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+    if (
+      err instanceof multer.MulterError &&
+      err.code === "LIMIT_FILE_SIZE"
+    ) {
       return res.status(413).json({
         success: false,
         message: `File is too large. Maximum allowed size is ${maxFileMb} MB.`,
@@ -85,7 +98,12 @@ router.get(
   c.downloadSubmissionFile,
 );
 
-router.get("/batch/:batchId", authenticate, c.getBatchAssignments);
+router.get(
+  "/batch/:batchId",
+  authenticate,
+  ensureCompletedSessionAssignments,
+  c.getBatchAssignments,
+);
 
 router.post(
   "/:id/submit",
