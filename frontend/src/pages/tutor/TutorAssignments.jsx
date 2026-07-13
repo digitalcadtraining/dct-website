@@ -7,10 +7,7 @@ import {
   Button,
   PageWrapper,
 } from "../../components/ui/index.jsx";
-import {
-  assignmentApi,
-  batchApi,
-} from "../../services/api.js";
+import { assignmentApi, batchApi } from "../../services/api.js";
 import {
   Download,
   RefreshCw,
@@ -33,17 +30,11 @@ function formatIst(value) {
   });
 }
 
-function ReviewModal({
-  submission,
-  onClose,
-  onSaved,
-}) {
+function ReviewModal({ submission, onClose, onSaved }) {
   const [feedback, setFeedback] = useState("");
   const [grade, setGrade] = useState("");
-  const [status, setStatus] =
-    useState("REVIEWED");
-  const [loading, setLoading] =
-    useState(false);
+  const [status, setStatus] = useState("REVIEWED");
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -51,11 +42,7 @@ function ReviewModal({
 
     setFeedback(submission.feedback || "");
     setGrade(submission.grade || "");
-    setStatus(
-      submission.status === "RESUBMIT"
-        ? "RESUBMIT"
-        : "REVIEWED",
-    );
+    setStatus(submission.status === "RESUBMIT" ? "RESUBMIT" : "REVIEWED");
     setErr("");
   }, [submission]);
 
@@ -66,22 +53,16 @@ function ReviewModal({
     setErr("");
 
     try {
-      await assignmentApi.reviewSubmission(
-        submission.id,
-        {
-          feedback,
-          grade,
-          status,
-        },
-      );
+      await assignmentApi.reviewSubmission(submission.id, {
+        feedback,
+        grade,
+        status,
+      });
 
       await onSaved();
       onClose();
     } catch (error) {
-      setErr(
-        error.message ||
-          "Could not save feedback.",
-      );
+      setErr(error.message || "Could not save feedback.");
     } finally {
       setLoading(false);
     }
@@ -96,68 +77,43 @@ function ReviewModal({
       <div className="space-y-4">
         <Input
           label="Student"
-          value={
-            submission.student?.name || ""
-          }
+          value={submission.student?.name || ""}
           readOnly
         />
 
         <Input
           label="Assignment"
-          value={
-            submission.assignment?.title ||
-            ""
-          }
+          value={submission.assignment?.title || ""}
           readOnly
         />
 
         <Input
           label="Grade"
           value={grade}
-          onChange={(event) =>
-            setGrade(event.target.value)
-          }
+          onChange={(event) => setGrade(event.target.value)}
           placeholder="A / Good / Needs improvement"
         />
 
         <Textarea
           label="Feedback"
           value={feedback}
-          onChange={(event) =>
-            setFeedback(event.target.value)
-          }
+          onChange={(event) => setFeedback(event.target.value)}
           rows={4}
         />
 
         <select
           className="dct-input"
           value={status}
-          onChange={(event) =>
-            setStatus(event.target.value)
-          }
+          onChange={(event) => setStatus(event.target.value)}
         >
-          <option value="REVIEWED">
-            Reviewed / Accepted
-          </option>
-          <option value="RESUBMIT">
-            Need Resubmission
-          </option>
+          <option value="REVIEWED">Reviewed / Accepted</option>
+          <option value="RESUBMIT">Need Resubmission</option>
         </select>
 
-        {err && (
-          <p className="text-sm text-red-600">
-            {err}
-          </p>
-        )}
+        {err && <p className="text-sm text-red-600">{err}</p>}
 
-        <Button
-          fullWidth
-          onClick={save}
-          disabled={loading}
-        >
-          {loading
-            ? "Saving..."
-            : "Submit Feedback"}
+        <Button fullWidth onClick={save} disabled={loading}>
+          {loading ? "Saving..." : "Submit Feedback"}
         </Button>
       </div>
     </Modal>
@@ -166,14 +122,10 @@ function ReviewModal({
 
 export default function TutorAssignments() {
   const [batches, setBatches] = useState([]);
-  const [batchId, setBatchId] =
-    useState("");
-  const [submissions, setSubmissions] =
-    useState([]);
-  const [review, setReview] =
-    useState(null);
-  const [loading, setLoading] =
-    useState(true);
+  const [batchId, setBatchId] = useState("");
+  const [submissions, setSubmissions] = useState([]);
+  const [review, setReview] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -202,17 +154,11 @@ export default function TutorAssignments() {
     setErr("");
 
     try {
-      const response =
-        await assignmentApi.tutorSubmissions(
-          batchId,
-        );
+      const response = await assignmentApi.tutorSubmissions(batchId);
 
       setSubmissions(response.data || []);
     } catch (error) {
-      setErr(
-        error.message ||
-          "Failed to load submissions.",
-      );
+      setErr(error.message || "Failed to load submissions.");
     } finally {
       setLoading(false);
     }
@@ -222,21 +168,15 @@ export default function TutorAssignments() {
     load();
   }, [batchId]);
 
-  const downloadSubmission = async (
-    submission,
-  ) => {
+  const downloadSubmission = async (submission) => {
     try {
       await assignmentApi.downloadSubmission(
         submission.id,
-        submission.original_filename ||
-          "student-assignment",
+        submission.original_filename || "student-assignment",
         "tutor",
       );
     } catch (error) {
-      alert(
-        error.message ||
-          "Could not download submission.",
-      );
+      alert(error.message || "Could not download submission.");
     }
   };
 
@@ -249,15 +189,12 @@ export default function TutorAssignments() {
               Student Assignments
             </h1>
             <p className="text-sm text-dct-gray">
-              Review final submissions after
-              each student's 48-hour replacement
+              Review final submissions after each student's 48-hour replacement
               window closes.
             </p>
             <p className="text-xs text-dct-primary font-semibold mt-1">
-              Submission tasks open
-              automatically when a live session is
-              marked completed. Tutors no longer
-              need to create or upload assignments.
+              Submission tasks open automatically when a live session is marked
+              completed. Tutors no longer need to create or upload assignments.
             </p>
           </div>
 
@@ -266,12 +203,7 @@ export default function TutorAssignments() {
             onClick={load}
             className="px-4 py-2 rounded-xl border bg-white text-sm font-bold flex items-center gap-2"
           >
-            <RefreshCw
-              size={14}
-              className={
-                loading ? "animate-spin" : ""
-              }
-            />
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
@@ -280,15 +212,10 @@ export default function TutorAssignments() {
           <select
             className="dct-input max-w-md mb-5"
             value={batchId}
-            onChange={(event) =>
-              setBatchId(event.target.value)
-            }
+            onChange={(event) => setBatchId(event.target.value)}
           >
             {batches.map((batch) => (
-              <option
-                key={batch.id}
-                value={batch.id}
-              >
+              <option key={batch.id} value={batch.id}>
                 {batch.name}
               </option>
             ))}
@@ -302,122 +229,106 @@ export default function TutorAssignments() {
         )}
 
         {loading ? (
-          <p className="text-sm text-dct-gray">
-            Loading...
-          </p>
+          <p className="text-sm text-dct-gray">Loading...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {submissions.map(
-              (submission) => (
-                <div
-                  key={submission.id}
-                  className="dct-card p-5"
-                >
-                  <div className="flex justify-between gap-2">
-                    <div>
-                      <p className="font-extrabold text-dct-dark">
-                        {
-                          submission.student
-                            ?.name
-                        }
-                      </p>
-                      <p className="text-xs text-dct-gray">
-                        {
-                          submission.student
-                            ?.email
-                        }
-                      </p>
-                    </div>
-
-                    <span
-                      className={`text-[10px] font-bold px-2 py-1 rounded-full h-fit ${
-                        submission.status ===
-                        "REVIEWED"
-                          ? "bg-green-100 text-green-700"
-                          : submission.status ===
-                              "RESUBMIT"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-purple-100 text-purple-700"
-                      }`}
-                    >
-                      {submission.status ===
-                      "SUBMITTED"
-                        ? "LOCKED"
-                        : submission.status}
-                    </span>
-                  </div>
-
-                  <h3 className="font-bold text-sm mt-4">
-                    {
-                      submission.assignment
-                        ?.title
-                    }
-                  </h3>
-
-                  <p className="text-xs text-dct-primary mt-1">
-                    {submission.assignment
-                      ?.session
-                      ? `Session ${submission.assignment.session.session_number}: ${submission.assignment.session.name}`
-                      : "Session assignment"}
-                  </p>
-
-                  <p className="text-xs text-dct-gray my-3">
-                    Submitted:{" "}
-                    {formatIst(
-                      submission.submitted_at,
-                    )}
-                  </p>
-
-                  {submission.status ===
-                    "SUBMITTED" && (
-                    <p className="text-xs text-purple-700 mb-3 flex items-center gap-1">
-                      <Lock size={12} />
-                      Student replacement window
-                      completed
+            {submissions.map((submission) => (
+              <div key={submission.id} className="dct-card p-5">
+                <div className="flex justify-between gap-2">
+                  <div>
+                    <p className="font-extrabold text-dct-dark">
+                      {submission.student?.name}
                     </p>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        downloadSubmission(
-                          submission,
-                        )
-                      }
-                      className="py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1"
-                    >
-                      <Download size={13} />
-                      Download
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setReview(submission)
-                      }
-                      className="py-2 rounded-xl bg-dct-primary text-white text-xs font-bold flex items-center justify-center gap-1"
-                    >
-                      <CheckCircle2
-                        size={13}
-                      />
-                      Review
-                    </button>
+                    <p className="text-xs text-dct-gray">
+                      {submission.student?.email}
+                    </p>
                   </div>
+
+                  <span
+                    className={`text-[10px] font-bold px-2 py-1 rounded-full h-fit ${
+                      submission.status === "REVIEWED"
+                        ? "bg-green-100 text-green-700"
+                        : submission.status === "RESUBMIT"
+                          ? "bg-red-100 text-red-700"
+                          : submission.is_locked
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {submission.status === "REVIEWED"
+                      ? "REVIEWED"
+                      : submission.status === "RESUBMIT"
+                        ? "RESUBMIT"
+                        : submission.is_locked
+                          ? "LOCKED"
+                          : "EDIT WINDOW ACTIVE"}
+                  </span>
                 </div>
-              ),
-            )}
+
+                <h3 className="font-bold text-sm mt-4">
+                  {submission.assignment?.title}
+                </h3>
+
+                <p className="text-xs text-dct-primary mt-1">
+                  {submission.assignment?.session
+                    ? `Session ${submission.assignment.session.session_number}: ${submission.assignment.session.name}`
+                    : "Session assignment"}
+                </p>
+
+                <p className="text-xs text-dct-gray my-3">
+                  Submitted: {formatIst(submission.submitted_at)}
+                </p>
+
+                {submission.is_locked ? (
+                  <p className="text-xs text-purple-700 mb-3 flex items-center gap-1">
+                    <Lock size={12} />
+                    Replacement window completed. Ready for review.
+                  </p>
+                ) : (
+                  <p className="text-xs text-blue-700 mb-3">
+                    Student can replace this file until{" "}
+                    {formatIst(submission.editable_until)}.
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadSubmission(submission)}
+                    className="py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1"
+                  >
+                    <Download size={13} />
+                    Download
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!submission.is_locked}
+                    onClick={() => {
+                      if (submission.is_locked) {
+                        setReview(submission);
+                      }
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 ${
+                      submission.is_locked
+                        ? "bg-dct-primary text-white"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    <CheckCircle2 size={13} />
+                    {submission.is_locked ? "Review" : "Review after 48h"}
+                  </button>
+                </div>
+              </div>
+            ))}
 
             {submissions.length === 0 && (
               <div className="col-span-full bg-white border rounded-2xl p-12 text-center">
                 <ClipboardCheck className="mx-auto text-gray-300 mb-3" />
-                <p className="font-bold">
-                  No locked submissions yet
-                </p>
+                <p className="font-bold">No locked submissions yet</p>
                 <p className="text-sm text-dct-gray mt-1">
-                  Student files appear here after
-                  their 48-hour replacement window
-                  closes.
+                  Student files appear here after their 48-hour replacement
+                  window closes.
                 </p>
               </div>
             )}

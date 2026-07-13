@@ -365,16 +365,6 @@ function AssignmentCard({
         </span>
       </div>
 
-      <p className="text-sm text-dct-gray my-3">
-        {assignment.description ||
-          "Submit the practical work completed in this live session."}
-      </p>
-
-      <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-        Reference ZIP/files and detailed instructions are
-        shared in the official WhatsApp group.
-      </div>
-
       <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
         <div className="border rounded-xl p-3">
           <p className="font-bold">Session Status</p>

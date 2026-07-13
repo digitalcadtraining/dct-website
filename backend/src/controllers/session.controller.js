@@ -9,8 +9,7 @@ const EDIT_WINDOW_HOURS = Math.max(
   Number(process.env.ASSIGNMENT_EDIT_WINDOW_HOURS || 48),
 );
 
-const cleanUploadPath = (file) =>
-  file ? file.path.replace(/\\/g, "/") : null;
+const cleanUploadPath = (file) => (file ? file.path.replace(/\\/g, "/") : null);
 
 async function safeUnlink(filePath) {
   if (!filePath) return;
@@ -200,8 +199,7 @@ const updateSession = async (req, res, next) => {
     if (scheduled_at !== undefined)
       data.scheduled_at = scheduled_at ? new Date(scheduled_at) : null;
     if (zoom_link !== undefined) data.zoom_link = zoom_link || null;
-    if (recording_url !== undefined)
-      data.recording_url = recording_url || null;
+    if (recording_url !== undefined) data.recording_url = recording_url || null;
     if (notes_url !== undefined) data.notes_url = notes_url || null;
     if (status !== undefined) data.status = status;
 
@@ -234,8 +232,7 @@ const assignmentController = {
         const session = await prisma.scheduledSession.findFirst({
           where: { id: session_id, batch_id },
         });
-        if (!session)
-          return error(res, 400, "Invalid session for this batch.");
+        if (!session) return error(res, 400, "Invalid session for this batch.");
       }
 
       const parsedDueDate = due_date ? parseIndiaDateTime(due_date) : null;
@@ -244,20 +241,17 @@ const assignmentController = {
 
       let driveFile = null;
       if (req.file) {
-if (!drive.isConfigured()) {
-  const missing = drive.getMissingConfig();
+        if (!drive.isConfigured()) {
+          const missing = drive.getMissingConfig();
 
-  console.error(
-    "Missing Google Drive environment variables:",
-    missing,
-  );
+          console.error("Missing Google Drive environment variables:", missing);
 
-  return error(
-    res,
-    503,
-    `Google Drive configuration missing: ${missing.join(", ")}`,
-  );
-}
+          return error(
+            res,
+            503,
+            `Google Drive configuration missing: ${missing.join(", ")}`,
+          );
+        }
 
         driveFile = await drive.uploadFile({
           localPath: req.file.path,
@@ -283,10 +277,8 @@ if (!drive.isConfigured()) {
           file_url: driveFile ? `drive:${driveFile.id}` : null,
           storage_provider: driveFile ? "GOOGLE_DRIVE" : "LOCAL",
           drive_file_id: driveFile?.id || null,
-          original_filename:
-            driveFile?.name || req.file?.originalname || null,
-          file_mime_type:
-            driveFile?.mimeType || req.file?.mimetype || null,
+          original_filename: driveFile?.name || req.file?.originalname || null,
+          file_mime_type: driveFile?.mimeType || req.file?.mimetype || null,
           file_size: driveFile?.size || req.file?.size || null,
           due_date: parsedDueDate,
         },
@@ -312,8 +304,7 @@ if (!drive.isConfigured()) {
         const enrolled = await prisma.enrollment.findFirst({
           where: { student_id: req.user.id, batch_id: batchId },
         });
-        if (!enrolled)
-          return error(res, 403, "Not enrolled in this batch.");
+        if (!enrolled) return error(res, 403, "Not enrolled in this batch.");
       } else if (req.user.role === "TUTOR") {
         const owns = await prisma.batch.findFirst({
           where: { id: batchId, tutor_id: req.user.id },
@@ -389,16 +380,11 @@ if (!drive.isConfigured()) {
       const result = assignments.map((assignment) => ({
         ...assignment,
         file_size:
-          assignment.file_size === null ||
-          assignment.file_size === undefined
+          assignment.file_size === null || assignment.file_size === undefined
             ? null
             : Number(assignment.file_size),
-        has_file: Boolean(
-          assignment.drive_file_id || assignment.file_url,
-        ),
-        submissions: (assignment.submissions || []).map(
-          serializeSubmission,
-        ),
+        has_file: Boolean(assignment.drive_file_id || assignment.file_url),
+        submissions: (assignment.submissions || []).map(serializeSubmission),
       }));
 
       return success(res, 200, "Assignments fetched.", result);
@@ -422,8 +408,7 @@ if (!drive.isConfigured()) {
           batch_id: assignment.batch_id,
         },
       });
-      if (!enrolled)
-        return error(res, 403, "Not enrolled in this batch.");
+      if (!enrolled) return error(res, 403, "Not enrolled in this batch.");
       if (!req.file)
         return error(res, 400, "Please upload your assignment file.");
       if (!drive.isConfigured())
@@ -475,8 +460,7 @@ if (!drive.isConfigured()) {
       });
       uploadedDriveFileId = driveFile.id;
 
-      const openingNewWindow =
-        !existing || existing.status === "RESUBMIT";
+      const openingNewWindow = !existing || existing.status === "RESUBMIT";
       const editableUntil = openingNewWindow
         ? addHours(now, EDIT_WINDOW_HOURS)
         : normalizedEditableUntil(existing);
@@ -488,13 +472,10 @@ if (!drive.isConfigured()) {
               file_url: `drive:${driveFile.id}`,
               storage_provider: "GOOGLE_DRIVE",
               drive_file_id: driveFile.id,
-              original_filename:
-                driveFile.name || req.file.originalname,
-              file_mime_type:
-                driveFile.mimeType || req.file.mimetype,
+              original_filename: driveFile.name || req.file.originalname,
+              file_mime_type: driveFile.mimeType || req.file.mimetype,
               file_size: driveFile.size || req.file.size,
-              first_submitted_at:
-                existing.first_submitted_at || now,
+              first_submitted_at: existing.first_submitted_at || now,
               submitted_at: now,
               editable_until: editableUntil,
               locked_at: null,
@@ -512,10 +493,8 @@ if (!drive.isConfigured()) {
               file_url: `drive:${driveFile.id}`,
               storage_provider: "GOOGLE_DRIVE",
               drive_file_id: driveFile.id,
-              original_filename:
-                driveFile.name || req.file.originalname,
-              file_mime_type:
-                driveFile.mimeType || req.file.mimetype,
+              original_filename: driveFile.name || req.file.originalname,
+              file_mime_type: driveFile.mimeType || req.file.mimetype,
               file_size: driveFile.size || req.file.size,
               first_submitted_at: now,
               submitted_at: now,
@@ -556,18 +535,13 @@ if (!drive.isConfigured()) {
       const { batch_id, session_id } = req.query;
       const submissions = await prisma.assignmentSubmission.findMany({
         where: {
-          AND: [
-            {
-              assignment: {
-                batch: {
-                  tutor_id: req.user.id,
-                  ...(batch_id && { id: batch_id }),
-                },
-                ...(session_id && { session_id }),
-              },
+          assignment: {
+            batch: {
+              tutor_id: req.user.id,
+              ...(batch_id && { id: batch_id }),
             },
-            visibleToTutorWhere(),
-          ],
+            ...(session_id && { session_id }),
+          },
         },
         orderBy: { submitted_at: "desc" },
         include: {
@@ -620,8 +594,7 @@ if (!drive.isConfigured()) {
             batch_id: assignment.batch_id,
           },
         });
-        if (!enrolled)
-          return error(res, 403, "Not enrolled in this batch.");
+        if (!enrolled) return error(res, 403, "Not enrolled in this batch.");
       } else if (
         req.user.role === "TUTOR" &&
         assignment.batch.tutor_id !== req.user.id
@@ -656,8 +629,7 @@ if (!drive.isConfigured()) {
       if (!submission) return error(res, 404, "Submission not found.");
 
       const isOwner =
-        req.user.role === "STUDENT" &&
-        submission.student_id === req.user.id;
+        req.user.role === "STUDENT" && submission.student_id === req.user.id;
       const isTutor =
         req.user.role === "TUTOR" &&
         submission.assignment.batch.tutor_id === req.user.id;
@@ -669,8 +641,7 @@ if (!drive.isConfigured()) {
       return sendStoredFile({
         driveFileId: submission.drive_file_id,
         fileUrl: submission.file_url,
-        originalFilename:
-          submission.original_filename || "student-assignment",
+        originalFilename: submission.original_filename || "student-assignment",
         mimeType: submission.file_mime_type,
         res,
       });
@@ -683,8 +654,7 @@ if (!drive.isConfigured()) {
   reviewSubmission: async (req, res, next) => {
     try {
       const { grade, feedback, status } = req.body;
-      const safeStatus =
-        status === "RESUBMIT" ? "RESUBMIT" : "REVIEWED";
+      const safeStatus = status === "RESUBMIT" ? "RESUBMIT" : "REVIEWED";
 
       const submission = await prisma.assignmentSubmission.findUnique({
         where: { id: req.params.id },
@@ -705,8 +675,7 @@ if (!drive.isConfigured()) {
           feedback: feedback || null,
           status: safeStatus,
           reviewed_at: new Date(),
-          locked_at:
-            safeStatus === "REVIEWED" ? new Date() : null,
+          locked_at: safeStatus === "REVIEWED" ? new Date() : null,
         },
       });
 
@@ -732,15 +701,13 @@ const queryController = {
       const enrolled = await prisma.enrollment.findFirst({
         where: { student_id: req.user.id, batch_id },
       });
-      if (!enrolled)
-        return error(res, 403, "Not enrolled in this batch.");
+      if (!enrolled) return error(res, 403, "Not enrolled in this batch.");
 
       if (session_id) {
         const session = await prisma.scheduledSession.findFirst({
           where: { id: session_id, batch_id },
         });
-        if (!session)
-          return error(res, 400, "Invalid session for this batch.");
+        if (!session) return error(res, 400, "Invalid session for this batch.");
       }
 
       const query = await prisma.query.create({
@@ -857,11 +824,7 @@ const queryController = {
           where: { id: query.batch_id, tutor_id: req.user.id },
         });
         if (!batch)
-          return error(
-            res,
-            403,
-            "Not authorized to answer this query.",
-          );
+          return error(res, 403, "Not authorized to answer this query.");
       }
 
       const updated = await prisma.query.update({
