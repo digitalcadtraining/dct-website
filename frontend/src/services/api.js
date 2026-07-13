@@ -299,6 +299,16 @@ export const sessionApi = {
 };
 export const assignmentApi = {
   getForBatch: (batchId) => http(`/assignments/batch/${batchId}`),
+  submitForSession: (sessionId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    return http(`/assignments/session/${sessionId}/submit`, {
+      method: "POST",
+      role: "student",
+      body: fd,
+    });
+  },
   create: (data, file) => {
     const fd = new FormData();
     Object.entries(data || {}).forEach(([k, v]) => {
@@ -328,6 +338,7 @@ export const assignmentApi = {
       body: JSON.stringify(data),
     }),
 };
+
 export const queryApi = {
   mine: (batchId) =>
     http(`/queries/mine${toQuery({ batch_id: batchId })}`, { role: "student" }),
@@ -395,23 +406,10 @@ export const adminApi = {
       role: "admin",
     }),
 
-feeTracker: () =>
-  http("/admin/installments/tracker", {
-    role: "admin",
-  }),
-
-markInstallmentPaid: (id, data) =>
-  http(`/admin/installments/${id}/paid`, {
-    method: "PATCH",
-    role: "admin",
-    body: JSON.stringify(data),
-  }),
-
-markInstallmentPending: (id) =>
-  http(`/admin/installments/${id}/pending`, {
-    method: "PATCH",
-    role: "admin",
-  }),
+  feeTracker: () =>
+    http("/admin/installments/tracker", {
+      role: "admin",
+    }),
 
   markInstallmentPaid: (id, data) =>
     http(`/admin/installments/${id}/paid`, {
@@ -426,23 +424,36 @@ markInstallmentPending: (id) =>
       role: "admin",
     }),
 
-    feeTracker: () =>
-  http("/admin/installments/tracker", {
-    role: "admin",
-  }),
+  markInstallmentPaid: (id, data) =>
+    http(`/admin/installments/${id}/paid`, {
+      method: "PATCH",
+      role: "admin",
+      body: JSON.stringify(data),
+    }),
 
-markInstallmentPaid: (id, data) =>
-  http(`/admin/installments/${id}/paid`, {
-    method: "PATCH",
-    role: "admin",
-    body: JSON.stringify(data),
-  }),
+  markInstallmentPending: (id) =>
+    http(`/admin/installments/${id}/pending`, {
+      method: "PATCH",
+      role: "admin",
+    }),
 
-markInstallmentPending: (id) =>
-  http(`/admin/installments/${id}/pending`, {
-    method: "PATCH",
-    role: "admin",
-  }),
+  feeTracker: () =>
+    http("/admin/installments/tracker", {
+      role: "admin",
+    }),
+
+  markInstallmentPaid: (id, data) =>
+    http(`/admin/installments/${id}/paid`, {
+      method: "PATCH",
+      role: "admin",
+      body: JSON.stringify(data),
+    }),
+
+  markInstallmentPending: (id) =>
+    http(`/admin/installments/${id}/pending`, {
+      method: "PATCH",
+      role: "admin",
+    }),
 };
 
 export const api = {

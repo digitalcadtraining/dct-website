@@ -391,6 +391,90 @@ async function finalizePaidRegistration(pending, paymentRequestId, paymentId, ra
       });
     }
 
+    const enrolledPrice = Number(pending.enrolled_price || 0);
+const remainingAmount = Math.max(
+  0,
+  enrolledPrice - REGISTRATION_AMOUNT,
+);
+
+const isSingleBalancePlan =
+  !pending.emi_second_due && remainingAmount > 0;
+
+if (remainingAmount > 0) {
+  if (isSingleBalancePlan) {
+    // CAD tools: one remaining payment on batch start.
+    await tx.enrollmentInstallment.upsert({
+      where: {
+        enrollment_id_installment_no: {
+          enrollment_id: enrollment.id,
+          installment_no: 1,
+        },
+      },
+      update: {
+        label: "Final Payment",
+        amount: remainingAmount,
+        due_date: pending.emi_first_due || batch.start_date,
+      },
+      create: {
+        enrollment_id: enrollment.id,
+        installment_no: 1,
+        label: "Final Payment",
+        amount: remainingAmount,
+        due_date: pending.emi_first_due || batch.start_date,
+        status: "PENDING",
+      },
+    });
+  } else {
+    // Domain courses: two EMI payments.
+    const firstEmiAmount = Math.ceil(remainingAmount / 2);
+    const secondEmiAmount =
+      remainingAmount - firstEmiAmount;
+
+    await tx.enrollmentInstallment.upsert({
+      where: {
+        enrollment_id_installment_no: {
+          enrollment_id: enrollment.id,
+          installment_no: 1,
+        },
+      },
+      update: {
+        label: "First EMI",
+        amount: firstEmiAmount,
+        due_date: pending.emi_first_due || null,
+      },
+      create: {
+        enrollment_id: enrollment.id,
+        installment_no: 1,
+        label: "First EMI",
+        amount: firstEmiAmount,
+        due_date: pending.emi_first_due || null,
+        status: "PENDING",
+      },
+    });
+
+    await tx.enrollmentInstallment.upsert({
+      where: {
+        enrollment_id_installment_no: {
+          enrollment_id: enrollment.id,
+          installment_no: 2,
+        },
+      },
+      update: {
+        label: "Second EMI",
+        amount: secondEmiAmount,
+        due_date: pending.emi_second_due || null,
+      },
+      create: {
+        enrollment_id: enrollment.id,
+        installment_no: 2,
+        label: "Second EMI",
+        amount: secondEmiAmount,
+        due_date: pending.emi_second_due || null,
+        status: "PENDING",
+      },
+    });
+  }
+}
     await createReferralReward(tx, { pending, user, enrollmentId: enrollment.id });
 
     await tx.pendingRegistration.update({

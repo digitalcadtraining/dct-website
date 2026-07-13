@@ -230,6 +230,12 @@ model Batch {
   @@index([status])
   @@index([start_date])
   @@map("batches")
+
+  offer_name     String?
+original_price Decimal? @db.Decimal(10, 2)
+offer_price    Decimal? @db.Decimal(10, 2)
+offer_start_at DateTime?
+offer_end_at   DateTime?
 }
 
 model Enrollment {

@@ -17,6 +17,7 @@ const errorHandler = require("./src/middleware/errorHandler");
 const { prisma, checkDatabaseConnection } = require("./src/config/db");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
@@ -27,18 +28,20 @@ function normalizeOrigins(value) {
     .filter(Boolean);
 }
 
-const allowedOrigins = Array.from(new Set([
-  ...normalizeOrigins(process.env.FRONTEND_URL),
-  ...normalizeOrigins(process.env.CLIENT_URL),
-  ...normalizeOrigins(process.env.EXTRA_CORS_ORIGINS),
-  "https://digitalcadtraining.com",
-  "https://www.digitalcadtraining.com",
-  "http://digitalcadtraining.com",
-  "http://www.digitalcadtraining.com",
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:3000",
-]));
+const allowedOrigins = Array.from(
+  new Set([
+    ...normalizeOrigins(process.env.FRONTEND_URL),
+    ...normalizeOrigins(process.env.CLIENT_URL),
+    ...normalizeOrigins(process.env.EXTRA_CORS_ORIGINS),
+    "https://digitalcadtraining.com",
+    "https://www.digitalcadtraining.com",
+    "http://digitalcadtraining.com",
+    "http://www.digitalcadtraining.com",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+  ]),
+);
 
 const corsOptions = {
   origin(origin, callback) {
@@ -57,18 +60,39 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  }),
+);
 
 const generalLimiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_MAX) || 300,
+
+  // Dashboard loads many API requests.
+  // This limit is still protective but will not block normal students/admins.
+  max: Number(process.env.RATE_LIMIT_MAX) || 2000,
+
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: "Too many requests, please try again later." },
+
+  skip: (req) => {
+    // Do not rate-limit browser preflight requests.
+    if (req.method === "OPTIONS") return true;
+
+    // Keep health checks outside the request count.
+    if (req.path === "/health" || req.path === "/health/db") {
+      return true;
+    }
+
+    return false;
+  },
+
+  message: {
+    success: false,
+    message: "Too many requests, please wait a moment and try again.",
+  },
 });
-app.use(generalLimiter);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -80,22 +104,37 @@ if (NODE_ENV !== "test") {
 }
 
 app.get("/health", (req, res) => {
-  res.json({ success: true, message: "DCT API is running", timestamp: new Date() });
+  res.json({
+    success: true,
+    message: "DCT API is running",
+    timestamp: new Date(),
+  });
 });
 
 app.get("/health/db", async (req, res) => {
   try {
     await checkDatabaseConnection();
-    res.json({ success: true, message: "Database connected", timestamp: new Date() });
+    res.json({
+      success: true,
+      message: "Database connected",
+      timestamp: new Date(),
+    });
   } catch (err) {
-    res.status(503).json({ success: false, message: "Database not reachable", error: err.message });
+    res.status(503).json({
+      success: false,
+      message: "Database not reachable",
+      error: err.message,
+    });
   }
 });
 
+app.use("/api/v1", generalLimiter);
 app.use("/api/v1", routes);
 
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+  res
+    .status(404)
+    .json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
 app.use(errorHandler);
@@ -113,7 +152,10 @@ async function connectWithRetry(maxAttempts = 3) {
       return;
     } catch (err) {
       lastError = err;
-      console.error(`❌ Database connection failed (${attempt}/${maxAttempts}):`, err.message);
+      console.error(
+        `❌ Database connection failed (${attempt}/${maxAttempts}):`,
+        err.message,
+      );
       if (attempt < maxAttempts) await wait(1500 * attempt);
     }
   }
@@ -131,7 +173,9 @@ async function startServer() {
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);
-    console.error("Check backend/.env DATABASE_URL and DIRECT_URL. For Supabase, use the pooler/direct connection string with sslmode=require.");
+    console.error(
+      "Check backend/.env DATABASE_URL and DIRECT_URL. For Supabase, use the pooler/direct connection string with sslmode=require.",
+    );
     process.exit(1);
   }
 }
