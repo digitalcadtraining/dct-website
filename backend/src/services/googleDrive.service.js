@@ -18,13 +18,21 @@ function requiredEnv(name) {
   return value;
 }
 
-function isConfigured() {
-  return Boolean(
-    process.env.GOOGLE_DRIVE_CLIENT_ID &&
-      process.env.GOOGLE_DRIVE_CLIENT_SECRET &&
-      process.env.GOOGLE_DRIVE_REFRESH_TOKEN &&
-      process.env.GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID,
+function getMissingConfig() {
+  const required = [
+    "GOOGLE_DRIVE_CLIENT_ID",
+    "GOOGLE_DRIVE_CLIENT_SECRET",
+    "GOOGLE_DRIVE_REFRESH_TOKEN",
+    "GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID",
+  ];
+
+  return required.filter(
+    (name) => !String(process.env[name] || "").trim(),
   );
+}
+
+function isConfigured() {
+  return getMissingConfig().length === 0;
 }
 
 function safeDriveName(value) {
@@ -269,6 +277,7 @@ async function streamDownload({
 
 module.exports = {
   isConfigured,
+  getMissingConfig,
   uploadFile,
   deleteFile,
   streamDownload,

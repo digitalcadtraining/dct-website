@@ -299,16 +299,19 @@ export const sessionApi = {
 };
 export const assignmentApi = {
   getForBatch: (batchId) => http(`/assignments/batch/${batchId}`),
-  submitForSession: (sessionId, file) => {
-    const fd = new FormData();
-    fd.append("file", file);
+submitForSession: (sessionId, file) => {
+  const fd = new FormData();
+  fd.append("file", file);
 
-    return http(`/assignments/session/${sessionId}/submit`, {
+  return http(
+    `/assignments/session/${sessionId}/submit`,
+    {
       method: "POST",
       role: "student",
       body: fd,
-    });
-  },
+    },
+  );
+},
   create: (data, file) => {
     const fd = new FormData();
     Object.entries(data || {}).forEach(([k, v]) => {

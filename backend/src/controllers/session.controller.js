@@ -244,13 +244,20 @@ const assignmentController = {
 
       let driveFile = null;
       if (req.file) {
-        if (!drive.isConfigured()) {
-          return error(
-            res,
-            503,
-            "Google Drive storage is not configured on the server.",
-          );
-        }
+if (!drive.isConfigured()) {
+  const missing = drive.getMissingConfig();
+
+  console.error(
+    "Missing Google Drive environment variables:",
+    missing,
+  );
+
+  return error(
+    res,
+    503,
+    `Google Drive configuration missing: ${missing.join(", ")}`,
+  );
+}
 
         driveFile = await drive.uploadFile({
           localPath: req.file.path,
