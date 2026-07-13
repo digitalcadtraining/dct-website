@@ -58,6 +58,33 @@ function parseSlotStart(slot) {
   return `${String(h).padStart(2, "0")}:${mm}`;
 }
 
+function parseSlotEnd(slot) {
+  const parts = String(slot || "")
+    .split(/[–-]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const last = parts[1] || parts[0] || "";
+
+  const match = last.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+
+  if (!match) return "";
+
+  let hours = Number(match[1]);
+  const minutes = match[2];
+  const period = match[3]?.toUpperCase();
+
+  if (period === "PM" && hours < 12) {
+    hours += 12;
+  }
+
+  if (period === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${minutes}`;
+}
+
 function displaySlotStart(slot) {
   const t = parseSlotStart(slot);
   if (!t) return "TBD";
@@ -68,23 +95,70 @@ function displaySlotStart(slot) {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${p}`;
 }
 
-function deriveStatus(session) {
+function deriveStatus(session, timeSlots = []) {
+  if (session.status === "COMPLETED") {
+    return "COMPLETED";
+  }
+
+  if (session.status === "CANCELLED") {
+    return "CANCELLED";
+  }
+
   if (!session.scheduled_at) {
     return session.status || "UPCOMING";
   }
 
   const now = new Date();
-  const date = new Date(session.scheduled_at);
-  const todayStart = dayStart(now);
-  const todayEnd = dayEnd(now);
+  const sessionDate = new Date(session.scheduled_at);
 
-  if (date < todayStart) return "COMPLETED";
+  const dateOnly = new Date(sessionDate);
+  dateOnly.setHours(0, 0, 0, 0);
 
-  if (date >= todayStart && date < todayEnd) {
-    return date <= now ? "LIVE" : "TODAY";
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  if (dateOnly < today) {
+    return "COMPLETED";
   }
 
-  return session.status || "UPCOMING";
+  if (dateOnly > today) {
+    return "UPCOMING";
+  }
+
+  const slot = session.time_slot || session.slot || timeSlots?.[0] || "";
+
+  const startValue = parseSlotStart(slot);
+  const endValue = parseSlotEnd(slot);
+
+  const [startHour, startMinute] = (startValue || "00:00")
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute] = (endValue || startValue || "23:59")
+    .split(":")
+    .map(Number);
+
+  const startAt = new Date(sessionDate);
+  startAt.setHours(startHour, startMinute, 0, 0);
+
+  const endAt = new Date(sessionDate);
+  endAt.setHours(endHour, endMinute, 0, 0);
+
+  // Fallback when only start time is available:
+  // assume the session runs for one hour.
+  if (!endValue) {
+    endAt.setTime(startAt.getTime() + 60 * 60 * 1000);
+  }
+
+  if (now < startAt) {
+    return "TODAY";
+  }
+
+  if (now >= startAt && now < endAt) {
+    return "LIVE";
+  }
+
+  return "COMPLETED";
 }
 
 function fmtDate(iso) {
@@ -1116,7 +1190,7 @@ function useBatchSessions() {
     () =>
       sessions.map((s) => ({
         ...s,
-        _derivedStatus: deriveStatus(s),
+        _derivedStatus: deriveStatus(s, selectedBatch?.time_slots || []),
       })),
     [sessions],
   );

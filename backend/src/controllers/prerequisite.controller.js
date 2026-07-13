@@ -13,105 +13,31 @@ const DEFAULT_COURSES = [
     icon: "⚙",
     order_index: 1,
     lessons: [
-      [
-        1,
-        "Sketcher Session 01",
-        "CATIA sketcher introduction and basic sketch workflow.",
-        "https://player.vimeo.com/video/900601730",
-      ],
-      [
-        2,
-        "Sketcher Session 02",
-        "Profile creation, constraints and clean sketching practice.",
-        "https://player.vimeo.com/video/900603176",
-      ],
-      [
-        3,
-        "Sketcher Session 03",
-        "Advanced profile creation and sketch correction practice.",
-        "https://player.vimeo.com/video/900609026",
-      ],
-      [
-        4,
-        "Sketcher Session 04",
-        "Sketcher tools, trim, mirror, offset and reference use.",
-        "https://player.vimeo.com/video/900610082",
-      ],
-      [
-        5,
-        "Sketcher Session 05",
-        "Sketcher practice and common mistakes correction.",
-        "https://player.vimeo.com/video/900611137",
-      ],
-      [
-        6,
-        "Part Design Session 01",
-        "Part Design interface, pad, pocket and basic solid workflow.",
-        "https://player.vimeo.com/video/900612354",
-      ],
-      [
-        7,
-        "Part Design Session 02",
-        "Fillet, chamfer, hole, shell and feature order thinking.",
-        "https://player.vimeo.com/video/900613490",
-      ],
-      [
-        8,
-        "Part Design Session 03",
-        "Reference elements, planes, axis and design intent.",
-        "https://player.vimeo.com/video/900614440",
-      ],
-      [
-        9,
-        "Part Design Session 04",
-        "Practice model creation and tree structure discipline.",
-        "https://player.vimeo.com/video/900615262",
-      ],
-      [
-        10,
-        "Part Design Session 05",
-        "Final basic practice before live domain sessions.",
-        "https://player.vimeo.com/video/900616202",
-      ],
+      [1, "Sketcher Session 01", "CATIA sketcher introduction and basic sketch workflow.", "https://player.vimeo.com/video/900601730"],
+      [2, "Sketcher Session 02", "Profile creation, constraints and clean sketching practice.", "https://player.vimeo.com/video/900603176"],
+      [3, "Sketcher Session 03", "Advanced profile creation and sketch correction practice.", "https://player.vimeo.com/video/900609026"],
+      [4, "Sketcher Session 04", "Sketcher tools, trim, mirror, offset and reference use.", "https://player.vimeo.com/video/900610082"],
+      [5, "Sketcher Session 05", "Sketcher practice and common mistakes correction.", "https://player.vimeo.com/video/900611137"],
+      [6, "Part Design Session 01", "Part Design interface, pad, pocket and basic solid workflow.", "https://player.vimeo.com/video/900612354"],
+      [7, "Part Design Session 02", "Fillet, chamfer, hole, shell and feature order thinking.", "https://player.vimeo.com/video/900613490"],
+      [8, "Part Design Session 03", "Reference elements, planes, axis and design intent.", "https://player.vimeo.com/video/900614440"],
+      [9, "Part Design Session 04", "Practice model creation and tree structure discipline.", "https://player.vimeo.com/video/900615262"],
+      [10, "Part Design Session 05", "Final basic practice before live domain sessions.", "https://player.vimeo.com/video/900616202"],
     ],
   },
   {
     slug: "ug-nx-tool-for-beginners",
     title: "UG NX Tool for Beginners",
     subtitle: "Optional after CATIA basics",
-    description:
-      "NX awareness course for students who want extra CAD confidence.",
+    description: "NX awareness course for students who want extra CAD confidence.",
     icon: "🔧",
     order_index: 2,
     lessons: [
-      [
-        1,
-        "NX Sketchers Introduction",
-        "its not required now, after 3 months you can learn",
-        "https://player.vimeo.com/video/997012965",
-      ],
-      [
-        2,
-        "NX Part-Design",
-        "its not required now, after 3 months you can learn",
-        "https://player.vimeo.com/video/997173059",
-      ],
-      [
-        3,
-        "NX Assembly Workbench",
-        "its not required now, after 3 months you can learn",
-        "https://player.vimeo.com/video/707301515",
-      ],
-      [
-        4,
-        "Synchronous Modeling Basics",
-        "Understand direct edit workflow used in industry corrections.",
-      ],
-      [
-        5,
-        "NX Assembly & Drafting Basics",
-        "Assembly positioning and drawing basics for mechanical parts.",
-      ],
+      [1, "NX Sketchers Introduction", "Learn NX sketcher basics.", "https://player.vimeo.com/video/997012965"],
+      [2, "NX Part-Design", "Learn NX part design basics.", "https://player.vimeo.com/video/997173059"],
+      [3, "NX Assembly Workbench", "Learn assembly basics.", "https://player.vimeo.com/video/707301515"],
+      [4, "Synchronous Modeling Basics", "Understand direct edit workflow used in industry corrections."],
+      [5, "NX Assembly & Drafting Basics", "Assembly positioning and drawing basics for mechanical parts."],
     ],
   },
   {
@@ -122,31 +48,11 @@ const DEFAULT_COURSES = [
     icon: "📐",
     order_index: 3,
     lessons: [
-      [
-        1,
-        "Drawing Reading Basics",
-        "Understand basic views, dimensions, notes and title block.",
-      ],
-      [
-        2,
-        "Datum Concept",
-        "Understand datum feature, datum reference and locating intent.",
-      ],
-      [
-        3,
-        "Form Controls",
-        "Flatness, straightness, circularity and cylindricity overview.",
-      ],
-      [
-        4,
-        "Orientation & Location Controls",
-        "Parallelism, perpendicularity, position and profile basics.",
-      ],
-      [
-        5,
-        "Practical GD&T Review",
-        "How designers use GD&T in automotive product design discussions.",
-      ],
+      [1, "Drawing Reading Basics", "Understand basic views, dimensions, notes and title block."],
+      [2, "Datum Concept", "Understand datum feature, datum reference and locating intent."],
+      [3, "Form Controls", "Flatness, straightness, circularity and cylindricity overview."],
+      [4, "Orientation & Location Controls", "Parallelism, perpendicularity, position and profile basics."],
+      [5, "Practical GD&T Review", "How designers use GD&T in automotive product design discussions."],
     ],
   },
 ];
@@ -155,11 +61,14 @@ function toVimeoEmbed(url) {
   const raw = String(url || "").trim();
   if (!raw || raw.includes("PASTE_VIDEO_ID")) return DEMO_VIMEO;
   if (raw.includes("player.vimeo.com/video/")) return raw;
+
   const privateMatch = raw.match(
     /vimeo\.com\/(?:manage\/videos\/)?(\d+)\/([a-zA-Z0-9]+)/i,
   );
-  if (privateMatch)
+  if (privateMatch) {
     return `https://player.vimeo.com/video/${privateMatch[1]}?h=${privateMatch[2]}`;
+  }
+
   const match = raw.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
   if (match) return `https://player.vimeo.com/video/${match[1]}`;
   return raw;
@@ -190,9 +99,13 @@ async function ensureDefaultPrerequisites() {
 
     for (const lesson of item.lessons) {
       const [order_number, title, description, vimeo_url] = lesson;
+
       await prisma.prerequisiteLesson.upsert({
         where: {
-          course_id_order_number: { course_id: course.id, order_number },
+          course_id_order_number: {
+            course_id: course.id,
+            order_number,
+          },
         },
         update: {
           title,
@@ -219,20 +132,27 @@ async function ensureDefaultPrerequisites() {
 
 function isComplete(progress, lesson) {
   if (progress?.completed_at) return true;
+
   const required = Math.ceil(
     (Number(lesson.duration_seconds || 0) *
       Number(lesson.completion_percent || 90)) /
       100,
   );
-  return Number(progress?.watched_seconds || 0) >= required && required > 0;
+
+  return (
+    Number(progress?.watched_seconds || 0) >= required &&
+    required > 0
+  );
 }
 
 function buildCoursePayload(course, progressesByLessonId) {
   let previousCompleted = true;
+
   const lessons = course.lessons.map((lesson) => {
     const progress = progressesByLessonId.get(lesson.id) || null;
     const completed = isComplete(progress, lesson);
     const unlocked = previousCompleted;
+
     const pct = lesson.duration_seconds
       ? Math.min(
           100,
@@ -264,7 +184,7 @@ function buildCoursePayload(course, progressesByLessonId) {
     return payload;
   });
 
-  const completedCount = lessons.filter((l) => l.completed).length;
+  const completedCount = lessons.filter((lesson) => lesson.completed).length;
   const totalLessons = lessons.length;
 
   return {
@@ -284,13 +204,320 @@ function buildCoursePayload(course, progressesByLessonId) {
   };
 }
 
+function normalizeAccessRow(row) {
+  return {
+    show_prerequisites: row?.show_prerequisites !== false,
+    show_sessions: row?.show_sessions !== false,
+    show_assignments: row?.show_assignments !== false,
+    show_progress: row?.show_progress !== false,
+    visible_prerequisite_ids: Array.isArray(
+      row?.visible_prerequisite_ids,
+    )
+      ? row.visible_prerequisite_ids
+      : [],
+  };
+}
+
+async function getBatchAccess(batchId) {
+  const rows = await prisma.$queryRaw`
+    SELECT
+      id,
+      show_prerequisites,
+      show_sessions,
+      show_assignments,
+      show_progress,
+      visible_prerequisite_ids
+    FROM batches
+    WHERE id = ${batchId}
+    LIMIT 1
+  `;
+
+  return rows[0] ? normalizeAccessRow(rows[0]) : null;
+}
+
+async function getStudentAccess(studentId) {
+  const rows = await prisma.$queryRaw`
+    SELECT
+      b.id,
+      b.show_prerequisites,
+      b.show_sessions,
+      b.show_assignments,
+      b.show_progress,
+      b.visible_prerequisite_ids
+    FROM enrollments e
+    JOIN batches b ON b.id = e.batch_id
+    WHERE e.student_id = ${studentId}
+      AND b.status::text IN ('UPCOMING', 'ACTIVE', 'COMPLETED')
+    ORDER BY e.enrolled_at DESC
+  `;
+
+  if (!rows.length) {
+    return {
+      show_prerequisites: true,
+      show_sessions: true,
+      show_assignments: true,
+      show_progress: true,
+      visible_prerequisite_ids: [],
+      show_all_prerequisites: true,
+    };
+  }
+
+  const normalized = rows.map(normalizeAccessRow);
+  const prerequisiteBatches = normalized.filter(
+    (item) => item.show_prerequisites,
+  );
+
+  const showAllPrerequisites = prerequisiteBatches.some(
+    (item) => item.visible_prerequisite_ids.length === 0,
+  );
+
+  return {
+    show_prerequisites: prerequisiteBatches.length > 0,
+    show_sessions: normalized.some((item) => item.show_sessions),
+    show_assignments: normalized.some((item) => item.show_assignments),
+    show_progress: normalized.some((item) => item.show_progress),
+    visible_prerequisite_ids: showAllPrerequisites
+      ? []
+      : [
+          ...new Set(
+            prerequisiteBatches.flatMap(
+              (item) => item.visible_prerequisite_ids,
+            ),
+          ),
+        ],
+    show_all_prerequisites: showAllPrerequisites,
+  };
+}
+
+const getStudentPortalAccess = async (req, res, next) => {
+  try {
+    const access = await getStudentAccess(req.user.id);
+    return success(res, 200, "Student portal access fetched.", access);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAdminPrerequisiteCatalog = async (req, res, next) => {
+  try {
+    await ensureDefaultPrerequisites();
+
+    const courses = await prisma.prerequisiteCourse.findMany({
+      where: { is_active: true },
+      orderBy: [{ order_index: "asc" }, { created_at: "asc" }],
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        subtitle: true,
+        icon: true,
+        order_index: true,
+        _count: {
+          select: { lessons: true },
+        },
+      },
+    });
+
+    return success(res, 200, "Prerequisite catalog fetched.", courses);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAdminBatchAccess = async (req, res, next) => {
+  try {
+    const { batchId } = req.params;
+
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      select: {
+        id: true,
+        name: true,
+        start_date: true,
+        end_date: true,
+        max_students: true,
+        time_slots: true,
+      },
+    });
+
+    if (!batch) return error(res, 404, "Batch not found.");
+
+    const access = await getBatchAccess(batchId);
+
+    return success(res, 200, "Batch access fetched.", {
+      ...batch,
+      ...access,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateAdminBatchAccess = async (req, res, next) => {
+  try {
+    const { batchId } = req.params;
+
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+    });
+
+    if (!batch) return error(res, 404, "Batch not found.");
+
+    const startDate =
+      req.body.start_date === undefined
+        ? batch.start_date
+        : new Date(req.body.start_date);
+
+    const endDate =
+      req.body.end_date === undefined
+        ? batch.end_date
+        : new Date(req.body.end_date);
+
+    if (
+      Number.isNaN(startDate.getTime()) ||
+      Number.isNaN(endDate.getTime())
+    ) {
+      return error(res, 400, "Valid batch start and end dates are required.");
+    }
+
+    if (endDate <= startDate) {
+      return error(res, 400, "Batch end date must be after start date.");
+    }
+
+    const maxStudents =
+      req.body.max_students === undefined
+        ? batch.max_students
+        : Number(req.body.max_students);
+
+    if (!Number.isInteger(maxStudents) || maxStudents < 1) {
+      return error(res, 400, "Maximum students must be at least 1.");
+    }
+
+    const timeSlots =
+      req.body.time_slots === undefined
+        ? batch.time_slots
+        : Array.isArray(req.body.time_slots)
+          ? req.body.time_slots
+              .map((slot) => String(slot || "").trim())
+              .filter(Boolean)
+          : [];
+
+    await prisma.batch.update({
+      where: { id: batchId },
+      data: {
+        start_date: startDate,
+        end_date: endDate,
+        max_students: maxStudents,
+        time_slots: timeSlots,
+      },
+    });
+
+    const currentAccess =
+      (await getBatchAccess(batchId)) || normalizeAccessRow(null);
+
+    const showPrerequisites =
+      req.body.show_prerequisites === undefined
+        ? currentAccess.show_prerequisites
+        : Boolean(req.body.show_prerequisites);
+
+    const showSessions =
+      req.body.show_sessions === undefined
+        ? currentAccess.show_sessions
+        : Boolean(req.body.show_sessions);
+
+    const showAssignments =
+      req.body.show_assignments === undefined
+        ? currentAccess.show_assignments
+        : Boolean(req.body.show_assignments);
+
+    const showProgress =
+      req.body.show_progress === undefined
+        ? currentAccess.show_progress
+        : Boolean(req.body.show_progress);
+
+    const visibleIds =
+      showPrerequisites &&
+      Array.isArray(req.body.visible_prerequisite_ids)
+        ? [
+            ...new Set(
+              req.body.visible_prerequisite_ids
+                .map((value) => String(value || "").trim())
+                .filter(Boolean),
+            ),
+          ]
+        : showPrerequisites
+          ? currentAccess.visible_prerequisite_ids
+          : [];
+
+    await prisma.$executeRaw`
+      UPDATE batches
+      SET
+        show_prerequisites = ${showPrerequisites},
+        show_sessions = ${showSessions},
+        show_assignments = ${showAssignments},
+        show_progress = ${showProgress},
+        visible_prerequisite_ids = ${visibleIds}::text[],
+        updated_at = NOW()
+      WHERE id = ${batchId}
+    `;
+
+    const updatedBatch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      select: {
+        id: true,
+        name: true,
+        start_date: true,
+        end_date: true,
+        max_students: true,
+        time_slots: true,
+      },
+    });
+
+    const updatedAccess = await getBatchAccess(batchId);
+
+    return success(
+      res,
+      200,
+      "Batch dates and student access updated.",
+      {
+        ...updatedBatch,
+        ...updatedAccess,
+      },
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 const listPrerequisitesForStudent = async (req, res, next) => {
   try {
     await ensureDefaultPrerequisites();
 
+    const access = await getStudentAccess(req.user.id);
+
+    if (!access.show_prerequisites) {
+      return success(
+        res,
+        200,
+        "Prerequisites are disabled for your batch.",
+        [],
+      );
+    }
+
+    const where = {
+      is_active: true,
+      ...(!access.show_all_prerequisites
+        ? {
+            id: {
+              in: access.visible_prerequisite_ids,
+            },
+          }
+        : {}),
+    };
+
     const [courses, progresses] = await Promise.all([
       prisma.prerequisiteCourse.findMany({
-        where: { is_active: true },
+        where,
         orderBy: [{ order_index: "asc" }, { created_at: "asc" }],
         include: {
           lessons: {
@@ -305,11 +532,13 @@ const listPrerequisitesForStudent = async (req, res, next) => {
     ]);
 
     const progressesByLessonId = new Map(
-      progresses.map((p) => [p.lesson_id, p]),
+      progresses.map((progress) => [progress.lesson_id, progress]),
     );
+
     const data = courses.map((course) =>
       buildCoursePayload(course, progressesByLessonId),
     );
+
     return success(res, 200, "Prerequisite courses fetched.", data);
   } catch (err) {
     next(err);
@@ -338,6 +567,20 @@ const updateLessonProgress = async (req, res, next) => {
       return error(res, 404, "Lesson not found.");
     }
 
+    const access = await getStudentAccess(req.user.id);
+
+    if (
+      !access.show_prerequisites ||
+      (!access.show_all_prerequisites &&
+        !access.visible_prerequisite_ids.includes(lesson.course_id))
+    ) {
+      return error(
+        res,
+        403,
+        "This prerequisite is not enabled for your batch.",
+      );
+    }
+
     if (lesson.order_number > 1) {
       const previous = await prisma.prerequisiteLesson.findUnique({
         where: {
@@ -346,8 +589,13 @@ const updateLessonProgress = async (req, res, next) => {
             order_number: lesson.order_number - 1,
           },
         },
-        include: { progress: { where: { student_id: req.user.id } } },
+        include: {
+          progress: {
+            where: { student_id: req.user.id },
+          },
+        },
       });
+
       if (previous && !isComplete(previous.progress?.[0], previous)) {
         return error(res, 403, "Complete previous lesson first.");
       }
@@ -356,21 +604,32 @@ const updateLessonProgress = async (req, res, next) => {
     const requiredSeconds = Math.ceil(
       (lesson.duration_seconds * lesson.completion_percent) / 100,
     );
+
     const cappedWatched = completedFromClient
       ? lesson.duration_seconds
-      : Math.min(Math.max(watched, position), lesson.duration_seconds);
+      : Math.min(
+          Math.max(watched, position),
+          lesson.duration_seconds,
+        );
+
     const isNowComplete =
       cappedWatched >= requiredSeconds || completedFromClient;
 
     const existing = await prisma.prerequisiteProgress.findUnique({
       where: {
-        student_id_lesson_id: { student_id: req.user.id, lesson_id: lesson.id },
+        student_id_lesson_id: {
+          student_id: req.user.id,
+          lesson_id: lesson.id,
+        },
       },
     });
 
     const progress = await prisma.prerequisiteProgress.upsert({
       where: {
-        student_id_lesson_id: { student_id: req.user.id, lesson_id: lesson.id },
+        student_id_lesson_id: {
+          student_id: req.user.id,
+          lesson_id: lesson.id,
+        },
       },
       update: {
         watched_seconds: Math.max(
@@ -393,7 +652,9 @@ const updateLessonProgress = async (req, res, next) => {
           position || cappedWatched,
           lesson.duration_seconds,
         ),
-        ...(isNowComplete ? { completed_at: new Date() } : {}),
+        ...(isNowComplete
+          ? { completed_at: new Date() }
+          : {}),
       },
     });
 
@@ -441,7 +702,13 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
           prerequisite_progress: true,
           enrollments: {
             include: {
-              batch: { include: { course: { select: { name: true } } } },
+              batch: {
+                include: {
+                  course: {
+                    select: { name: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -450,28 +717,44 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
 
     const rows = students.map((student) => {
       const progressByLessonId = new Map(
-        student.prerequisite_progress.map((p) => [p.lesson_id, p]),
+        student.prerequisite_progress.map((progress) => [
+          progress.lesson_id,
+          progress,
+        ]),
       );
+
       const courseRows = courses.map((course) => {
         const total = course.lessons.length;
         const completed = course.lessons.filter((lesson) =>
           isComplete(progressByLessonId.get(lesson.id), lesson),
         ).length;
+
         return {
           course_id: course.id,
           slug: course.slug,
           title: course.title,
           total_lessons: total,
           completed_lessons: completed,
-          progress_percent: total ? Math.round((completed / total) * 100) : 0,
+          progress_percent: total
+            ? Math.round((completed / total) * 100)
+            : 0,
         };
       });
 
       const catia =
-        courseRows.find((c) => c.slug === "catia-tool-for-beginners") ||
-        courseRows[0];
-      const allTotal = courseRows.reduce((n, c) => n + c.total_lessons, 0);
-      const allDone = courseRows.reduce((n, c) => n + c.completed_lessons, 0);
+        courseRows.find(
+          (course) => course.slug === "catia-tool-for-beginners",
+        ) || courseRows[0];
+
+      const allTotal = courseRows.reduce(
+        (total, course) => total + course.total_lessons,
+        0,
+      );
+
+      const allDone = courseRows.reduce(
+        (total, course) => total + course.completed_lessons,
+        0,
+      );
 
       return {
         id: student.id,
@@ -480,25 +763,36 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
         phone: student.phone,
         is_active: student.is_active,
         enrolled_courses: student.enrollments
-          .map((e) => e.batch?.course?.name)
+          .map((enrollment) => enrollment.batch?.course?.name)
           .filter(Boolean),
         catia_completed_lessons: catia?.completed_lessons || 0,
         catia_total_lessons: catia?.total_lessons || 10,
         catia_progress_percent: catia?.progress_percent || 0,
         total_lessons: allTotal,
         completed_lessons: allDone,
-        progress_percent: allTotal ? Math.round((allDone / allTotal) * 100) : 0,
+        progress_percent: allTotal
+          ? Math.round((allDone / allTotal) * 100)
+          : 0,
         courses: courseRows,
       };
     });
 
-    return success(res, 200, "Prerequisite progress fetched.", rows);
+    return success(
+      res,
+      200,
+      "Prerequisite progress fetched.",
+      rows,
+    );
   } catch (err) {
     next(err);
   }
 };
 
 module.exports = {
+  getStudentPortalAccess,
+  getAdminPrerequisiteCatalog,
+  getAdminBatchAccess,
+  updateAdminBatchAccess,
   listPrerequisitesForStudent,
   updateLessonProgress,
   getAdminPrerequisiteProgress,

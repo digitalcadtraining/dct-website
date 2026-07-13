@@ -3,6 +3,9 @@ const path = require("path");
 const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
 const drive = require("../services/googleDrive.service");
+const {
+  ensureCompletedSessionAssignments,
+} = require("../services/automaticAssignment.service");
 
 const EDIT_WINDOW_HOURS = Math.max(
   1,
@@ -300,6 +303,7 @@ const assignmentController = {
   getBatchAssignments: async (req, res, next) => {
     try {
       const { batchId } = req.params;
+      await ensureCompletedSessionAssignments(batchId);
       if (req.user.role === "STUDENT") {
         const enrolled = await prisma.enrollment.findFirst({
           where: { student_id: req.user.id, batch_id: batchId },

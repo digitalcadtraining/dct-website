@@ -89,6 +89,87 @@ export function clearRoleSession(role) {
   localStorage.removeItem(keys.userKey);
   localStorage.removeItem(keys.tokenKey);
 }
+async function downloadWithAuth(
+  path,
+  fallbackFilename,
+  role = "student",
+  retry = true,
+) {
+  const normalizedRole = normalizeRole(role);
+  const token = getRoleToken(normalizedRole);
+
+  const response = await fetch(`${BASE}${path}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (response.status === 401 && retry) {
+    const refreshResponse = await fetch(
+      `${BASE}/auth/refresh?role=${encodeURIComponent(normalizedRole)}`,
+      {
+        method: "POST",
+        credentials: "include",
+      },
+    );
+
+    const refreshData = await parseResponse(refreshResponse);
+
+    const newToken =
+      refreshData?.data?.access_token ||
+      refreshData?.data?.accessToken ||
+      refreshData?.access_token ||
+      refreshData?.accessToken ||
+      "";
+
+    if (refreshResponse.ok && newToken) {
+      const existingUser = getRoleUser(normalizedRole);
+
+      if (existingUser) {
+        saveRoleSession(normalizedRole, existingUser, newToken);
+      } else {
+        localStorage.setItem(ROLE_KEYS[normalizedRole].tokenKey, newToken);
+      }
+
+      return downloadWithAuth(path, fallbackFilename, normalizedRole, false);
+    }
+  }
+
+  if (!response.ok) {
+    const data = await parseResponse(response);
+    throw new Error(data?.message || "Download failed.");
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") || "";
+
+  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  const normalMatch = disposition.match(/filename="?([^"]+)"?/i);
+
+  let filename = fallbackFilename || "download";
+
+  if (encodedMatch?.[1]) {
+    filename = decodeURIComponent(encodedMatch[1]);
+  } else if (normalMatch?.[1]) {
+    filename = normalMatch[1];
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = objectUrl;
+  anchor.download = filename;
+
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  URL.revokeObjectURL(objectUrl);
+}
+
 async function parseResponse(res) {
   const type = res.headers.get("content-type") || "";
   if (type.includes("application/json")) return res.json();
@@ -299,19 +380,16 @@ export const sessionApi = {
 };
 export const assignmentApi = {
   getForBatch: (batchId) => http(`/assignments/batch/${batchId}`),
-submitForSession: (sessionId, file) => {
-  const fd = new FormData();
-  fd.append("file", file);
+  submitForSession: (sessionId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
 
-  return http(
-    `/assignments/session/${sessionId}/submit`,
-    {
+    return http(`/assignments/session/${sessionId}/submit`, {
       method: "POST",
       role: "student",
       body: fd,
-    },
-  );
-},
+    });
+  },
   create: (data, file) => {
     const fd = new FormData();
     Object.entries(data || {}).forEach(([k, v]) => {
@@ -340,6 +418,16 @@ submitForSession: (sessionId, file) => {
       role: "tutor",
       body: JSON.stringify(data),
     }),
+  downloadSubmission: (
+    submissionId,
+    filename = "student-assignment",
+    role = "student",
+  ) =>
+    downloadWithAuth(
+      `/assignments/submissions/${submissionId}/download`,
+      filename,
+      role,
+    ),
 };
 
 export const queryApi = {

@@ -222,6 +222,95 @@ function contentDisposition(fileName) {
   )}`;
 }
 
+async function findOrCreateFolder({
+  parentFolderId,
+  folderName,
+  appProperties = {},
+}) {
+  const accessToken = await getAccessToken();
+  const safeName = safeDriveName(folderName);
+
+  const escapedName = safeName.replace(
+    /'/g,
+    "\\'",
+  );
+
+  const query = [
+    `name = '${escapedName}'`,
+    "mimeType = 'application/vnd.google-apps.folder'",
+    `'${parentFolderId}' in parents`,
+    "trashed = false",
+  ].join(" and ");
+
+  const searchResponse = await fetch(
+    `${DRIVE_API}/files?q=${encodeURIComponent(
+      query,
+    )}&fields=files(id,name)&spaces=drive&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  const searchData = await searchResponse
+    .json()
+    .catch(() => ({}));
+
+  if (!searchResponse.ok) {
+    const err = new Error(
+      searchData?.error?.message ||
+        "Could not search Google Drive folders.",
+    );
+    err.statusCode = 502;
+    throw err;
+  }
+
+  if (searchData.files?.[0]?.id) {
+    return searchData.files[0].id;
+  }
+
+  const createResponse = await fetch(
+    `${DRIVE_API}/files?supportsAllDrives=true&fields=id,name`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: safeName,
+        mimeType:
+          "application/vnd.google-apps.folder",
+        parents: [parentFolderId],
+        appProperties: Object.fromEntries(
+          Object.entries(appProperties).map(
+            ([key, value]) => [
+              key,
+              String(value).slice(0, 120),
+            ],
+          ),
+        ),
+      }),
+    },
+  );
+
+  const created = await createResponse
+    .json()
+    .catch(() => ({}));
+
+  if (!createResponse.ok || !created.id) {
+    const err = new Error(
+      created?.error?.message ||
+        "Could not create batch folder.",
+    );
+    err.statusCode = 502;
+    throw err;
+  }
+
+  return created.id;
+}
+
 async function streamDownload({
   fileId,
   fileName,
@@ -282,4 +371,5 @@ module.exports = {
   deleteFile,
   streamDownload,
   safeDriveName,
+  findOrCreateFolder,
 };
