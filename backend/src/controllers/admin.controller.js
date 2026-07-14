@@ -823,13 +823,11 @@ const updateEnrollmentInstallments = async (req, res, next) => {
       }
     }
 
-    const thirdInstallment = normalizedInstallments.find(
-      (item) => item.installment_no === 3,
-    );
-
-    if (!thirdInstallment || thirdInstallment.amount <= 0) {
-      return error(res, 400, "Third EMI amount must be greater than zero.");
+for (const emi of normalizedInstallments) {
+    if (emi.amount === 0) {
+        emi.due_date = null;
     }
+}
 
     const registrationAmount =
       String(enrollment.payment_status || "").toUpperCase() === "PAID"
