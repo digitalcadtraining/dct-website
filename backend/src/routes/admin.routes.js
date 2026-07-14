@@ -12,6 +12,10 @@ router.get("/students", admin.listStudents);
 router.get("/installments/tracker", admin.feeTracker);
 router.patch("/installments/:id/paid", admin.markInstallmentPaid);
 router.patch("/installments/:id/pending", admin.markInstallmentPending);
+router.patch(
+  "/enrollments/:id/installments",
+  admin.updateEnrollmentInstallments,
+);
 
 router.get("/tutors", admin.listTutors);
 router.get("/batches/pending", admin.listPendingBatches);

@@ -766,6 +766,188 @@ const markInstallmentPending = async (req, res, next) => {
   }
 };
 
+const updateEnrollmentInstallments = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const requestedInstallments = Array.isArray(req.body.installments)
+      ? req.body.installments
+      : [];
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id },
+      include: {
+        installments: {
+          orderBy: {
+            installment_no: "asc",
+          },
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return error(res, 404, "Enrollment not found.");
+    }
+
+    const normalizedInstallments = requestedInstallments
+      .map((item) => ({
+        installment_no: Number(item.installment_no),
+        amount: Number(item.amount),
+        due_date: item.due_date ? new Date(item.due_date) : null,
+      }))
+      .filter((item) => [1, 2, 3].includes(item.installment_no));
+
+    if (normalizedInstallments.length !== 3) {
+      return error(
+        res,
+        400,
+        "First, second and third EMI details are required.",
+      );
+    }
+
+    const uniqueInstallmentNumbers = new Set(
+      normalizedInstallments.map((item) => item.installment_no),
+    );
+
+    if (uniqueInstallmentNumbers.size !== 3) {
+      return error(res, 400, "Duplicate EMI numbers are not allowed.");
+    }
+
+    for (const item of normalizedInstallments) {
+      if (!Number.isFinite(item.amount) || item.amount < 0) {
+        return error(res, 400, "EMI amounts must be valid numbers.");
+      }
+
+      if (item.due_date && Number.isNaN(item.due_date.getTime())) {
+        return error(res, 400, "One or more EMI due dates are invalid.");
+      }
+    }
+
+    const thirdInstallment = normalizedInstallments.find(
+      (item) => item.installment_no === 3,
+    );
+
+    if (!thirdInstallment || thirdInstallment.amount <= 0) {
+      return error(res, 400, "Third EMI amount must be greater than zero.");
+    }
+
+    const registrationAmount =
+      String(enrollment.payment_status || "").toUpperCase() === "PAID"
+        ? 999
+        : 0;
+
+    const enrolledPrice = Number(enrollment.enrolled_price || 0);
+
+    const expectedEmiTotal = Math.max(
+      0,
+      enrolledPrice - registrationAmount,
+    );
+
+    const enteredEmiTotal = normalizedInstallments.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
+
+    if (Math.abs(enteredEmiTotal - expectedEmiTotal) > 0.01) {
+      return error(
+        res,
+        400,
+        `EMI total must equal ₹${expectedEmiTotal.toLocaleString("en-IN")}.`,
+      );
+    }
+
+    const existingInstallments = new Map(
+      enrollment.installments.map((item) => [
+        Number(item.installment_no),
+        item,
+      ]),
+    );
+
+    for (const item of normalizedInstallments) {
+      const existing = existingInstallments.get(item.installment_no);
+
+      const isPaid =
+        existing &&
+        (String(existing.status || "").toUpperCase() === "PAID" ||
+          Boolean(existing.paid_at));
+
+      if (
+        isPaid &&
+        Math.abs(Number(existing.amount || 0) - item.amount) > 0.01
+      ) {
+        return error(
+          res,
+          409,
+          `${existing.label} is already paid. Its amount cannot be changed because a receipt may already exist.`,
+        );
+      }
+    }
+
+    const updatedInstallments = await prisma.$transaction(async (tx) => {
+      const results = [];
+
+      for (const item of normalizedInstallments) {
+        const existing = existingInstallments.get(item.installment_no);
+
+        const label =
+          item.installment_no === 1
+            ? "First EMI"
+            : item.installment_no === 2
+              ? "Second EMI"
+              : "Third EMI";
+
+        if (existing) {
+          const isPaid =
+            String(existing.status || "").toUpperCase() === "PAID" ||
+            Boolean(existing.paid_at);
+
+          const updated = await tx.enrollmentInstallment.update({
+            where: {
+              id: existing.id,
+            },
+            data: {
+              label,
+
+              ...(isPaid
+                ? {}
+                : {
+                    amount: item.amount,
+                    due_date: item.due_date,
+                  }),
+            },
+          });
+
+          results.push(updated);
+        } else {
+          const created = await tx.enrollmentInstallment.create({
+            data: {
+              enrollment_id: enrollment.id,
+              installment_no: item.installment_no,
+              label,
+              amount: item.amount,
+              due_date: item.due_date,
+              status: "PENDING",
+            },
+          });
+
+          results.push(created);
+        }
+      }
+
+      return results;
+    });
+
+    return success(
+      res,
+      200,
+      "EMI structure updated successfully.",
+      decorateInstallments(updatedInstallments),
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getStats,
   listApplications,
@@ -784,4 +966,5 @@ module.exports = {
   feeTracker,
   markInstallmentPaid,
   markInstallmentPending,
+  updateEnrollmentInstallments,
 };
