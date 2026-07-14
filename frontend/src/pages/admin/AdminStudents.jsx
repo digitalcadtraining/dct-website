@@ -36,8 +36,9 @@ function StatusPill({ status }) {
   );
 }
 
-function InstallmentCell({ item, onPaid, onPending }) {
+function InstallmentCell({ item, onPaid, onPending, savingPaymentId }) {
   if (!item) return <span className="text-xs text-gray-400">Not set</span>;
+  const isSaving = savingPaymentId === item.id;
   return (
     <div className="min-w-[130px]">
       <div className="flex items-center gap-2">
@@ -62,51 +63,40 @@ function InstallmentCell({ item, onPaid, onPending }) {
       ) : (
         <button
           type="button"
+          disabled={isSaving}
           onClick={() => onPaid(item)}
-          className="mt-1 rounded-lg bg-dct-primary px-2 py-1 text-[10px] font-black text-white"
+          className={`mt-1 rounded-lg px-2 py-1 text-[10px] font-black text-white ${
+            isSaving ? "cursor-not-allowed bg-gray-400" : "bg-dct-primary"
+          }`}
         >
-          Mark Paid
+          {isSaving ? "Updating..." : "Mark Paid"}
         </button>
       )}
     </div>
   );
 }
 
-function BatchGroup({ batch, onPaid, onPending, onToggle }) {
+function BatchGroup({ batch, onPaid, onPending, onToggle, savingPaymentId }) {
   const [open, setOpen] = useState(true);
   const active = batch.items.filter((x) => x.student.is_active).length;
   const disabled = batch.items.length - active;
-const activeItems = batch.items.filter(
-  (item) => item.student.is_active,
-);
+  const activeItems = batch.items.filter((item) => item.student.is_active);
 
-const received = activeItems.reduce(
-  (sum, item) =>
-    sum +
-    Number(
-      item.enrollment.payment_summary
-        ?.installment_received || 0,
-    ),
-  0,
-);
+  const received = activeItems.reduce(
+    (sum, item) =>
+      sum + Number(item.enrollment.payment_summary?.installment_received || 0),
+    0,
+  );
 
-const pending = activeItems.reduce(
-  (sum, item) =>
-    sum +
-    Number(
-      item.enrollment.payment_summary?.pending || 0,
-    ),
-  0,
-);
+  const pending = activeItems.reduce(
+    (sum, item) => sum + Number(item.enrollment.payment_summary?.pending || 0),
+    0,
+  );
 
-const overdue = activeItems.reduce(
-  (sum, item) =>
-    sum +
-    Number(
-      item.enrollment.payment_summary?.overdue || 0,
-    ),
-  0,
-);
+  const overdue = activeItems.reduce(
+    (sum, item) => sum + Number(item.enrollment.payment_summary?.overdue || 0),
+    0,
+  );
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -166,6 +156,7 @@ const overdue = activeItems.reduce(
                         item={installments.find((x) => x.installment_no === 1)}
                         onPaid={onPaid}
                         onPending={onPending}
+                        savingPaymentId={savingPaymentId}
                       />
                     </td>
                     <td className="px-4 py-4">
@@ -173,6 +164,7 @@ const overdue = activeItems.reduce(
                         item={installments.find((x) => x.installment_no === 2)}
                         onPaid={onPaid}
                         onPending={onPending}
+                        savingPaymentId={savingPaymentId}
                       />
                     </td>
                     <td className="px-4 py-4">
@@ -180,6 +172,7 @@ const overdue = activeItems.reduce(
                         item={installments.find((x) => x.installment_no === 3)}
                         onPaid={onPaid}
                         onPending={onPending}
+                        savingPaymentId={savingPaymentId}
                       />
                     </td>
                     <td
@@ -219,10 +212,7 @@ export default function AdminStudents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [payingItem, setPayingItem] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("UPI");
-  const [paymentRef, setPaymentRef] = useState("");
-  const [savingPayment, setSavingPayment] = useState(false);
+  const [savingPaymentId, setSavingPaymentId] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -260,34 +250,23 @@ export default function AdminStudents() {
     return Array.from(map.values());
   }, [payload.students, search]);
 
-  const markPaid = (item) => {
-    setPayingItem(item);
-    setPaymentMethod("UPI");
-    setPaymentRef("");
-    setError("");
-  };
-
-  const submitPayment = async () => {
-    if (!payingItem) return;
+  const markPaid = async (item) => {
+    if (!item?.id || savingPaymentId) return;
 
     try {
-      setSavingPayment(true);
+      setSavingPaymentId(item.id);
       setError("");
 
-      await adminApi.markInstallmentPaid(payingItem.id, {
-        payment_method: paymentMethod,
-        payment_ref: paymentRef,
+      await adminApi.markInstallmentPaid(item.id, {
+        payment_method: "ADMIN",
+        payment_ref: "",
       });
-
-      setPayingItem(null);
-      setPaymentMethod("UPI");
-      setPaymentRef("");
 
       await load();
     } catch (err) {
       setError(err.message || "Could not mark installment as paid.");
     } finally {
-      setSavingPayment(false);
+      setSavingPaymentId("");
     }
   };
 
@@ -313,58 +292,6 @@ export default function AdminStudents() {
   const s = payload.summary || {};
   return (
     <AppShell>
-      {payingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-[420px] rounded-3xl bg-white p-6 shadow-2xl">
-            <h2 className="text-xl font-black mb-5">Mark Installment Paid</h2>
-
-            <div className="mb-4">
-              <label className="text-sm font-bold">Payment Method</label>
-
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-2 w-full rounded-xl border p-3"
-              >
-                <option>UPI</option>
-                <option>CASH</option>
-                <option>BANK_TRANSFER</option>
-                <option>PHONEPE</option>
-                <option>GPAY</option>
-                <option>OTHER</option>
-              </select>
-            </div>
-
-            <div className="mb-5">
-              <label className="text-sm font-bold">UTR / Reference</label>
-
-              <input
-                value={paymentRef}
-                onChange={(e) => setPaymentRef(e.target.value)}
-                className="mt-2 w-full rounded-xl border p-3"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setPayingItem(null)}
-                className="flex-1 rounded-xl border py-3 font-bold"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={submitPayment}
-                disabled={savingPayment}
-                className="flex-1 rounded-xl bg-dct-primary py-3 font-bold text-white"
-              >
-                {savingPayment ? "Saving..." : "Confirm Paid"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <PageWrapper>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -432,6 +359,7 @@ export default function AdminStudents() {
                 onPaid={markPaid}
                 onPending={markPending}
                 onToggle={toggle}
+                savingPaymentId={savingPaymentId}
               />
             ))}
           </div>

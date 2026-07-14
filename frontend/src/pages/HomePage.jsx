@@ -96,17 +96,36 @@ const homepageHtml = `
       <p class="cad-software-home-sub">Focused beginner software training for freshers who want strong command on CATIA V5, UG NX and SolidWorks.</p>
     </div>
     <div class="cad-software-home-grid">
-      <article class="cad-software-card">
-        <div class="cad-software-visual solidworks"><span>Mechanical CAD Starter</span><strong>SW</strong></div>
-        <div class="cad-software-body">
-          <h3>SolidWorks Basic Software Training</h3>
-          <p>Learn SolidWorks sketching, parametric modeling, assemblies and drawing creation from basics.</p>
-          <div class="cad-software-actions">
-  <a href="/courses/nx-basic">View Course</a>
-<a class="secondary" href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf" download onclick="event.stopPropagation();">Download Syllabus</a>
-</div>
-        </div>
-      </article>
+<article class="cad-software-card">
+  <div class="cad-software-visual catia">
+    <span>Mechanical CAD Starter</span>
+    <strong>CATIA</strong>
+  </div>
+
+  <div class="cad-software-body">
+    <h3>CATIA V5 Basic Software Training</h3>
+
+    <p>
+      Learn CATIA V5 sketching, part design, assembly,
+      surfacing and drafting fundamentals from basics.
+    </p>
+
+    <div class="cad-software-actions">
+      <a href="/courses/catia-basic">
+        View Course
+      </a>
+
+      <a
+        class="secondary"
+        href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf"
+        download
+        onclick="event.stopPropagation();"
+      >
+        Download Syllabus
+      </a>
+    </div>
+  </div>
+</article>
       <article class="cad-software-card">
         <div class="cad-software-visual nx"><span>Second Tool Advantage</span><strong>NX</strong></div>
         <div class="cad-software-body">
