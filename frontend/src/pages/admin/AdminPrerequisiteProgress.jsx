@@ -252,7 +252,7 @@ function StudentProgressRow({ row }) {
 }
 
 function BatchProgressGroup({ batch }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const completed = batch.rows.filter(
     (r) => (r.catia_progress_percent || 0) >= 100,
   ).length;

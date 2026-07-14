@@ -378,6 +378,30 @@ export const sessionApi = {
       body: JSON.stringify(data),
     }),
 };
+export const installmentApi = {
+  mine: () =>
+    http("/installments/mine", {
+      role: "student",
+    }),
+
+  saveReceiptDetails: (id, data) =>
+    http(`/installments/${id}/receipt-details`, {
+      method: "PATCH",
+      role: "student",
+      body: JSON.stringify(data),
+    }),
+
+  downloadReceipt: (
+    id,
+    filename = "DCT-payment-receipt.pdf",
+  ) =>
+    downloadWithAuth(
+      `/installments/${id}/receipt.pdf`,
+      filename,
+      "student",
+    ),
+};
+
 export const assignmentApi = {
   getForBatch: (batchId) => http(`/assignments/batch/${batchId}`),
   submitForSession: (sessionId, file) => {
@@ -474,77 +498,51 @@ export const adminApi = {
       role: "admin",
       body: JSON.stringify({ rejection_note: note }),
     }),
-
   students: (search) =>
     http(`/admin/students${toQuery({ search })}`, { role: "admin" }),
   tutors: () => http("/admin/tutors", { role: "admin" }),
-
   batches: (status) =>
     http(`/admin/batches${toQuery({ status })}`, { role: "admin" }),
-  pendingBatches: () => http("/admin/batches/pending", { role: "admin" }),
-
+  pendingBatches: () =>
+    http("/admin/batches/pending", { role: "admin" }),
   approveBatch: (id) =>
-    http(`/admin/batches/${id}/approve`, { method: "POST", role: "admin" }),
+    http(`/admin/batches/${id}/approve`, {
+      method: "POST",
+      role: "admin",
+    }),
   rejectBatch: (id) =>
-    http(`/admin/batches/${id}/reject`, { method: "POST", role: "admin" }),
-
+    http(`/admin/batches/${id}/reject`, {
+      method: "POST",
+      role: "admin",
+    }),
   queries: (status) =>
     http(`/admin/queries${toQuery({ status })}`, { role: "admin" }),
-
   toggleUserStatus: (id) =>
     http(`/admin/users/${id}/status`, {
       method: "PATCH",
       role: "admin",
     }),
-
   feeTracker: () =>
-    http("/admin/installments/tracker", {
-      role: "admin",
-    }),
-
-  markInstallmentPaid: (id, data) =>
+    http("/admin/installments/tracker", { role: "admin" }),
+  markInstallmentPaid: (id, data = {}) =>
     http(`/admin/installments/${id}/paid`, {
       method: "PATCH",
       role: "admin",
       body: JSON.stringify(data),
     }),
-
+    
   markInstallmentPending: (id) =>
     http(`/admin/installments/${id}/pending`, {
       method: "PATCH",
       role: "admin",
     }),
 
-  markInstallmentPaid: (id, data) =>
-    http(`/admin/installments/${id}/paid`, {
-      method: "PATCH",
-      role: "admin",
-      body: JSON.stringify(data),
-    }),
-
-  markInstallmentPending: (id) =>
-    http(`/admin/installments/${id}/pending`, {
-      method: "PATCH",
-      role: "admin",
-    }),
-
-  feeTracker: () =>
-    http("/admin/installments/tracker", {
-      role: "admin",
-    }),
-
-  markInstallmentPaid: (id, data) =>
-    http(`/admin/installments/${id}/paid`, {
-      method: "PATCH",
-      role: "admin",
-      body: JSON.stringify(data),
-    }),
-
-  markInstallmentPending: (id) =>
-    http(`/admin/installments/${id}/pending`, {
-      method: "PATCH",
-      role: "admin",
-    }),
+    updateEnrollmentEmis: (enrollmentId, data) =>
+  http(`/admin/enrollments/${enrollmentId}/installments`, {
+    method: "PATCH",
+    role: "admin",
+    body: JSON.stringify(data),
+  }),
 };
 
 export const api = {
