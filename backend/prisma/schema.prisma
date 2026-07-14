@@ -203,21 +203,22 @@ model SyllabusProject {
 }
 
 model Batch {
-  id           String      @id @default(cuid())
-  course_id    String
-  course       Course      @relation(fields: [course_id], references: [id])
-  tutor_id     String
-  tutor        User        @relation("TutorBatches", fields: [tutor_id], references: [id])
-  name         String
-  start_date   DateTime
-  end_date     DateTime
-  max_students Int         @default(50)
-  description  String?
-  zoom_link    String?
-  time_slots   Json        @default("[]")
-  status       BatchStatus @default(PENDING_APPROVAL)
-  created_at   DateTime    @default(now())
-  updated_at   DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  course_id          String
+  course             Course      @relation(fields: [course_id], references: [id])
+  tutor_id           String
+  tutor              User        @relation("TutorBatches", fields: [tutor_id], references: [id])
+  name               String
+  start_date         DateTime
+  end_date           DateTime
+  max_students       Int         @default(50)
+  description        String?
+  zoom_link          String?
+  time_slots         Json        @default("[]")
+  show_prerequisites Boolean     @default(false)
+  status             BatchStatus @default(PENDING_APPROVAL)
+  created_at         DateTime    @default(now())
+  updated_at         DateTime    @updatedAt
 
   enrollments        Enrollment[]
   scheduled_sessions ScheduledSession[]
@@ -225,17 +226,17 @@ model Batch {
   queries            Query[]
   discount_codes     DiscountCode[]
 
+  offer_name     String?
+  original_price Decimal?  @db.Decimal(10, 2)
+  offer_price    Decimal?  @db.Decimal(10, 2)
+  offer_start_at DateTime?
+  offer_end_at   DateTime?
+
   @@index([course_id])
   @@index([tutor_id])
   @@index([status])
   @@index([start_date])
   @@map("batches")
-
-  offer_name     String?
-original_price Decimal? @db.Decimal(10, 2)
-offer_price    Decimal? @db.Decimal(10, 2)
-offer_start_at DateTime?
-offer_end_at   DateTime?
 }
 
 model Enrollment {
@@ -281,6 +282,8 @@ model EnrollmentInstallment {
   payment_ref    String?
   notes          String?
 
+  receipt PaymentReceipt?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -289,6 +292,22 @@ model EnrollmentInstallment {
   @@index([status])
   @@index([due_date])
   @@map("enrollment_installments")
+}
+
+model PaymentReceipt {
+  id                   String                @id @default(cuid())
+  installment_id       String                @unique
+  installment          EnrollmentInstallment @relation(fields: [installment_id], references: [id], onDelete: Cascade)
+  receipt_number       String                @unique
+  payment_method       String?
+  transaction_ref      String?
+  details_completed_at DateTime?
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
+
+  @@index([installment_id])
+  @@index([receipt_number])
+  @@map("payment_receipts")
 }
 
 model ReferralReward {
