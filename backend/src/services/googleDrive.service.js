@@ -10,11 +10,13 @@ let cachedTokenExpiresAt = 0;
 
 function requiredEnv(name) {
   const value = String(process.env[name] || "").trim();
+
   if (!value) {
     const err = new Error(`${name} is not configured.`);
     err.statusCode = 503;
     throw err;
   }
+
   return value;
 }
 
@@ -47,6 +49,7 @@ function safeDriveName(value) {
 
 async function getAccessToken() {
   const now = Date.now();
+
   if (cachedToken && cachedTokenExpiresAt - 60_000 > now) {
     return cachedToken;
   }
@@ -60,11 +63,14 @@ async function getAccessToken() {
 
   const response = await fetch(TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
     body,
   });
 
   const payload = await response.json().catch(() => ({}));
+
   if (!response.ok || !payload.access_token) {
     const err = new Error(
       payload.error_description ||
@@ -82,6 +88,103 @@ async function getAccessToken() {
   return cachedToken;
 }
 
+function escapeDriveQueryValue(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+}
+
+async function findOrCreateFolder({
+  parentFolderId,
+  folderName,
+  appProperties = {},
+}) {
+  if (!parentFolderId) {
+    const err = new Error(
+      "GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID is not configured.",
+    );
+    err.statusCode = 503;
+    throw err;
+  }
+
+  const accessToken = await getAccessToken();
+  const finalName = safeDriveName(folderName || "Batch Submissions");
+
+  const query = [
+    `name = '${escapeDriveQueryValue(finalName)}'`,
+    "mimeType = 'application/vnd.google-apps.folder'",
+    `'${escapeDriveQueryValue(parentFolderId)}' in parents`,
+    "trashed = false",
+  ].join(" and ");
+
+  const searchResponse = await fetch(
+    `${DRIVE_API}/files?q=${encodeURIComponent(
+      query,
+    )}&spaces=drive&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  const searchPayload = await searchResponse
+    .json()
+    .catch(() => ({}));
+
+  if (!searchResponse.ok) {
+    const err = new Error(
+      searchPayload?.error?.message ||
+        "Could not search Google Drive folders.",
+    );
+    err.statusCode = 502;
+    throw err;
+  }
+
+  if (searchPayload.files?.[0]?.id) {
+    return searchPayload.files[0].id;
+  }
+
+  const metadata = {
+    name: finalName,
+    mimeType: "application/vnd.google-apps.folder",
+    parents: [parentFolderId],
+    appProperties: Object.fromEntries(
+      Object.entries(appProperties)
+        .filter(([, value]) => value !== undefined && value !== null)
+        .map(([key, value]) => [
+          key,
+          String(value).slice(0, 120),
+        ]),
+    ),
+  };
+
+  const createResponse = await fetch(
+    `${DRIVE_API}/files?supportsAllDrives=true&fields=id,name`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+      },
+      body: JSON.stringify(metadata),
+    },
+  );
+
+  const created = await createResponse.json().catch(() => ({}));
+
+  if (!createResponse.ok || !created.id) {
+    const err = new Error(
+      created?.error?.message ||
+        "Could not create Google Drive batch folder.",
+    );
+    err.statusCode = 502;
+    throw err;
+  }
+
+  return created.id;
+}
+
 async function uploadFile({
   localPath,
   originalName,
@@ -90,14 +193,16 @@ async function uploadFile({
   appProperties = {},
 }) {
   if (!localPath || !fs.existsSync(localPath)) {
-    const err = new Error("Temporary upload file was not found.");
+    const err = new Error(
+      "Temporary upload file was not found.",
+    );
     err.statusCode = 400;
     throw err;
   }
 
   if (!folderId) {
     const err = new Error(
-      "GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID is not configured.",
+      "Google Drive destination folder is not configured.",
     );
     err.statusCode = 503;
     throw err;
@@ -136,7 +241,10 @@ async function uploadFile({
   );
 
   if (!initResponse.ok) {
-    const payload = await initResponse.json().catch(() => ({}));
+    const payload = await initResponse
+      .json()
+      .catch(() => ({}));
+
     const err = new Error(
       payload?.error?.message ||
         "Could not start Google Drive upload.",
@@ -146,6 +254,7 @@ async function uploadFile({
   }
 
   const uploadUrl = initResponse.headers.get("location");
+
   if (!uploadUrl) {
     const err = new Error(
       "Google Drive did not return an upload URL.",
@@ -155,20 +264,26 @@ async function uploadFile({
   }
 
   const stream = fs.createReadStream(localPath);
+
   const uploadResponse = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": mimeType || "application/octet-stream",
+      "Content-Type":
+        mimeType || "application/octet-stream",
       "Content-Length": String(stats.size),
     },
     body: stream,
     duplex: "half",
   });
 
-  const uploaded = await uploadResponse.json().catch(() => ({}));
+  const uploaded = await uploadResponse
+    .json()
+    .catch(() => ({}));
+
   if (!uploadResponse.ok || !uploaded.id) {
     const err = new Error(
-      uploaded?.error?.message || "Google Drive upload failed.",
+      uploaded?.error?.message ||
+        "Google Drive upload failed.",
     );
     err.statusCode = 502;
     throw err;
@@ -191,6 +306,7 @@ async function deleteFile(fileId) {
 
   try {
     const accessToken = await getAccessToken();
+
     await fetch(
       `${DRIVE_API}/files/${encodeURIComponent(
         fileId,
@@ -203,7 +319,10 @@ async function deleteFile(fileId) {
       },
     );
   } catch (err) {
-    console.error("Google Drive cleanup failed:", err.message);
+    console.error(
+      "Google Drive cleanup failed:",
+      err.message,
+    );
   }
 }
 
@@ -222,95 +341,6 @@ function contentDisposition(fileName) {
   )}`;
 }
 
-async function findOrCreateFolder({
-  parentFolderId,
-  folderName,
-  appProperties = {},
-}) {
-  const accessToken = await getAccessToken();
-  const safeName = safeDriveName(folderName);
-
-  const escapedName = safeName.replace(
-    /'/g,
-    "\\'",
-  );
-
-  const query = [
-    `name = '${escapedName}'`,
-    "mimeType = 'application/vnd.google-apps.folder'",
-    `'${parentFolderId}' in parents`,
-    "trashed = false",
-  ].join(" and ");
-
-  const searchResponse = await fetch(
-    `${DRIVE_API}/files?q=${encodeURIComponent(
-      query,
-    )}&fields=files(id,name)&spaces=drive&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
-
-  const searchData = await searchResponse
-    .json()
-    .catch(() => ({}));
-
-  if (!searchResponse.ok) {
-    const err = new Error(
-      searchData?.error?.message ||
-        "Could not search Google Drive folders.",
-    );
-    err.statusCode = 502;
-    throw err;
-  }
-
-  if (searchData.files?.[0]?.id) {
-    return searchData.files[0].id;
-  }
-
-  const createResponse = await fetch(
-    `${DRIVE_API}/files?supportsAllDrives=true&fields=id,name`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: safeName,
-        mimeType:
-          "application/vnd.google-apps.folder",
-        parents: [parentFolderId],
-        appProperties: Object.fromEntries(
-          Object.entries(appProperties).map(
-            ([key, value]) => [
-              key,
-              String(value).slice(0, 120),
-            ],
-          ),
-        ),
-      }),
-    },
-  );
-
-  const created = await createResponse
-    .json()
-    .catch(() => ({}));
-
-  if (!createResponse.ok || !created.id) {
-    const err = new Error(
-      created?.error?.message ||
-        "Could not create batch folder.",
-    );
-    err.statusCode = 502;
-    throw err;
-  }
-
-  return created.id;
-}
-
 async function streamDownload({
   fileId,
   fileName,
@@ -318,12 +348,15 @@ async function streamDownload({
   res,
 }) {
   if (!fileId) {
-    const err = new Error("Google Drive file ID is missing.");
+    const err = new Error(
+      "Google Drive file ID is missing.",
+    );
     err.statusCode = 404;
     throw err;
   }
 
   const accessToken = await getAccessToken();
+
   const response = await fetch(
     `${DRIVE_API}/files/${encodeURIComponent(
       fileId,
@@ -336,12 +369,16 @@ async function streamDownload({
   );
 
   if (!response.ok || !response.body) {
-    const payload = await response.json().catch(() => ({}));
+    const payload = await response
+      .json()
+      .catch(() => ({}));
+
     const err = new Error(
       payload?.error?.message ||
         "Could not download file from Google Drive.",
     );
-    err.statusCode = response.status === 404 ? 404 : 502;
+    err.statusCode =
+      response.status === 404 ? 404 : 502;
     throw err;
   }
 
@@ -356,10 +393,17 @@ async function streamDownload({
     "Content-Disposition",
     contentDisposition(fileName),
   );
-  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  res.setHeader(
+    "Cache-Control",
+    "private, no-store, max-age=0",
+  );
 
-  const length = response.headers.get("content-length");
-  if (length) res.setHeader("Content-Length", length);
+  const length =
+    response.headers.get("content-length");
+
+  if (length) {
+    res.setHeader("Content-Length", length);
+  }
 
   Readable.fromWeb(response.body).pipe(res);
 }

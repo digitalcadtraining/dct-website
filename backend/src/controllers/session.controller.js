@@ -147,6 +147,8 @@ const getBatchSessions = async (req, res, next) => {
       if (!owns) return error(res, 403, "You do not own this batch.");
     }
 
+    await ensureCompletedSessionAssignments(batchId);
+
     const sessions = await prisma.scheduledSession.findMany({
       where: { batch_id: batchId, ...(status && { status }) },
       orderBy: { session_number: "asc" },
@@ -210,6 +212,11 @@ const updateSession = async (req, res, next) => {
       where: { id: req.params.id },
       data,
     });
+
+    if (updated.status === "COMPLETED") {
+      await ensureCompletedSessionAssignments(updated.batch_id);
+    }
+
     return success(res, 200, "Session updated.", updated);
   } catch (err) {
     next(err);
@@ -403,6 +410,21 @@ const assignmentController = {
     try {
       const assignment = await prisma.assignment.findUnique({
         where: { id: req.params.id },
+        include: {
+          batch: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          session: {
+            select: {
+              id: true,
+              session_number: true,
+              name: true,
+            },
+          },
+        },
       });
       if (!assignment) return error(res, 404, "Assignment not found.");
 
@@ -450,15 +472,35 @@ const assignmentController = {
         }
       }
 
+      const batchFolderId = await drive.findOrCreateFolder({
+        parentFolderId: process.env.GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID,
+        folderName:
+          assignment.batch?.name || `Batch-${assignment.batch_id}`,
+        appProperties: {
+          type: "DCT_BATCH_SUBMISSIONS",
+          batchId: assignment.batch_id,
+        },
+      });
+
+      const studentLabel =
+        req.user.name ||
+        req.user.email ||
+        `Student-${req.user.id}`;
+
+      const sessionLabel = assignment.session?.session_number
+        ? `Session-${assignment.session.session_number}`
+        : "Session";
+
       const driveFile = await drive.uploadFile({
         localPath: req.file.path,
-        originalName: req.file.originalname,
+        originalName: `${studentLabel} - ${sessionLabel} - ${req.file.originalname}`,
         mimeType: req.file.mimetype,
-        folderId: process.env.GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID,
+        folderId: batchFolderId,
         appProperties: {
           type: "STUDENT_SUBMISSION",
           assignmentId: assignment.id,
           batchId: assignment.batch_id,
+          sessionId: assignment.session_id || "",
           studentId: req.user.id,
         },
       });
