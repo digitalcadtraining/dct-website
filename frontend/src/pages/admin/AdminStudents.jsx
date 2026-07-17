@@ -10,6 +10,7 @@ import {
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { adminApi } from "../../services/api.js";
+import { cadToolAccessApi } from "../../services/cadToolAccessApi.js";
 
 const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
 
@@ -379,12 +380,220 @@ function EmiEditor({ target, onClose, onSaved }) {
   );
 }
 
+function CadAccessModal({ target, onClose, onSaved }) {
+  const [payload, setPayload] = useState(null);
+  const [selected, setSelected] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await cadToolAccessApi.get(target.student.id);
+
+        if (!active) return;
+
+        const data = response.data || {
+          batches: [],
+        };
+
+        setPayload(data);
+        setSelected(
+          (data.batches || [])
+            .filter((batch) => batch.selected)
+            .map((batch) => batch.id),
+        );
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Could not load CAD software access.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      active = false;
+    };
+  }, [target.student.id]);
+
+  const toggleBatch = (batch) => {
+    if (batch.locked) return;
+
+    setSelected((current) =>
+      current.includes(batch.id)
+        ? current.filter((id) => id !== batch.id)
+        : [...current, batch.id],
+    );
+  };
+
+  const save = async () => {
+    try {
+      setSaving(true);
+      setError("");
+
+      await cadToolAccessApi.update(target.student.id, selected);
+      await onSaved();
+    } catch (err) {
+      setError(err.message || "Could not update CAD software access.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const groups = useMemo(() => {
+    const map = new Map();
+
+    for (const batch of payload?.batches || []) {
+      const key = batch.tool_key || "other";
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          label: batch.tool_label || "CAD Software",
+          batches: [],
+        });
+      }
+
+      map.get(key).batches.push(batch);
+    }
+
+    return Array.from(map.values());
+  }, [payload]);
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-black text-dct-dark">
+              Manage CAD Software Access
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              {target.student.name} · Select software batches
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-gray-100 p-2 text-gray-600"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-xs leading-5 text-blue-900">
+          Additional software access is free and does not create EMI, receipt or
+          another payable fee. The student's original paid course cannot be
+          removed here.
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-sm font-bold text-gray-500">
+            Loading CAD software batches...
+          </div>
+        ) : (
+          <div className="max-h-[55vh] space-y-4 overflow-y-auto pr-1">
+            {groups.map((group) => (
+              <div
+                key={group.key}
+                className="rounded-2xl border border-gray-100 p-4"
+              >
+                <h3 className="mb-3 text-sm font-black text-dct-dark">
+                  {group.label}
+                </h3>
+
+                <div className="space-y-2">
+                  {group.batches.map((batch) => {
+                    const checked = selected.includes(batch.id);
+
+                    return (
+                      <label
+                        key={batch.id}
+                        className={`flex items-center justify-between gap-4 rounded-xl border p-3 ${
+                          checked
+                            ? "border-blue-300 bg-blue-50"
+                            : "border-gray-200 bg-white"
+                        } ${batch.locked ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+                      >
+                        <div>
+                          <p className="text-sm font-black text-dct-dark">
+                            {batch.name}
+                          </p>
+
+                          <p className="mt-1 text-[10px] text-gray-500">
+                            {fmtDate(batch.start_date)} · {batch.status}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {batch.locked && (
+                            <span className="rounded-full bg-green-50 px-2 py-1 text-[9px] font-black text-green-700">
+                              Paid course
+                            </span>
+                          )}
+
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={batch.locked}
+                            onChange={() => toggleBatch(batch)}
+                            className="h-5 w-5 accent-dct-primary"
+                          />
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {groups.length === 0 && (
+              <div className="rounded-2xl bg-amber-50 p-4 text-sm font-semibold text-amber-700">
+                No active or upcoming CAD Software Tools batches were found.
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-600">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={save}
+          disabled={loading || saving}
+          className="mt-5 h-12 w-full rounded-xl bg-dct-primary font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
+        >
+          {saving ? "Saving Access..." : "Save Software Access"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function BatchGroup({
   batch,
   onPaid,
   onPending,
   onToggle,
   onEditEmi,
+  onManageCadAccess,
   savingPaymentId,
 }) {
   const [open, setOpen] = useState(false);
@@ -560,6 +769,23 @@ function BatchGroup({
                         >
                           <Power size={13} />
                         </button>
+
+                        {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
+                          String(enrollment.batch?.name || ""),
+                        ) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onManageCadAccess({
+                                student,
+                                enrollment,
+                              })
+                            }
+                            className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-dct-primary"
+                          >
+                            Manage CAD Access
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -583,6 +809,7 @@ export default function AdminStudents() {
   const [error, setError] = useState("");
   const [savingPaymentId, setSavingPaymentId] = useState("");
   const [emiTarget, setEmiTarget] = useState(null);
+  const [cadAccessTarget, setCadAccessTarget] = useState(null);
 
   const load = async (silent = false) => {
     if (!silent) {
@@ -620,6 +847,13 @@ export default function AdminStudents() {
 
     for (const student of payload.students || []) {
       for (const enrollment of student.enrollments || []) {
+        if (
+          String(enrollment.discount_code || "").toUpperCase() ===
+          "CAD_TOOL_ACCESS"
+        ) {
+          continue;
+        }
+
         const batch = enrollment.batch || {};
 
         const haystack =
@@ -692,10 +926,15 @@ export default function AdminStudents() {
     await load();
   };
 
-const emiSaved = async () => {
-  setEmiTarget(null);
-  await load(true);
-};
+  const emiSaved = async () => {
+    setEmiTarget(null);
+    await load(true);
+  };
+
+  const cadAccessSaved = async () => {
+    setCadAccessTarget(null);
+    await load(true);
+  };
 
   const summary = payload.summary || {};
 
@@ -706,6 +945,14 @@ const emiSaved = async () => {
           target={emiTarget}
           onClose={() => setEmiTarget(null)}
           onSaved={emiSaved}
+        />
+      )}
+
+      {cadAccessTarget && (
+        <CadAccessModal
+          target={cadAccessTarget}
+          onClose={() => setCadAccessTarget(null)}
+          onSaved={cadAccessSaved}
         />
       )}
 
@@ -782,6 +1029,7 @@ const emiSaved = async () => {
                 onPending={markPending}
                 onToggle={toggle}
                 onEditEmi={setEmiTarget}
+                onManageCadAccess={setCadAccessTarget}
                 savingPaymentId={savingPaymentId}
               />
             ))}

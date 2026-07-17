@@ -1,5 +1,7 @@
 /** Routes Index - mounts modules under /api/v1 */
 const router = require("express").Router();
+const certificateRoutes = require("./certificate.routes");
+
 
 router.use("/auth", require("./auth.routes"));
 router.use("/courses", require("./course.routes"));
@@ -13,7 +15,9 @@ router.use("/referrals", require("./referral.routes"));
 router.use("/prerequisites", require("./prerequisite.routes"));
 router.use("/tutor-applications", require("./tutor.routes"));
 router.use("/installments", require("./installment.routes"));
+router.use("/certificates", require("./certificate.routes"));
 router.use("/admin", require("./admin.routes"));
+router.use("/certificates", certificateRoutes);
 
 router.get("/", (req, res) => {
   res.json({ success: true, message: "DigitalCAD Training API v1" });

@@ -250,11 +250,12 @@ model Enrollment {
   payment_ref    String?
   progress       Int           @default(0)
 
-  enrolled_price Decimal?  @db.Decimal(10, 2)
-  original_price Decimal?  @db.Decimal(10, 2)
+  enrolled_price Decimal?           @db.Decimal(10, 2)
+  original_price Decimal?           @db.Decimal(10, 2)
   discount_code  String?
   emi_first_due  DateTime?
   emi_second_due DateTime?
+  certificate    CourseCertificate?
 
   installments EnrollmentInstallment[]
 
@@ -415,6 +416,36 @@ model AssignmentSubmission {
   @@index([editable_until])
   @@index([drive_file_id])
   @@map("assignment_submissions")
+}
+
+model CourseCertificate {
+  id            String     @id @default(cuid())
+  enrollment_id String     @unique
+  enrollment    Enrollment @relation(fields: [enrollment_id], references: [id], onDelete: Cascade)
+
+  certificate_number String @unique
+  course_code        String
+  issue_year         Int
+  sequence           Int
+
+  student_name     String
+  course_name      String
+  batch_name       String
+  batch_start_date DateTime
+  batch_end_date   DateTime
+
+  issued_at    DateTime @default(now())
+  issued_by_id String?
+  is_active    Boolean  @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([course_code, issue_year, sequence])
+  @@index([enrollment_id])
+  @@index([certificate_number])
+  @@index([is_active])
+  @@map("course_certificates")
 }
 
 model Query {

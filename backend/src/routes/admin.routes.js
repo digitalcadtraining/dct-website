@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { authenticate, authorize } = require("../middleware/auth");
 const admin = require("../controllers/admin.controller");
+const cadToolAccess = require("../controllers/cadToolAccess.controller");
 
 router.use(authenticate, authorize("ADMIN"));
 
@@ -15,6 +16,20 @@ router.patch("/installments/:id/pending", admin.markInstallmentPending);
 router.patch(
   "/enrollments/:id/installments",
   admin.updateEnrollmentInstallments,
+);
+
+/*
+ * Admin-only CAD Software Tools access.
+ * This does not change registration, payment, EMI, receipt,
+ * Plastic Product Design or BIW logic.
+ */
+router.get(
+  "/cad-tools/students/:studentId/access",
+  cadToolAccess.getCadAccess,
+);
+router.put(
+  "/cad-tools/students/:studentId/access",
+  cadToolAccess.updateCadAccess,
 );
 
 router.get("/tutors", admin.listTutors);

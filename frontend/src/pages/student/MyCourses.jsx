@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
+import { certificateApi } from "../../services/certificateApi.js";
+import CertificateCard from "../../components/certificate/CertificateCard.jsx";
 import { motion } from "framer-motion";
 import { batchApi, installmentApi } from "../../services/api.js";
 import {
@@ -729,6 +731,20 @@ function mergePaymentData(courseEnrollments, paymentEnrollments) {
   });
 }
 
+function mergeCertificateData(enrollments, certificates) {
+  const certificateMap = new Map(
+    (certificates || []).map((certificate) => [
+      certificate.enrollment_id,
+      certificate,
+    ]),
+  );
+
+  return (enrollments || []).map((enrollment) => ({
+    ...enrollment,
+    certificate: certificateMap.get(enrollmentKey(enrollment)) || null,
+  }));
+}
+
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -740,13 +756,17 @@ export default function MyCourses() {
     setError("");
 
     try {
-      const [courseRes, paymentRes] = await Promise.all([
+      const [courseRes, paymentRes, certificateRes] = await Promise.all([
         batchApi.enrolled(),
         installmentApi.mine(),
+        certificateApi.mine(),
       ]);
 
       setEnrollments(
-        mergePaymentData(courseRes?.data || [], paymentRes?.data || []),
+        mergeCertificateData(
+          mergePaymentData(courseRes?.data || [], paymentRes?.data || []),
+          certificateRes?.data || [],
+        ),
       );
     } catch (err) {
       setError(err.message || "Failed to load courses.");
@@ -901,7 +921,8 @@ export default function MyCourses() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(260px,320px))",
+              gridTemplateColumns:
+                "repeat(auto-fit,minmax(min(100%,560px),1fr))",
               gap: 16,
               marginBottom: 32,
             }}
@@ -966,18 +987,25 @@ export default function MyCourses() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(260px,320px))",
+              gridTemplateColumns:
+                "repeat(auto-fit,minmax(min(100%,560px),1fr))",
               gap: 16,
               marginBottom: 32,
             }}
           >
             {enrollments.map((enrollment, index) => (
-              <CourseCard
+              <div
                 key={enrollmentKey(enrollment) || index}
-                enrollment={enrollment}
-                index={index}
-                onReceipt={openReceipt}
-              />
+                className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(280px,1fr)]"
+              >
+                <CourseCard
+                  enrollment={enrollment}
+                  index={index}
+                  onReceipt={openReceipt}
+                />
+
+                <CertificateCard certificate={enrollment.certificate} />
+              </div>
             ))}
           </div>
         )}
