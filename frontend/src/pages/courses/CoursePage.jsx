@@ -369,17 +369,31 @@ export default function CoursePage({ course }) {
   const offerEnd = nearestBatch?.offer_end_at
     ? new Date(nearestBatch.offer_end_at)
     : null;
-  const isOfferLive =
-    offerStart && offerEnd && now >= offerStart && now <= offerEnd;
+const hasOfferPrice =
+  nearestBatch?.offer_price !== null &&
+  nearestBatch?.offer_price !== undefined &&
+  Number(nearestBatch.offer_price) > 0;
 
-  const regularPrice = Number(
-    nearestBatch?.regular_offer_price ||
-      course.regularOfferPrice ||
-      course.regularPrice ||
-      20999,
-  );
-  const currentPrice = isOfferLive
-    ? Number(nearestBatch?.offer_price || regularPrice)
+const hasOfferSchedule =
+  Boolean(offerStart) &&
+  Boolean(offerEnd);
+
+const isOfferLive = hasOfferSchedule
+  ? now >= offerStart && now <= offerEnd
+  : hasOfferPrice;
+
+const regularPrice = Number(
+  nearestBatch?.regular_offer_price ||
+    nearestBatch?.original_price ||
+    course.regularOfferPrice ||
+    course.regularPrice ||
+    course.price ||
+    20999,
+);
+
+const currentPrice =
+  isOfferLive && hasOfferPrice
+    ? Number(nearestBatch.offer_price)
     : regularPrice;
   const originalPrice = Number(
     nearestBatch?.original_price ||
