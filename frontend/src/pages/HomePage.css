@@ -81,29 +81,36 @@
   align-items: center;
   gap: 14px;
 }
-.dct-home-page .nav-phone {
+.nav-phone {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 14px;
+  padding: 8px 18px;
+  border-radius: 50px;
+  transition: all .25s ease;
 }
-.dct-home-page .phone-icon {
-  width: 32px;
-  height: 32px;
-  background: #0d0d0d;
+
+.phone-icon {
+  width: 48px;
+  height: 48px;
+  background: #111;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.dct-home-page .phone-icon svg {
-  fill: #fff;
-  width: 15px;
-  height: 15px;
+
+.phone-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
 }
-.dct-home-page .phone-num {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0d0d0d;
+
+.phone-num {
+  font-size: 24px;
+  font-weight: 800;
+  color: #005DC5;
+  letter-spacing: .3px;
 }
 .dct-home-page .nav-divider {
   width: 1px;
