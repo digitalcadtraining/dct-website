@@ -3,6 +3,8 @@ const { authenticate, authorize } = require("../middleware/auth");
 const admin = require("../controllers/admin.controller");
 const cadToolAccess = require("../controllers/cadToolAccess.controller");
 
+const manualEnrollment = require("../controllers/manualEnrollment.controller");
+
 router.use(authenticate, authorize("ADMIN"));
 
 router.get("/stats", admin.getStats);
@@ -10,6 +12,15 @@ router.get("/applications", admin.listApplications);
 router.post("/applications/:id/approve", admin.approveApplication);
 router.post("/applications/:id/reject", admin.rejectApplication);
 router.get("/students", admin.listStudents);
+router.get(
+  "/manual-enrollments/batches",
+  manualEnrollment.listManualEnrollmentBatches,
+);
+
+router.post(
+  "/manual-enrollments/students/:studentId",
+  manualEnrollment.createManualEnrollment,
+);
 router.get("/installments/tracker", admin.feeTracker);
 router.patch("/installments/:id/paid", admin.markInstallmentPaid);
 router.patch("/installments/:id/pending", admin.markInstallmentPending);
@@ -23,10 +34,7 @@ router.patch(
  * This does not change registration, payment, EMI, receipt,
  * Plastic Product Design or BIW logic.
  */
-router.get(
-  "/cad-tools/students/:studentId/access",
-  cadToolAccess.getCadAccess,
-);
+router.get("/cad-tools/students/:studentId/access", cadToolAccess.getCadAccess);
 router.put(
   "/cad-tools/students/:studentId/access",
   cadToolAccess.updateCadAccess,

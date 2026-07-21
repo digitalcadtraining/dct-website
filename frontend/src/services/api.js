@@ -391,15 +391,8 @@ export const installmentApi = {
       body: JSON.stringify(data),
     }),
 
-  downloadReceipt: (
-    id,
-    filename = "DCT-payment-receipt.pdf",
-  ) =>
-    downloadWithAuth(
-      `/installments/${id}/receipt.pdf`,
-      filename,
-      "student",
-    ),
+  downloadReceipt: (id, filename = "DCT-payment-receipt.pdf") =>
+    downloadWithAuth(`/installments/${id}/receipt.pdf`, filename, "student"),
 };
 
 export const assignmentApi = {
@@ -500,11 +493,24 @@ export const adminApi = {
     }),
   students: (search) =>
     http(`/admin/students${toQuery({ search })}`, { role: "admin" }),
+  manualEnrollmentBatches: () =>
+    http("/admin/manual-enrollments/batches", {
+      role: "admin",
+    }),
+
+  createManualEnrollment: (studentId, data) =>
+    http(
+      `/admin/manual-enrollments/students/${encodeURIComponent(studentId)}`,
+      {
+        method: "POST",
+        role: "admin",
+        body: JSON.stringify(data),
+      },
+    ),
   tutors: () => http("/admin/tutors", { role: "admin" }),
   batches: (status) =>
     http(`/admin/batches${toQuery({ status })}`, { role: "admin" }),
-  pendingBatches: () =>
-    http("/admin/batches/pending", { role: "admin" }),
+  pendingBatches: () => http("/admin/batches/pending", { role: "admin" }),
   approveBatch: (id) =>
     http(`/admin/batches/${id}/approve`, {
       method: "POST",
@@ -522,27 +528,26 @@ export const adminApi = {
       method: "PATCH",
       role: "admin",
     }),
-  feeTracker: () =>
-    http("/admin/installments/tracker", { role: "admin" }),
+  feeTracker: () => http("/admin/installments/tracker", { role: "admin" }),
   markInstallmentPaid: (id, data = {}) =>
     http(`/admin/installments/${id}/paid`, {
       method: "PATCH",
       role: "admin",
       body: JSON.stringify(data),
     }),
-    
+
   markInstallmentPending: (id) =>
     http(`/admin/installments/${id}/pending`, {
       method: "PATCH",
       role: "admin",
     }),
 
-    updateEnrollmentEmis: (enrollmentId, data) =>
-  http(`/admin/enrollments/${enrollmentId}/installments`, {
-    method: "PATCH",
-    role: "admin",
-    body: JSON.stringify(data),
-  }),
+  updateEnrollmentEmis: (enrollmentId, data) =>
+    http(`/admin/enrollments/${enrollmentId}/installments`, {
+      method: "PATCH",
+      role: "admin",
+      body: JSON.stringify(data),
+    }),
 };
 
 export const api = {

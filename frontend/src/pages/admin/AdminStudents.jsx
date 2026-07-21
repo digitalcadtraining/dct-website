@@ -586,6 +586,435 @@ function CadAccessModal({ target, onClose, onSaved }) {
     </div>
   );
 }
+function ManualEnrollmentModal({ target, onClose, onSaved }) {
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [batchSearch, setBatchSearch] = useState("");
+
+  const [form, setForm] = useState({
+    student_id: "",
+    batch_id: target.batch.id,
+    enrolled_price: "",
+    original_price: "",
+    registration_paid: true,
+    payment_ref: "",
+    emi1_amount: "",
+    emi1_due_date: "",
+    emi2_amount: "",
+    emi2_due_date: "",
+    emi3_amount: "",
+    emi3_due_date: "",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    const run = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await adminApi.manualEnrollmentBatches();
+
+        if (!active) return;
+
+        setBatches(response.data || []);
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Could not load batches.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const update = (key, value) => {
+    setError("");
+
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const selectedBatch = batches.find((batch) => batch.id === form.batch_id);
+
+  const selectBatch = (batchId) => {
+    const batch = batches.find((item) => item.id === batchId);
+
+    const suggestedPrice =
+      Number(batch?.offer_price || 0) ||
+      Number(batch?.original_price || 0) ||
+      Number(batch?.course?.price || 0) ||
+      0;
+
+    setForm((current) => ({
+      ...current,
+      batch_id: batchId,
+      enrolled_price: suggestedPrice || "",
+      original_price:
+        Number(batch?.original_price || 0) ||
+        Number(batch?.course?.price || 0) ||
+        suggestedPrice ||
+        "",
+    }));
+  };
+
+  const registrationAmount = form.registration_paid ? 999 : 0;
+
+  const requiredEmiTotal = Math.max(
+    0,
+    Number(form.enrolled_price || 0) - registrationAmount,
+  );
+
+  const enteredEmiTotal =
+    Number(form.emi1_amount || 0) +
+    Number(form.emi2_amount || 0) +
+    Number(form.emi3_amount || 0);
+
+  const remaining = requiredEmiTotal - enteredEmiTotal;
+
+  const filteredBatches = useMemo(() => {
+    const query = batchSearch.trim().toLowerCase();
+
+    if (!query) return batches;
+
+    return batches.filter((batch) => {
+      const value =
+        `${batch.name} ${batch.course?.name} ${batch.status}`.toLowerCase();
+
+      return value.includes(query);
+    });
+  }, [batches, batchSearch]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+
+    if (!form.batch_id) {
+      setError("Select a batch.");
+      return;
+    }
+
+    if (!Number(form.enrolled_price || 0)) {
+      setError("Enter the agreed course fee.");
+      return;
+    }
+
+    if (remaining !== 0) {
+      setError(`EMI amounts must total ${money(requiredEmiTotal)}.`);
+      return;
+    }
+
+    const installments = [
+      {
+        installment_no: 1,
+        label: "First EMI",
+        amount: Number(form.emi1_amount || 0),
+        due_date: form.emi1_due_date || null,
+      },
+      {
+        installment_no: 2,
+        label: "Second EMI",
+        amount: Number(form.emi2_amount || 0),
+        due_date: form.emi2_due_date || null,
+      },
+      {
+        installment_no: 3,
+        label: "Third EMI",
+        amount: Number(form.emi3_amount || 0),
+        due_date: form.emi3_due_date || null,
+      },
+    ].filter((item) => item.amount > 0);
+
+    try {
+      setSaving(true);
+      setError("");
+
+      await adminApi.createManualEnrollment(target.student.id, {
+        batch_id: target.batch.id,
+        batch_id: form.batch_id,
+        enrolled_price: Number(form.enrolled_price),
+        original_price: Number(form.original_price || form.enrolled_price),
+        registration_paid: Boolean(form.registration_paid),
+        payment_ref: form.payment_ref.trim(),
+        installments,
+      });
+
+      await onSaved();
+    } catch (err) {
+      setError(err.message || "Could not add student to batch.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50 p-4">
+      <form
+        onSubmit={submit}
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+
+                <h3 className="truncate text-sm font-black text-dct-dark">
+                  {batch.name}
+                </h3>
+              </div>
+
+              <p className="mt-1 text-xs text-gray-500">
+                {active} active · {disabled} disabled · EMI received{" "}
+                {money(received)} · Pending {money(pending)} · Overdue{" "}
+                {money(overdue)}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              onManualEnrollment({
+                batch,
+              })
+            }
+            className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
+          >
+            Add Student
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-6">
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800">
+            Admin can select an old, active, upcoming or completed batch. This
+            will not reopen the batch on the public registration page.
+          </div>
+
+          <label className="block">
+            <span className="text-xs font-black uppercase text-gray-500">
+              Search batch
+            </span>
+
+            <input
+              value={batchSearch}
+              onChange={(event) => setBatchSearch(event.target.value)}
+              placeholder="Search July batch, Plastic Product Design..."
+              className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+            />
+          </label>
+
+          <label className="mt-4 block">
+            <span className="text-xs font-black uppercase text-gray-500">
+              Select Batch
+            </span>
+
+            <select
+              value={form.batch_id}
+              onChange={(event) => selectBatch(event.target.value)}
+              className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold"
+            >
+              <option value="">Select an existing batch</option>
+
+              {filteredBatches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {batch.course?.name} — {batch.name} —{" "}
+                  {fmtDate(batch.start_date)} — {batch.status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {selectedBatch && (
+            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
+              <p className="font-black text-dct-dark">{selectedBatch.name}</p>
+
+              <p className="mt-1 text-xs text-gray-600">
+                {selectedBatch.course?.name} · Starts{" "}
+                {fmtDate(selectedBatch.start_date)} · {selectedBatch.status}
+              </p>
+
+              {new Date(selectedBatch.start_date) < new Date() && (
+                <p className="mt-2 text-xs font-bold text-amber-700">
+                  This batch has already started. The student will receive
+                  access to its existing sessions.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Agreed Course Fee
+              </span>
+
+              <input
+                type="number"
+                min="1"
+                value={form.enrolled_price}
+                onChange={(event) =>
+                  update("enrolled_price", event.target.value)
+                }
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold"
+              />
+            </label>
+
+            <label>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Original Price
+              </span>
+
+              <input
+                type="number"
+                min="1"
+                value={form.original_price}
+                onChange={(event) =>
+                  update("original_price", event.target.value)
+                }
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold"
+              />
+            </label>
+          </div>
+
+          <label className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 p-4">
+            <input
+              type="checkbox"
+              checked={form.registration_paid}
+              onChange={(event) =>
+                update("registration_paid", event.target.checked)
+              }
+              className="h-5 w-5 accent-dct-primary"
+            />
+
+            <div>
+              <p className="text-sm font-black text-dct-dark">
+                ₹999 registration already paid
+              </p>
+
+              <p className="text-xs text-gray-500">
+                Uncheck only when the student has not paid registration.
+              </p>
+            </div>
+          </label>
+
+          <label className="mt-4 block">
+            <span className="text-xs font-black uppercase text-gray-500">
+              Payment Reference Optional
+            </span>
+
+            <input
+              value={form.payment_ref}
+              onChange={(event) => update("payment_ref", event.target.value)}
+              placeholder="UPI reference, cash, old receipt..."
+              className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+            />
+          </label>
+
+          <div className="mt-5 rounded-2xl border border-gray-100 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-black text-dct-dark">
+                  EMI Structure
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  EMI total required: {money(requiredEmiTotal)}
+                </p>
+              </div>
+            </div>
+
+            {[
+              ["emi1_amount", "emi1_due_date", "First EMI"],
+              ["emi2_amount", "emi2_due_date", "Second EMI"],
+              ["emi3_amount", "emi3_due_date", "Third EMI"],
+            ].map(([amountKey, dateKey, label]) => (
+              <div
+                key={amountKey}
+                className="mb-3 grid grid-cols-[1fr_160px] gap-3"
+              >
+                <label>
+                  <span className="text-[10px] font-black uppercase text-gray-500">
+                    {label} Amount
+                  </span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    value={form[amountKey]}
+                    onChange={(event) => update(amountKey, event.target.value)}
+                    className="mt-1 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                  />
+                </label>
+
+                <label>
+                  <span className="text-[10px] font-black uppercase text-gray-500">
+                    Due Date
+                  </span>
+
+                  <input
+                    type="date"
+                    value={form[dateKey]}
+                    onChange={(event) => update(dateKey, event.target.value)}
+                    className="mt-1 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                  />
+                </label>
+              </div>
+            ))}
+
+            <div
+              className={`mt-3 rounded-xl p-3 text-sm font-bold ${
+                remaining === 0
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
+            >
+              {remaining === 0
+                ? "EMI total matches the required balance."
+                : remaining > 0
+                  ? `${money(remaining)} still needs to be allocated.`
+                  : `EMI exceeds required balance by ${money(
+                      Math.abs(remaining),
+                    )}.`}
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-600">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 p-5">
+          <button
+            type="submit"
+            disabled={loading || saving || !form.batch_id || remaining !== 0}
+            className="h-12 w-full rounded-xl bg-dct-primary font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
+          >
+            {saving ? "Adding Student..." : "Add Student to Batch"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function BatchGroup({
   batch,
@@ -594,6 +1023,7 @@ function BatchGroup({
   onToggle,
   onEditEmi,
   onManageCadAccess,
+  onManualEnrollment,
   savingPaymentId,
 }) {
   const [open, setOpen] = useState(false);
@@ -639,6 +1069,18 @@ function BatchGroup({
             {money(received)} · Pending {money(pending)} · Overdue{" "}
             {money(overdue)}
           </p>
+
+          <button
+            type="button"
+            onClick={(event) =>
+              onManualEnrollment({
+                batch,
+              })
+            }
+            className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700"
+          >
+            Add Student
+          </button>
         </div>
       </button>
 
