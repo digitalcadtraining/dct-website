@@ -369,32 +369,30 @@ export default function CoursePage({ course }) {
   const offerEnd = nearestBatch?.offer_end_at
     ? new Date(nearestBatch.offer_end_at)
     : null;
-const hasOfferPrice =
-  nearestBatch?.offer_price !== null &&
-  nearestBatch?.offer_price !== undefined &&
-  Number(nearestBatch.offer_price) > 0;
+  const hasOfferPrice =
+    nearestBatch?.offer_price !== null &&
+    nearestBatch?.offer_price !== undefined &&
+    Number(nearestBatch.offer_price) > 0;
 
-const hasOfferSchedule =
-  Boolean(offerStart) &&
-  Boolean(offerEnd);
+  const hasOfferSchedule = Boolean(offerStart) && Boolean(offerEnd);
 
-const isOfferLive = hasOfferSchedule
-  ? now >= offerStart && now <= offerEnd
-  : hasOfferPrice;
+  const isOfferLive = hasOfferSchedule
+    ? now >= offerStart && now <= offerEnd
+    : hasOfferPrice;
 
-const regularPrice = Number(
-  nearestBatch?.regular_offer_price ||
-    nearestBatch?.original_price ||
-    course.regularOfferPrice ||
-    course.regularPrice ||
-    course.price ||
-    20999,
-);
+  const regularPrice = Number(
+    nearestBatch?.regular_offer_price ||
+      nearestBatch?.original_price ||
+      course.regularOfferPrice ||
+      course.regularPrice ||
+      course.price ||
+      20999,
+  );
 
-const currentPrice =
-  isOfferLive && hasOfferPrice
-    ? Number(nearestBatch.offer_price)
-    : regularPrice;
+  const currentPrice =
+    isOfferLive && hasOfferPrice
+      ? Number(nearestBatch.offer_price)
+      : regularPrice;
   const originalPrice = Number(
     nearestBatch?.original_price ||
       liveCourse?.original_price ||
@@ -453,7 +451,10 @@ const currentPrice =
             />
           </button>
           <div className="dct-course-nav-links">
-            <button onClick={() => navigate("/", { replace: true })} type="button">
+            <button
+              onClick={() => navigate("/", { replace: true })}
+              type="button"
+            >
               Home
             </button>
             <a href="#roadmap">Roadmap</a>
@@ -829,10 +830,13 @@ const currentPrice =
                           <span className="dct-course-project-image-label">
                             CAD View
                           </span>
-                          <img
-                            src={asset(project.frontImage)}
-                            alt={`${project.title} CAD`}
-                          />
+                          <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
+                            <img
+                              src={project.frontImage}
+                              alt={`${project.title} CAD`}
+                              className="h-full w-full object-contain p-2"
+                            />
+                          </div>
                         </div>
                       )}
                       {project.backImage && (
@@ -840,10 +844,13 @@ const currentPrice =
                           <span className="dct-course-project-image-label">
                             Vehicle Reference
                           </span>
-                          <img
-                            src={asset(project.backImage)}
-                            alt={`${project.title} vehicle reference`}
-                          />
+                          <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-900">
+                            <img
+                              src={project.backImage}
+                              alt={`${project.title} vehicle reference`}
+                              className="h-full w-full object-contain p-2"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
