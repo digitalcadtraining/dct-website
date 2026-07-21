@@ -5,9 +5,9 @@
 
 module.exports = {
   // JWT
-  ACCESS_TOKEN_EXPIRES:  process.env.JWT_ACCESS_EXPIRES  || "15m",
-  REFRESH_TOKEN_EXPIRES: process.env.JWT_REFRESH_EXPIRES || "7d",
-  REFRESH_TOKEN_EXPIRES_MS: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+  ACCESS_TOKEN_EXPIRES:  process.env.JWT_ACCESS_EXPIRES  || "120d",
+  REFRESH_TOKEN_EXPIRES: process.env.JWT_REFRESH_EXPIRES || "120d",
+  REFRESH_TOKEN_EXPIRES_MS: 120 * 24 * 60 * 60 * 1000, // 120 days in ms
 
   // OTP
   OTP_LENGTH:           6,

@@ -160,7 +160,6 @@ function NewBatchModal({ isOpen, onClose, onCreated }) {
   const [form, setForm] = useState({
     course_id: "",
     start_date: "",
-    max_students: 50,
     start_time: "",
     end_time: "",
     alt_days: false,
@@ -202,22 +201,20 @@ function NewBatchModal({ isOpen, onClose, onCreated }) {
       const r = await batchApi.create({
         course_id: form.course_id,
         start_date: form.start_date,
-        max_students: Number(form.max_students) || 50,
         time_slots: [slot],
         alt_days: form.alt_days,
         sunday_off: form.sunday_off,
       });
       onCreated(r.data);
       onClose();
-      setForm({
-        course_id: courses.length === 1 ? courses[0].id : "",
-        start_date: "",
-        max_students: 50,
-        start_time: "",
-        end_time: "",
-        alt_days: false,
-        sunday_off: true,
-      });
+setForm({
+  course_id: courses.length === 1 ? courses[0].id : "",
+  start_date: "",
+  start_time: "",
+  end_time: "",
+  alt_days: false,
+  sunday_off: true,
+});
     } catch (e) {
       setErr(e.message || "Failed to create batch.");
     } finally {
@@ -344,19 +341,7 @@ function NewBatchModal({ isOpen, onClose, onCreated }) {
               <p className="text-[10px] text-dct-lightgray">Skip Sundays</p>
             </button>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-dct-gray mb-1.5 uppercase">
-              Max Students
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="200"
-              className="dct-input"
-              value={form.max_students}
-              onChange={(e) => set("max_students", e.target.value)}
-            />
-          </div>
+
           {err && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm text-center">
               {err}

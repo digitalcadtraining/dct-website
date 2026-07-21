@@ -38,13 +38,13 @@ async function generateTokens(user) {
   const accessToken = jwt.sign(
     { ...payload, tokenType: "access" },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m", jwtid: crypto.randomUUID() }
+    { expiresIn: process.env.JWT_ACCESS_EXPIRES || "120d", jwtid: crypto.randomUUID() }
   );
 
   const rawRefreshToken = jwt.sign(
     { ...payload, tokenType: "refresh" },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d", jwtid: crypto.randomUUID() }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES || "120d", jwtid: crypto.randomUUID() }
   );
 
   await prisma.refreshToken.deleteMany({ where: { user_id: user.id } }).catch(() => {});

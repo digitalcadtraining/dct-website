@@ -194,26 +194,85 @@ async function updateCadAccess(req, res, next) {
     }
 
     const existingEnrollments = await prisma.enrollment.findMany({
-      where: {
-        student_id: student.id,
+where: {
+  student_id: student.id,
+  batch: {
+    course: {
+      slug: {
+        in: [...CAD_COURSE_SLUGS, "cad-software-tools"],
+      },
+    },
+  },
+},
+      include: {
+        installments: {
+          orderBy: {
+            installment_no: "asc",
+          },
+        },
         batch: {
-          course: {
-            slug: {
-              in: CAD_COURSE_SLUGS,
+          select: {
+            id: true,
+            course: {
+              select: {
+                slug: true,
+              },
             },
           },
         },
-      },
-      select: {
-        id: true,
-        batch_id: true,
-        discount_code: true,
       },
     });
 
     const existingByBatch = new Map(
       existingEnrollments.map((item) => [item.batch_id, item]),
     );
+
+    /*
+     * The original purchased CAD enrollment is the enrollment that was not
+     * created through the admin CAD access facility.
+     */
+const mainEnrollment = existingEnrollments.find(
+  (item) =>
+    item.batch?.course?.slug === "cad-software-tools" &&
+    String(item.discount_code || "").toUpperCase() !== ACCESS_MARKER,
+);
+
+    if (!mainEnrollment) {
+      return error(
+        res,
+        400,
+        "Original paid CAD enrollment could not be found for this student.",
+      );
+    }
+
+    /*
+     * Protect the originally purchased course.
+     * It must remain selected.
+     */
+
+
+    /*
+     * Count unique CAD software, not merely the number of batches.
+     */
+    const selectedToolKeys = new Set(
+      selectedBatchIds.map((batchId) => {
+        const batch = validBatchMap.get(batchId);
+        return courseMeta(batch?.course?.slug).key;
+      }),
+    );
+
+    const selectedToolCount = selectedToolKeys.size;
+
+    if (selectedToolCount < 1) {
+      return error(res, 400, "Select at least one CAD software course.");
+    }
+
+    /*
+     * Package pricing:
+     * 1 software = ₹10,000
+     * 2 or 3 software = ₹15,000
+     */
+    const packagePrice = selectedToolCount === 1 ? 10000 : 15000;
 
     const removableAccess = existingEnrollments.filter(
       (item) =>
@@ -234,7 +293,11 @@ async function updateCadAccess(req, res, next) {
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      /*
+       * Remove only access enrollments created by this admin facility.
+       * The student's original purchased enrollment is never removed.
+       */
       if (removableAccess.length > 0) {
         await tx.enrollment.deleteMany({
           where: {
@@ -245,6 +308,10 @@ async function updateCadAccess(req, res, next) {
         });
       }
 
+      /*
+       * Create ₹0 enrollments for additional software.
+       * Financial value remains attached to the original enrollment.
+       */
       for (const batchId of selectedBatchIds) {
         if (existingByBatch.has(batchId)) {
           continue;
@@ -263,20 +330,113 @@ async function updateCadAccess(req, res, next) {
           },
         });
       }
+
+      /*
+       * Update the total package price on the original paid enrollment.
+       */
+      await tx.enrollment.update({
+        where: {
+          id: mainEnrollment.id,
+        },
+        data: {
+          enrolled_price: packagePrice,
+          original_price: packagePrice,
+        },
+      });
+
+      /*
+       * Registration payment is treated as ₹999 when the original
+       * enrollment payment_status is PAID.
+       */
+      const registrationPaid =
+        mainEnrollment.payment_status === "PAID" ? 999 : 0;
+
+      const paidInstallments = mainEnrollment.installments.filter(
+        (item) =>
+          String(item.status || "").toUpperCase() === "PAID" ||
+          Boolean(item.paid_at),
+      );
+
+      const paidEmiTotal = paidInstallments.reduce(
+        (sum, item) => sum + Number(item.amount || 0),
+        0,
+      );
+
+      const totalPaid = registrationPaid + paidEmiTotal;
+
+      const remainingAmount = Math.max(0, packagePrice - totalPaid);
+
+      const unpaidInstallments = mainEnrollment.installments.filter(
+        (item) =>
+          String(item.status || "").toUpperCase() !== "PAID" &&
+          !item.paid_at,
+      );
+
+      /*
+       * Replace only unpaid EMI records.
+       * Paid installments and their receipts remain untouched.
+       */
+      if (unpaidInstallments.length > 0) {
+        await tx.enrollmentInstallment.deleteMany({
+          where: {
+            id: {
+              in: unpaidInstallments.map((item) => item.id),
+            },
+          },
+        });
+      }
+
+      if (remainingAmount > 0) {
+        const highestPaidInstallmentNumber = paidInstallments.reduce(
+          (highest, item) =>
+            Math.max(highest, Number(item.installment_no || 0)),
+          0,
+        );
+
+        await tx.enrollmentInstallment.create({
+          data: {
+            enrollment_id: mainEnrollment.id,
+            installment_no: highestPaidInstallmentNumber + 1,
+            label:
+              selectedToolCount > 1
+                ? "CAD Combo Upgrade Balance"
+                : "CAD Course Balance",
+            amount: remainingAmount,
+            due_date: null,
+            status: "PENDING",
+            notes: `CAD package updated to ${selectedToolCount} software course(s).`,
+          },
+        });
+      }
+
+      return {
+        packagePrice,
+        selectedToolCount,
+        totalPaid,
+        remainingAmount,
+      };
     });
 
     return success(
       res,
       200,
-      "CAD software access updated successfully.",
+      "CAD software access and package fee updated successfully.",
       {
         student_id: student.id,
         selected_batch_ids: selectedBatchIds,
+        selected_tool_count: result.selectedToolCount,
+        package_price: result.packagePrice,
+        already_paid: result.totalPaid,
+        remaining_payable: result.remainingAmount,
       },
     );
   } catch (err) {
     if (err.code === "P2002") {
-      return error(res, 409, "This software access already exists.");
+      return error(
+        res,
+        409,
+        "This software access or EMI installment already exists.",
+      );
     }
 
     next(err);
