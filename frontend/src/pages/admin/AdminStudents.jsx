@@ -11,6 +11,7 @@ import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { adminApi } from "../../services/api.js";
 import { cadToolAccessApi } from "../../services/cadToolAccessApi.js";
+import { manualRegistrationApi } from "../../services/manualRegistrationApi.js";
 
 const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
 
@@ -587,173 +588,117 @@ function CadAccessModal({ target, onClose, onSaved }) {
   );
 }
 function ManualEnrollmentModal({ target, onClose, onSaved }) {
-  const [batches, setBatches] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const batch = target.batch;
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    coupon_code: "",
+    registration_amount: "999",
+    payment_ref: "",
+  });
+  const [preview, setPreview] = useState(null);
+  const [loadingPrice, setLoadingPrice] = useState(true);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [batchSearch, setBatchSearch] = useState("");
-
-  const [form, setForm] = useState({
-    student_id: "",
-    batch_id: target.batch.id,
-    enrolled_price: "",
-    original_price: "",
-    registration_paid: true,
-    payment_ref: "",
-    emi1_amount: "",
-    emi1_due_date: "",
-    emi2_amount: "",
-    emi2_due_date: "",
-    emi3_amount: "",
-    emi3_due_date: "",
-  });
-
-  useEffect(() => {
-    let active = true;
-
-    const run = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const response = await adminApi.manualEnrollmentBatches();
-
-        if (!active) return;
-
-        setBatches(response.data || []);
-      } catch (err) {
-        if (active) {
-          setError(err.message || "Could not load batches.");
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const update = (key, value) => {
     setError("");
-
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setSuccessMessage("");
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const selectedBatch = batches.find((batch) => batch.id === form.batch_id);
-
-  const selectBatch = (batchId) => {
-    const batch = batches.find((item) => item.id === batchId);
-
-    const suggestedPrice =
-      Number(batch?.offer_price || 0) ||
-      Number(batch?.original_price || 0) ||
-      Number(batch?.course?.price || 0) ||
-      0;
-
-    setForm((current) => ({
-      ...current,
-      batch_id: batchId,
-      enrolled_price: suggestedPrice || "",
-      original_price:
-        Number(batch?.original_price || 0) ||
-        Number(batch?.course?.price || 0) ||
-        suggestedPrice ||
-        "",
-    }));
+  const calculate = async (couponCode = form.coupon_code) => {
+    try {
+      setError("");
+      const response = await manualRegistrationApi.preview({
+        batch_id: batch.id,
+        coupon_code: String(couponCode || "").trim(),
+        registration_amount: Number(form.registration_amount || 0),
+      });
+      setPreview(response.data || null);
+      return response.data || null;
+    } catch (err) {
+      setPreview(null);
+      setError(err.message || "Could not calculate registration price.");
+      return null;
+    }
   };
 
-  const registrationAmount = form.registration_paid ? 999 : 0;
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      try {
+        setLoadingPrice(true);
+        const response = await manualRegistrationApi.preview({
+          batch_id: batch.id,
+          coupon_code: "",
+          registration_amount: 999,
+        });
+        if (active) setPreview(response.data || null);
+      } catch (err) {
+        if (active) setError(err.message || "Could not load batch price.");
+      } finally {
+        if (active) setLoadingPrice(false);
+      }
+    };
+    run();
+    return () => {
+      active = false;
+    };
+  }, [batch.id]);
 
-  const requiredEmiTotal = Math.max(
-    0,
-    Number(form.enrolled_price || 0) - registrationAmount,
-  );
+  useEffect(() => {
+    if (!loadingPrice) {
+      const timer = setTimeout(() => calculate(form.coupon_code), 300);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [form.registration_amount]);
 
-  const enteredEmiTotal =
-    Number(form.emi1_amount || 0) +
-    Number(form.emi2_amount || 0) +
-    Number(form.emi3_amount || 0);
-
-  const remaining = requiredEmiTotal - enteredEmiTotal;
-
-  const filteredBatches = useMemo(() => {
-    const query = batchSearch.trim().toLowerCase();
-
-    if (!query) return batches;
-
-    return batches.filter((batch) => {
-      const value =
-        `${batch.name} ${batch.course?.name} ${batch.status}`.toLowerCase();
-
-      return value.includes(query);
-    });
-  }, [batches, batchSearch]);
+  const applyCoupon = async () => {
+    try {
+      setApplyingCoupon(true);
+      const result = await calculate(form.coupon_code);
+      if (result && form.coupon_code.trim()) {
+        setSuccessMessage(`Coupon ${result.discount_code || form.coupon_code.trim().toUpperCase()} applied.`);
+      }
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
 
-    if (!form.batch_id) {
-      setError("Select a batch.");
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
+      setError("Name, email and phone number are required.");
       return;
     }
-
-    if (!Number(form.enrolled_price || 0)) {
-      setError("Enter the agreed course fee.");
+    if (form.password.length < 6) {
+      setError("Password must contain at least 6 characters.");
       return;
     }
-
-    if (remaining !== 0) {
-      setError(`EMI amounts must total ${money(requiredEmiTotal)}.`);
-      return;
-    }
-
-    const installments = [
-      {
-        installment_no: 1,
-        label: "First EMI",
-        amount: Number(form.emi1_amount || 0),
-        due_date: form.emi1_due_date || null,
-      },
-      {
-        installment_no: 2,
-        label: "Second EMI",
-        amount: Number(form.emi2_amount || 0),
-        due_date: form.emi2_due_date || null,
-      },
-      {
-        installment_no: 3,
-        label: "Third EMI",
-        amount: Number(form.emi3_amount || 0),
-        due_date: form.emi3_due_date || null,
-      },
-    ].filter((item) => item.amount > 0);
 
     try {
       setSaving(true);
       setError("");
-
-      await adminApi.createManualEnrollment(target.student.id, {
-        batch_id: target.batch.id,
-        batch_id: form.batch_id,
-        enrolled_price: Number(form.enrolled_price),
-        original_price: Number(form.original_price || form.enrolled_price),
-        registration_paid: Boolean(form.registration_paid),
+      await manualRegistrationApi.create({
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        password: form.password,
+        batch_id: batch.id,
+        coupon_code: form.coupon_code.trim(),
+        registration_amount: Number(form.registration_amount || 0),
         payment_ref: form.payment_ref.trim(),
-        installments,
       });
-
       await onSaved();
     } catch (err) {
-      setError(err.message || "Could not add student to batch.");
+      setError(err.message || "Could not register student.");
     } finally {
       setSaving(false);
     }
@@ -765,233 +710,141 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
         onSubmit={submit}
         className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
       >
-        <div className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-gray-50">
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 p-6">
+          <div>
+            <h2 className="text-xl font-black text-dct-dark">
+              Register New Student
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">{batch.name}</p>
+          </div>
           <button
             type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            onClick={onClose}
+            className="rounded-xl bg-gray-100 p-2 text-gray-600"
           >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-
-                <h3 className="truncate text-sm font-black text-dct-dark">
-                  {batch.name}
-                </h3>
-              </div>
-
-              <p className="mt-1 text-xs text-gray-500">
-                {active} active · {disabled} disabled · EMI received{" "}
-                {money(received)} · Pending {money(pending)} · Overdue{" "}
-                {money(overdue)}
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              onManualEnrollment({
-                batch,
-              })
-            }
-            className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
-          >
-            Add Student
+            <X size={18} />
           </button>
         </div>
 
         <div className="overflow-y-auto p-6">
-          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800">
-            Admin can select an old, active, upcoming or completed batch. This
-            will not reopen the batch on the public registration page.
+          <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <p className="text-sm font-black text-dct-dark">{batch.name}</p>
+            <p className="mt-1 text-xs text-gray-600">
+              {batch.course?.name} · Starts {fmtDate(batch.start_date)} · {batch.status}
+            </p>
+            <p className="mt-2 text-xs text-blue-800">
+              Admin registration skips OTP and online payment. The entered registration amount is recorded as received.
+            </p>
           </div>
 
-          <label className="block">
-            <span className="text-xs font-black uppercase text-gray-500">
-              Search batch
-            </span>
-
-            <input
-              value={batchSearch}
-              onChange={(event) => setBatchSearch(event.target.value)}
-              placeholder="Search July batch, Plastic Product Design..."
-              className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
-            />
-          </label>
-
-          <label className="mt-4 block">
-            <span className="text-xs font-black uppercase text-gray-500">
-              Select Batch
-            </span>
-
-            <select
-              value={form.batch_id}
-              onChange={(event) => selectBatch(event.target.value)}
-              className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold"
-            >
-              <option value="">Select an existing batch</option>
-
-              {filteredBatches.map((batch) => (
-                <option key={batch.id} value={batch.id}>
-                  {batch.course?.name} — {batch.name} —{" "}
-                  {fmtDate(batch.start_date)} — {batch.status}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedBatch && (
-            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-              <p className="font-black text-dct-dark">{selectedBatch.name}</p>
-
-              <p className="mt-1 text-xs text-gray-600">
-                {selectedBatch.course?.name} · Starts{" "}
-                {fmtDate(selectedBatch.start_date)} · {selectedBatch.status}
-              </p>
-
-              {new Date(selectedBatch.start_date) < new Date() && (
-                <p className="mt-2 text-xs font-bold text-amber-700">
-                  This batch has already started. The student will receive
-                  access to its existing sessions.
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label>
-              <span className="text-xs font-black uppercase text-gray-500">
-                Agreed Course Fee
-              </span>
-
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="sm:col-span-2">
+              <span className="text-xs font-black uppercase text-gray-500">Student Name *</span>
               <input
-                type="number"
-                min="1"
-                value={form.enrolled_price}
-                onChange={(event) =>
-                  update("enrolled_price", event.target.value)
-                }
-                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold"
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                placeholder="Full name"
               />
             </label>
-
             <label>
-              <span className="text-xs font-black uppercase text-gray-500">
-                Original Price
-              </span>
-
+              <span className="text-xs font-black uppercase text-gray-500">Email *</span>
               <input
-                type="number"
-                min="1"
-                value={form.original_price}
-                onChange={(event) =>
-                  update("original_price", event.target.value)
-                }
-                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold"
+                type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                placeholder="student@gmail.com"
+              />
+            </label>
+            <label>
+              <span className="text-xs font-black uppercase text-gray-500">Phone Number *</span>
+              <input
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                placeholder="10-digit WhatsApp number"
+              />
+            </label>
+            <label className="sm:col-span-2">
+              <span className="text-xs font-black uppercase text-gray-500">Login Password *</span>
+              <input
+                type="text"
+                value={form.password}
+                onChange={(e) => update("password", e.target.value)}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                placeholder="Create password for student login"
               />
             </label>
           </div>
-
-          <label className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 p-4">
-            <input
-              type="checkbox"
-              checked={form.registration_paid}
-              onChange={(event) =>
-                update("registration_paid", event.target.checked)
-              }
-              className="h-5 w-5 accent-dct-primary"
-            />
-
-            <div>
-              <p className="text-sm font-black text-dct-dark">
-                ₹999 registration already paid
-              </p>
-
-              <p className="text-xs text-gray-500">
-                Uncheck only when the student has not paid registration.
-              </p>
-            </div>
-          </label>
-
-          <label className="mt-4 block">
-            <span className="text-xs font-black uppercase text-gray-500">
-              Payment Reference Optional
-            </span>
-
-            <input
-              value={form.payment_ref}
-              onChange={(event) => update("payment_ref", event.target.value)}
-              placeholder="UPI reference, cash, old receipt..."
-              className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
-            />
-          </label>
 
           <div className="mt-5 rounded-2xl border border-gray-100 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-black text-dct-dark">
-                  EMI Structure
-                </p>
-
-                <p className="text-xs text-gray-500">
-                  EMI total required: {money(requiredEmiTotal)}
-                </p>
-              </div>
+            <p className="text-sm font-black text-dct-dark">Price & Coupon</p>
+            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+              <input
+                value={form.coupon_code}
+                onChange={(e) => update("coupon_code", e.target.value.toUpperCase())}
+                className="h-11 rounded-xl border border-gray-200 px-3 text-sm font-bold"
+                placeholder="Coupon code (optional)"
+              />
+              <button
+                type="button"
+                onClick={applyCoupon}
+                disabled={applyingCoupon || !form.coupon_code.trim()}
+                className="rounded-xl bg-dct-primary px-5 text-xs font-black text-white disabled:bg-gray-400"
+              >
+                {applyingCoupon ? "Applying..." : "Apply"}
+              </button>
             </div>
 
-            {[
-              ["emi1_amount", "emi1_due_date", "First EMI"],
-              ["emi2_amount", "emi2_due_date", "Second EMI"],
-              ["emi3_amount", "emi3_due_date", "Third EMI"],
-            ].map(([amountKey, dateKey, label]) => (
-              <div
-                key={amountKey}
-                className="mb-3 grid grid-cols-[1fr_160px] gap-3"
-              >
-                <label>
-                  <span className="text-[10px] font-black uppercase text-gray-500">
-                    {label} Amount
-                  </span>
+            {successMessage && (
+              <p className="mt-2 text-xs font-bold text-green-700">{successMessage}</p>
+            )}
 
-                  <input
-                    type="number"
-                    min="0"
-                    value={form[amountKey]}
-                    onChange={(event) => update(amountKey, event.target.value)}
-                    className="mt-1 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm"
-                  />
-                </label>
+            <label className="mt-4 block">
+              <span className="text-xs font-black uppercase text-gray-500">
+                Registration Amount Received
+              </span>
+              <input
+                type="number"
+                min="0"
+                value={form.registration_amount}
+                onChange={(e) => update("registration_amount", e.target.value)}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold"
+              />
+            </label>
 
-                <label>
-                  <span className="text-[10px] font-black uppercase text-gray-500">
-                    Due Date
-                  </span>
+            <label className="mt-4 block">
+              <span className="text-xs font-black uppercase text-gray-500">
+                Payment Reference Optional
+              </span>
+              <input
+                value={form.payment_ref}
+                onChange={(e) => update("payment_ref", e.target.value)}
+                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                placeholder="Cash / UPI reference / receipt note"
+              />
+            </label>
 
-                  <input
-                    type="date"
-                    value={form[dateKey]}
-                    onChange={(event) => update(dateKey, event.target.value)}
-                    className="mt-1 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm"
-                  />
-                </label>
-              </div>
-            ))}
-
-            <div
-              className={`mt-3 rounded-xl p-3 text-sm font-bold ${
-                remaining === 0
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
-              {remaining === 0
-                ? "EMI total matches the required balance."
-                : remaining > 0
-                  ? `${money(remaining)} still needs to be allocated.`
-                  : `EMI exceeds required balance by ${money(
-                      Math.abs(remaining),
-                    )}.`}
+            <div className="mt-4 rounded-xl bg-gray-50 p-4">
+              {loadingPrice ? (
+                <p className="text-sm text-gray-500">Calculating price...</p>
+              ) : preview ? (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span>Original price</span><span className="font-black">{money(preview.original_price)}</span></div>
+                  <div className="flex justify-between"><span>Final course price</span><span className="font-black text-dct-primary">{money(preview.enrolled_price)}</span></div>
+                  <div className="flex justify-between"><span>Registration received</span><span className="font-black text-green-700">{money(preview.registration_amount)}</span></div>
+                  <div className="flex justify-between border-t border-gray-200 pt-2"><span>Remaining balance</span><span className="font-black">{money(preview.balance)}</span></div>
+                  <div className="mt-3 space-y-2">
+                    {(preview.installments || []).map((item) => (
+                      <div key={item.installment_no} className="flex justify-between rounded-lg bg-white px-3 py-2 text-xs">
+                        <span>{item.label} · {fmtDate(item.due_date)}</span>
+                        <span className="font-black">{money(item.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1005,10 +858,10 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
         <div className="border-t border-gray-100 p-5">
           <button
             type="submit"
-            disabled={loading || saving || !form.batch_id || remaining !== 0}
+            disabled={saving || loadingPrice || !preview}
             className="h-12 w-full rounded-xl bg-dct-primary font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            {saving ? "Adding Student..." : "Add Student to Batch"}
+            {saving ? "Registering Student..." : "Register Student & Add to Batch"}
           </button>
         </div>
       </form>
@@ -1052,16 +905,18 @@ function BatchGroup({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-gray-50"
-      >
-        <div>
+      <div className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-gray-50">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="min-w-0 flex-1 text-left"
+        >
           <div className="flex items-center gap-2">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 
-            <h3 className="text-sm font-black text-dct-dark">{batch.name}</h3>
+            <h3 className="truncate text-sm font-black text-dct-dark">
+              {batch.name}
+            </h3>
           </div>
 
           <p className="mt-1 text-xs text-gray-500">
@@ -1069,20 +924,16 @@ function BatchGroup({
             {money(received)} · Pending {money(pending)} · Overdue{" "}
             {money(overdue)}
           </p>
+        </button>
 
-          <button
-            type="button"
-            onClick={(event) =>
-              onManualEnrollment({
-                batch,
-              })
-            }
-            className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700"
-          >
-            Add Student
-          </button>
-        </div>
-      </button>
+        <button
+          type="button"
+          onClick={() => onManualEnrollment({ batch })}
+          className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
+        >
+          Register Student
+        </button>
+      </div>
 
       {open && (
         <div className="overflow-x-auto border-t border-gray-100">
@@ -1252,6 +1103,7 @@ export default function AdminStudents() {
   const [savingPaymentId, setSavingPaymentId] = useState("");
   const [emiTarget, setEmiTarget] = useState(null);
   const [cadAccessTarget, setCadAccessTarget] = useState(null);
+  const [manualEnrollmentTarget, setManualEnrollmentTarget] = useState(null);
 
   const load = async (silent = false) => {
     if (!silent) {
@@ -1309,6 +1161,7 @@ export default function AdminStudents() {
 
         if (!map.has(key)) {
           map.set(key, {
+            ...batch,
             id: key,
             name: batch.name || "No Batch",
             items: [],
@@ -1378,6 +1231,11 @@ export default function AdminStudents() {
     await load(true);
   };
 
+  const manualEnrollmentSaved = async () => {
+    setManualEnrollmentTarget(null);
+    await load(true);
+  };
+
   const summary = payload.summary || {};
 
   return (
@@ -1395,6 +1253,14 @@ export default function AdminStudents() {
           target={cadAccessTarget}
           onClose={() => setCadAccessTarget(null)}
           onSaved={cadAccessSaved}
+        />
+      )}
+
+      {manualEnrollmentTarget && (
+        <ManualEnrollmentModal
+          target={manualEnrollmentTarget}
+          onClose={() => setManualEnrollmentTarget(null)}
+          onSaved={manualEnrollmentSaved}
         />
       )}
 
@@ -1472,6 +1338,7 @@ export default function AdminStudents() {
                 onToggle={toggle}
                 onEditEmi={setEmiTarget}
                 onManageCadAccess={setCadAccessTarget}
+                onManualEnrollment={setManualEnrollmentTarget}
                 savingPaymentId={savingPaymentId}
               />
             ))}

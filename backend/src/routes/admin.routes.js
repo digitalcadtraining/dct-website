@@ -2,8 +2,9 @@ const router = require("express").Router();
 const { authenticate, authorize } = require("../middleware/auth");
 const admin = require("../controllers/admin.controller");
 const cadToolAccess = require("../controllers/cadToolAccess.controller");
-
-const manualEnrollment = require("../controllers/manualEnrollment.controller");
+const manualRegistration = require(
+  "../controllers/manualRegistration.controller",
+);
 
 router.use(authenticate, authorize("ADMIN"));
 
@@ -12,16 +13,10 @@ router.get("/applications", admin.listApplications);
 router.post("/applications/:id/approve", admin.approveApplication);
 router.post("/applications/:id/reject", admin.rejectApplication);
 router.get("/students", admin.listStudents);
-router.get(
-  "/manual-enrollments/batches",
-  manualEnrollment.listManualEnrollmentBatches,
-);
 
-router.post(
-  "/manual-enrollments/students/:studentId",
-  manualEnrollment.createManualEnrollment,
-);
-router.get("/installments/tracker", admin.feeTracker);
+// Use the registration-aware tracker so manually received registration
+// amounts are counted correctly. Existing EMI/receipt behaviour is preserved.
+router.get("/installments/tracker", manualRegistration.feeTracker);
 router.patch("/installments/:id/paid", admin.markInstallmentPaid);
 router.patch("/installments/:id/pending", admin.markInstallmentPending);
 router.patch(
@@ -29,12 +24,24 @@ router.patch(
   admin.updateEnrollmentInstallments,
 );
 
-/*
- * Admin-only CAD Software Tools access.
- * This does not change registration, payment, EMI, receipt,
- * Plastic Product Design or BIW logic.
- */
-router.get("/cad-tools/students/:studentId/access", cadToolAccess.getCadAccess);
+// Admin-only direct student registration. No OTP or online payment is used.
+router.get(
+  "/manual-registrations/batches",
+  manualRegistration.listManualRegistrationBatches,
+);
+router.post(
+  "/manual-registrations/preview",
+  manualRegistration.previewManualRegistration,
+);
+router.post(
+  "/manual-registrations",
+  manualRegistration.createManualRegistration,
+);
+
+router.get(
+  "/cad-tools/students/:studentId/access",
+  cadToolAccess.getCadAccess,
+);
 router.put(
   "/cad-tools/students/:studentId/access",
   cadToolAccess.updateCadAccess,
