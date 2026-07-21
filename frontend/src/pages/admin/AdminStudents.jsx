@@ -858,7 +858,12 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
         <div className="border-t border-gray-100 p-5">
           <button
             type="submit"
-            disabled={saving || loadingPrice || !preview}
+            disabled={
+              saving ||
+              loadingPrice ||
+              !preview ||
+              Number(preview?.enrolled_price || 0) <= 0
+            }
             className="h-12 w-full rounded-xl bg-dct-primary font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {saving ? "Registering Student..." : "Register Student & Add to Batch"}

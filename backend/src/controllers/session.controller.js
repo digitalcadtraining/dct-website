@@ -474,28 +474,65 @@ const assignmentController = {
 
       const batchFolderId = await drive.findOrCreateFolder({
         parentFolderId: process.env.GOOGLE_DRIVE_SUBMISSIONS_FOLDER_ID,
-        folderName:
-          assignment.batch?.name || `Batch-${assignment.batch_id}`,
+        folderName: assignment.batch?.name || `Batch-${assignment.batch_id}`,
         appProperties: {
           type: "DCT_BATCH_SUBMISSIONS",
           batchId: assignment.batch_id,
         },
       });
 
-      const studentLabel =
-        req.user.name ||
-        req.user.email ||
-        `Student-${req.user.id}`;
-
       const sessionLabel = assignment.session?.session_number
         ? `Session-${assignment.session.session_number}`
-        : "Session";
+        : "General Assignment";
+
+      const cleanAssignmentTitle = String(assignment.title || "Assignment")
+        .replace(/[\\/:*?"<>|]/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const assignmentFolderName =
+        `${sessionLabel} - ${cleanAssignmentTitle}`.slice(0, 150);
+
+      /*
+       * First student submission creates this folder.
+       * Every later submission for the same assignment reuses it.
+       *
+       * assignmentId in appProperties ensures two assignments with the same
+       * visible title do not accidentally share a folder.
+       */
+      const assignmentFolderId = await drive.findOrCreateFolder({
+        parentFolderId: batchFolderId,
+        folderName: assignmentFolderName,
+        appProperties: {
+          type: "DCT_ASSIGNMENT_SUBMISSIONS",
+          assignmentId: assignment.id,
+          batchId: assignment.batch_id,
+          sessionId: assignment.session_id || "",
+        },
+      });
+
+      const studentLabel = String(
+        req.user.name || req.user.email || `Student-${req.user.id}`,
+      )
+        .replace(/[\\/:*?"<>|]/g, "-")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const originalFileName = String(
+        req.file.originalname || "assignment-file",
+      )
+        .replace(/[\\/:*?"<>|]/g, "-")
+        .trim();
 
       const driveFile = await drive.uploadFile({
         localPath: req.file.path,
-        originalName: `${studentLabel} - ${sessionLabel} - ${req.file.originalname}`,
+        originalName:
+          `${studentLabel} - ${sessionLabel} - ${originalFileName}`.slice(
+            0,
+            220,
+          ),
         mimeType: req.file.mimetype,
-        folderId: batchFolderId,
+        folderId: assignmentFolderId,
         appProperties: {
           type: "STUDENT_SUBMISSION",
           assignmentId: assignment.id,

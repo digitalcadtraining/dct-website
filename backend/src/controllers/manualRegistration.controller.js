@@ -16,6 +16,13 @@ function asMoney(value, fallback = 0) {
   return Number.isFinite(number) && number >= 0 ? number : fallback;
 }
 
+// Course and coupon prices must always be greater than zero.
+// This prevents old/empty batch offer values from turning the final fee into ₹0.
+function asPositiveMoney(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
 function addDays(value, days) {
   const date = new Date(value || Date.now());
   date.setDate(date.getDate() + days);
@@ -24,11 +31,9 @@ function addDays(value, days) {
 
 function activeBatchPrice(batch) {
   const now = new Date();
-  const originalPrice = asMoney(
-    batch.original_price,
-    asMoney(batch.course?.price),
-  );
-  const offerPrice = asMoney(batch.offer_price);
+  const coursePrice = asPositiveMoney(batch.course?.price, 0);
+  const originalPrice = asPositiveMoney(batch.original_price, coursePrice);
+  const offerPrice = asPositiveMoney(batch.offer_price, 0);
   const offerStart = batch.offer_start_at
     ? new Date(batch.offer_start_at)
     : null;
@@ -75,10 +80,16 @@ async function resolvePrice(batch, couponCode) {
     throw err;
   }
 
-  const couponPrice = asMoney(discount.discount_price, base.currentPrice);
+  const couponPrice = asPositiveMoney(
+    discount.discount_price,
+    base.currentPrice,
+  );
 
   return {
-    original_price: asMoney(discount.original_price, base.originalPrice),
+    original_price: asPositiveMoney(
+      discount.original_price,
+      base.originalPrice,
+    ),
     enrolled_price: Math.min(base.currentPrice, couponPrice),
     discount_code: discount.code,
     discount_row: discount,
@@ -181,6 +192,15 @@ async function previewManualRegistration(req, res, next) {
     if (!batch) return error(res, 404, "Batch not found.");
 
     const pricing = await resolvePrice(batch, coupon_code);
+
+    if (!pricing.enrolled_price || pricing.enrolled_price <= 0) {
+      return error(
+        res,
+        400,
+        "A valid course price could not be found for this batch.",
+      );
+    }
+
     const registrationAmount = asMoney(
       registration_amount,
       DEFAULT_REGISTRATION_AMOUNT,
@@ -256,6 +276,14 @@ async function createManualRegistration(req, res, next) {
     if (!batch) return error(res, 404, "Batch not found.");
 
     const pricing = await resolvePrice(batch, coupon_code);
+
+    if (!pricing.enrolled_price || pricing.enrolled_price <= 0) {
+      return error(
+        res,
+        400,
+        "A valid course price could not be found for this batch.",
+      );
+    }
     const registrationAmount = asMoney(
       registration_amount,
       DEFAULT_REGISTRATION_AMOUNT,
