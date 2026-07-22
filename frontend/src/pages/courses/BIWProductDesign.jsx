@@ -441,6 +441,10 @@ const COURSE = {
     },
   ],
 
+  syllabusPdf: "downloads/biw-product-design-detailed-syllabus.pdf",
+
+  demoYoutubeUrl: "https://www.youtube.com/watch?v=Z6M5xJL9ZHc",
+
   courseFaqs: [
     {
       q: "Do I need prior BIW experience?",
