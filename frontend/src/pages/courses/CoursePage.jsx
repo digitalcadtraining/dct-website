@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { courseApi } from "../../services/api.js";
 
 const C = {
@@ -321,6 +321,7 @@ function RichAnswer({ answer }) {
 
 export default function CoursePage({ course }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [openFaq, setOpenFaq] = useState(0);
   const [activeRange, setActiveRange] = useState(0);
   const [companyPage, setCompanyPage] = useState(0);
@@ -354,6 +355,51 @@ export default function CoursePage({ course }) {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const targetId = location.hash.replace("#", "");
+
+    if (!targetId) {
+      window.scrollTo({
+        top: 0,
+        behavior: "auto",
+      });
+      return;
+    }
+
+    let attempts = 0;
+    let timeoutId;
+
+    const scrollToTarget = () => {
+      const target = document.getElementById(targetId);
+
+      if (target) {
+        const navHeight =
+          document.querySelector(".dct-course-nav")?.offsetHeight || 72;
+
+        const targetTop =
+          target.getBoundingClientRect().top + window.scrollY - navHeight - 16;
+
+        window.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: "smooth",
+        });
+
+        sessionStorage.removeItem("dctScrollToDemo");
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts < 15) {
+        timeoutId = window.setTimeout(scrollToTarget, 100);
+      }
+    };
+
+    timeoutId = window.setTimeout(scrollToTarget, 100);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.pathname, location.hash, course.slug]);
 
   const projects = course.portfolioProjects || course.projects || [];
   const projectLibrary = course.projectLibrary || [];
@@ -450,7 +496,7 @@ export default function CoursePage({ course }) {
     course.demoYoutubeUrl ||
     course.youtubeDemoUrl ||
     course.demoUrl ||
-    "https://youtu.be/lrf4o-zlSKE?si=sdhF5_QlytGesMGu";
+    "https://youtu.be/kZun40PNWjQ?si=txE-QkI0mn47QBLj";
   const demoEmbedUrl = getYoutubeEmbedUrl(demoUrl);
   const companyList = placements.length >= 50 ? placements : DEFAULT_COMPANIES;
   const companyStart = companyPage * 10;
