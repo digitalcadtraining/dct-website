@@ -251,8 +251,8 @@ model Enrollment {
   progress       Int           @default(0)
 
   assignment_rating              Int?
-assignment_feedback            String?
-assignment_feedback_updated_at DateTime?
+  assignment_feedback            String?
+  assignment_feedback_updated_at DateTime?
 
   enrolled_price Decimal?           @db.Decimal(10, 2)
   original_price Decimal?           @db.Decimal(10, 2)

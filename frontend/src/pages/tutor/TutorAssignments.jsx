@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "../../components/layout/AppShell.jsx";
+import StudentProgressTable from "./StudentProgressTable.jsx";
 import {
   Modal,
   Textarea,
@@ -35,7 +36,12 @@ function formatIst(value) {
 }
 
 function getInitial(name = "") {
-  return String(name || "S").trim().charAt(0).toUpperCase() || "S";
+  return (
+    String(name || "S")
+      .trim()
+      .charAt(0)
+      .toUpperCase() || "S"
+  );
 }
 
 function ProgressBar({ value = 0 }) {
@@ -66,9 +72,7 @@ function SummaryCard({ icon: Icon, label, value, helper }) {
         <div>
           <p className="text-xs font-semibold text-dct-gray">{label}</p>
           <p className="mt-1 text-2xl font-extrabold text-dct-dark">{value}</p>
-          {helper && (
-            <p className="mt-1 text-[11px] text-dct-gray">{helper}</p>
-          )}
+          {helper && <p className="mt-1 text-[11px] text-dct-gray">{helper}</p>}
         </div>
 
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-dct-primary">
@@ -412,6 +416,7 @@ function StudentCard({ item, expanded, onToggle, onFeedback }) {
 }
 
 export default function TutorAssignments() {
+  const [viewMode, setViewMode] = useState("TABLE");
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useState("");
   const [progressData, setProgressData] = useState(null);
@@ -477,6 +482,11 @@ export default function TutorAssignments() {
   const students = progressData?.students || [];
   const summary = progressData?.summary || {};
 
+  const selectedBatch = useMemo(
+    () => batches.find((batch) => batch.id === batchId) || null,
+    [batches, batchId],
+  );
+
   const selectedFeedbackStudent = useMemo(() => {
     if (!feedbackStudent) return null;
 
@@ -518,17 +528,45 @@ export default function TutorAssignments() {
         </div>
 
         {batches.length > 0 && (
-          <select
-            className="dct-input mb-5 max-w-md"
-            value={batchId}
-            onChange={(event) => setBatchId(event.target.value)}
-          >
-            {batches.map((batch) => (
-              <option key={batch.id} value={batch.id}>
-                {batch.name}
-              </option>
-            ))}
-          </select>
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <select
+              className="dct-input w-full max-w-md"
+              value={batchId}
+              onChange={(event) => setBatchId(event.target.value)}
+            >
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {batch.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="inline-flex w-fit rounded-xl border border-gray-200 bg-white p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("TABLE")}
+                className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                  viewMode === "TABLE"
+                    ? "bg-dct-primary text-white"
+                    : "text-dct-gray hover:bg-gray-50"
+                }`}
+              >
+                List View
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode("CARDS")}
+                className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                  viewMode === "CARDS"
+                    ? "bg-dct-primary text-white"
+                    : "text-dct-gray hover:bg-gray-50"
+                }`}
+              >
+                Card View
+              </button>
+            </div>
+          </div>
         )}
 
         {err && (
@@ -596,6 +634,26 @@ export default function TutorAssignments() {
                   Loading student progress...
                 </p>
               </div>
+            ) : students.length === 0 ? (
+              <div className="rounded-2xl border bg-white p-12 text-center">
+                <Users className="mx-auto mb-3 text-gray-300" />
+
+                <p className="font-bold text-dct-dark">
+                  No students found in this batch
+                </p>
+
+                <p className="mt-1 text-sm text-dct-gray">
+                  Students will appear here after enrollment.
+                </p>
+              </div>
+            ) : viewMode === "TABLE" ? (
+              <StudentProgressTable
+                students={students}
+                batchName={
+                  selectedBatch?.name || progressData?.batch?.name || ""
+                }
+                onFeedback={(item) => setFeedbackStudent(item)}
+              />
             ) : (
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 {students.map((item) => (
@@ -611,20 +669,6 @@ export default function TutorAssignments() {
                     onFeedback={() => setFeedbackStudent(item)}
                   />
                 ))}
-
-                {students.length === 0 && (
-                  <div className="col-span-full rounded-2xl border bg-white p-12 text-center">
-                    <Users className="mx-auto mb-3 text-gray-300" />
-
-                    <p className="font-bold text-dct-dark">
-                      No students found in this batch
-                    </p>
-
-                    <p className="mt-1 text-sm text-dct-gray">
-                      Students will appear here after enrollment.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </>
