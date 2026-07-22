@@ -12,6 +12,11 @@ const {
   assignmentController: c,
 } = require("../controllers/session.controller");
 
+const {
+  getTutorStudentProgress,
+  saveStudentFeedback,
+} = require("../controllers/assignmentProgress.controller");
+
 const router = express.Router();
 const tempDir = path.join(os.tmpdir(), "dct-assignment-uploads");
 
@@ -121,6 +126,20 @@ router.post(
 /**
  * Keep old assignment-ID endpoint for existing assignment pages and records.
  */
+router.get(
+  "/tutor/progress/:batchId",
+  authenticate,
+  authorize("TUTOR"),
+  getTutorStudentProgress,
+);
+
+router.patch(
+  "/tutor/progress/:batchId/students/:studentId/feedback",
+  authenticate,
+  authorize("TUTOR"),
+  saveStudentFeedback,
+);
+
 router.post(
   "/:id/submit",
   authenticate,

@@ -424,6 +424,21 @@ export const assignmentApi = {
       body: fd,
     });
   },
+  tutorProgress: (batchId) =>
+  http(`/assignments/tutor/progress/${batchId}`, {
+    role: "tutor",
+  }),
+
+saveStudentProgressFeedback: (batchId, studentId, data) =>
+  http(
+    `/assignments/tutor/progress/${batchId}/students/${studentId}/feedback`,
+    {
+      method: "PATCH",
+      role: "tutor",
+      body: JSON.stringify(data),
+    },
+  ),
+  
   tutorSubmissions: (batchId = "", sessionId = "") =>
     http(
       `/assignments/tutor/submissions${toQuery({ batch_id: batchId, session_id: sessionId })}`,
