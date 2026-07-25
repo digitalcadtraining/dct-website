@@ -70,24 +70,11 @@ const homepageHtml = `
   class="course-card-img"
   src="/images/courses/plastic.png"
   alt="Automotive Plastic Product Design Course"/>
-<span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><div class="dct-card-authority">CADPOINT Authorized • OEM/Tier-1 Track</div><h3 class="card-title">Automotive Plastic Product Design Course</h3><p class="card-desc">CATIA V5 surfacing, B-side features, tooling direction, mould feasibility and real automotive trim projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–16 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 50-session practical syllabus</li><li>✓ 9+ real automotive projects with images</li><li>✓ Placement + portfolio support</li></ul><a
-  class="btn-enroll"
-  href="/courses/plastic-product-design#demo"
-  data-demo-route="/courses/plastic-product-design"
->
-  Watch Free Demo
-</a>
-</div></div>
+<span class="card-badge badge-popular">Most Popular</span></div><div class="card-body"><div class="dct-card-authority">CADPOINT Authorized • OEM/Tier-1 Track</div><h3 class="card-title">Automotive Plastic Product Design Course</h3><p class="card-desc">CATIA V5 surfacing, B-side features, tooling direction, mould feasibility and real automotive trim projects.</p><div class="card-rating"><span class="rating-num">4.9</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–16 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 50-session practical syllabus</li><li>✓ 9+ real automotive projects with images</li><li>✓ Placement + portfolio support</li></ul><a class="btn-enroll" href="/courses/plastic-product-design#demo" data-demo-route="/courses/plastic-product-design">Watch Free Demo</a></div></div>
     <div class="course-card"><div class="card-img-wrap"><img
   class="course-card-img"
   src="/images/courses/biw.png"
-  alt="Automotive Plastic Product Design Course"/><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><div class="dct-card-authority">MNC/OEM Career Direction</div><h3 class="card-title">Automotive BIW Product Design Course</h3><p class="card-desc">Automotive Body-in-White design with sheet metal, joints, reinforcements, assembly and BIW project workflow.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–7 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ live sessions with recordings</li><li>✓ BIW component + assembly projects</li><li>✓ Resume, mock interview & referrals</li></ul><a
-  class="btn-enroll"
-  href="/courses/biw-product-design#demo"
-  data-demo-route="/courses/biw-product-design"
->
-  Watch Free Demo
-</a></div></div>
+  alt="Automotive Plastic Product Design Course"/><span class="card-badge badge-selling">Best Selling</span></div><div class="card-body"><div class="dct-card-authority">MNC/OEM Career Direction</div><h3 class="card-title">Automotive BIW Product Design Course</h3><p class="card-desc">Automotive Body-in-White design with sheet metal, joints, reinforcements, assembly and BIW project workflow.</p><div class="card-rating"><span class="rating-num">4.8</span><span class="rating-star">★★★★★</span><span class="rating-dot">•</span><span class="rating-reviews">Package: ₹3.5–7 LPA</span></div><div class="card-divider"></div><div class="card-includes">Includes:</div><ul class="card-features"><li>✓ 35+ live sessions with recordings</li><li>✓ BIW component + assembly projects</li><li>✓ Resume, mock interview & referrals</li></ul><a class="btn-enroll" href="/courses/biw-product-design#demo" data-demo-route="/courses/biw-product-design">Watch Free Demo</a></div></div>
     <div class="course-card"><div class="card-img-wrap"><img
   class="course-card-img"
   src="/images/courses/ansys.png"
@@ -109,36 +96,17 @@ const homepageHtml = `
       <p class="cad-software-home-sub">Focused beginner software training for freshers who want strong command on CATIA V5, UG NX and SolidWorks.</p>
     </div>
     <div class="cad-software-home-grid">
-<article class="cad-software-card">
-  <div class="cad-software-visual catia">
-    <span>Mechanical CAD Starter</span>
-    <strong>CATIA</strong>
-  </div>
-
-  <div class="cad-software-body">
-    <h3>CATIA V5 Basic Software Training</h3>
-
-    <p>
-      Learn CATIA V5 sketching, part design, assembly,
-      surfacing and drafting fundamentals from basics.
-    </p>
-
-    <div class="cad-software-actions">
-      <a href="/courses/catia-basic">
-        View Course
-      </a>
-
-      <a
-        class="secondary"
-        href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf"
-        download
-        onclick="event.stopPropagation();"
-      >
-        Download Syllabus
-      </a>
-    </div>
-  </div>
-</article>
+      <article class="cad-software-card">
+        <div class="cad-software-visual solidworks"><span>Mechanical CAD Starter</span><strong>SW</strong></div>
+        <div class="cad-software-body">
+          <h3>SolidWorks Basic Software Training</h3>
+          <p>Learn SolidWorks sketching, parametric modeling, assemblies and drawing creation from basics.</p>
+          <div class="cad-software-actions">
+  <a href="/courses/nx-basic">View Course</a>
+<a class="secondary" href="/downloads/DCT_CATIA_V5_45_Days_Syllabus.pdf" download onclick="event.stopPropagation();">Download Syllabus</a>
+</div>
+        </div>
+      </article>
       <article class="cad-software-card">
         <div class="cad-software-visual nx"><span>Second Tool Advantage</span><strong>NX</strong></div>
         <div class="cad-software-body">
@@ -266,7 +234,7 @@ const homepageHtml = `
     <div class="trust-verified-grid">
       <a class="trust-verified-card instagram" href="https://www.instagram.com/digital_cad_training/" target="_blank" rel="noopener noreferrer">
         <div class="trust-icon-wrap"><span class="trust-icon">◎</span></div>
-        <div class="trust-count-row"><span class="trust-count" data-count="20">0</span><span class="trust-plus">K+</span></div>
+        <div class="trust-count-row"><span class="trust-count" data-count="25">0</span><span class="trust-plus">K+</span></div>
         <h3>Instagram Followers</h3>
         <p>Daily reels, student updates, CAD tips and course awareness for mechanical engineers.</p>
       </a>
@@ -276,7 +244,7 @@ const homepageHtml = `
         <h3>YouTube Subscribers</h3>
         <p>Webinars, CAD learning videos and design career direction from experienced mentors.</p>
       </a>
-      <a class="trust-verified-card linkedin" href="https://www.linkedin.com/in/balkrishnadhuri" target="_blank" rel="noopener noreferrer">
+      <a class="trust-verified-card linkedin" href="https://www.linkedin.com/company/mechanical-engineering-design-hub/" target="_blank" rel="noopener noreferrer">
         <div class="trust-icon-wrap"><span class="trust-icon">in</span></div>
         <div class="trust-count-row"><span class="trust-count" data-count="4">0</span><span class="trust-plus">Lakh+</span></div>
         <h3>LinkedIn Reach</h3>
@@ -289,6 +257,40 @@ const homepageHtml = `
         <p>Fresh job openings, course updates, placement guidance and student support community.</p>
       </div>
     </div>
+
+    <a
+  href="https://www.linkedin.com/in/balkrishnadhuri"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="mentor-linkedin-card"
+>
+  <div class="mentor-linkedin-left">
+    <div class="mentor-avatar">
+      BD
+    </div>
+
+    <div class="mentor-content">
+      <span class="mentor-label">
+        LEAD MENTOR & FOUNDER
+      </span>
+
+      <h3>Mr. Balkrishna Dhuri</h3>
+
+      <p>
+        Automotive Product Design Expert • 12+ Years Domain Industry Experience
+      </p>
+    </div>
+  </div>
+
+  <div class="mentor-button">
+    <span class="mentor-in">in</span>
+
+    <div>
+      <strong>LinkedIn Profile</strong>
+      <small>View Profile ↗</small>
+    </div>
+  </div>
+</a>
 
     </section>
 
@@ -323,7 +325,7 @@ const homepageHtml = `
       </div>
       <div>
         <h4>Contact</h4>
-        <p>Phone: +91 7977508768/8554070478<br/>WhatsApp: +91 +91 7977508768<br/>Email: contact@learndigitalcadtraining .com</p>
+        <p>Phone: +91 7977508768<br/>WhatsApp: +91 8591719044<br/>Email: digitalcadtraining@gmail.com</p>
       </div>
       <div>
         <h4>Courses</h4>
@@ -426,14 +428,14 @@ export default function HomePage() {
           </li>
         </ul>
         <div className="nav-right">
-          <a href="tel:+917977508768" className="nav-phone">
+          <div className="nav-phone">
             <div className="phone-icon">
               <svg viewBox="0 0 24 24">
                 <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.39 21 3 13.61 3 4.5a1 1 0 011-1H7.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
               </svg>
             </div>
             <span className="phone-num">+91 7977508768</span>
-          </a>
+          </div>
           <div className="nav-divider" />
           {user ? (
             <a href={dashLink} className="nav-user-btn">

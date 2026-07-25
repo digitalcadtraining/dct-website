@@ -319,3 +319,204 @@
   }
 }
 
+/* =====================================
+   Mentor LinkedIn Card
+===================================== */
+
+.mentor-linkedin-card {
+  width: 100%;
+  margin-top: 26px;
+  padding: 20px 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: #fff;
+  border: 1px solid #dbe8f7;
+  border-radius: 22px;
+
+  text-decoration: none;
+  color: inherit;
+
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+
+  transition: all .25s ease;
+}
+
+.mentor-linkedin-card:hover{
+  transform: translateY(-3px);
+  border-color:#0A66C2;
+  box-shadow:0 18px 40px rgba(10,102,194,.12);
+}
+
+.mentor-linkedin-left{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.mentor-avatar{
+
+  width:64px;
+  height:64px;
+
+  border-radius:18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:linear-gradient(135deg,#0A66C2,#074B91);
+
+  color:#fff;
+
+  font-size:22px;
+  font-weight:800;
+
+  flex-shrink:0;
+
+}
+
+.mentor-label{
+
+  display:block;
+
+  color:#0A66C2;
+
+  font-size:11px;
+
+  letter-spacing:.15em;
+
+  font-weight:800;
+
+  margin-bottom:5px;
+
+}
+
+.mentor-content h3{
+
+  margin:0;
+
+  font-size:24px;
+
+  font-weight:800;
+
+  color:#07152C;
+
+}
+
+.mentor-content p{
+
+  margin-top:5px;
+
+  color:#5E6D81;
+
+  font-size:14px;
+
+}
+
+.mentor-button{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:12px;
+
+  padding:14px 18px;
+
+  background:#0A66C2;
+
+  color:#fff;
+
+  border-radius:14px;
+
+  flex-shrink:0;
+
+}
+
+.mentor-in{
+
+  width:38px;
+  height:38px;
+
+  border-radius:10px;
+
+  background:#fff;
+
+  color:#0A66C2;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  font-weight:800;
+
+  font-size:18px;
+
+}
+
+.mentor-button strong{
+
+  display:block;
+
+  font-size:13px;
+
+}
+
+.mentor-button small{
+
+  display:block;
+
+  margin-top:2px;
+
+  color:rgba(255,255,255,.8);
+
+}
+
+@media(max-width:768px){
+
+.mentor-linkedin-card{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+padding:18px;
+
+}
+
+.mentor-linkedin-left{
+
+width:100%;
+
+}
+
+.mentor-content h3{
+
+font-size:22px;
+
+}
+
+.mentor-content p{
+
+font-size:13px;
+
+}
+
+.mentor-button{
+
+width:100%;
+
+justify-content:center;
+
+margin-top:10px;
+
+}
+
+}
+
