@@ -168,6 +168,7 @@ function CatiaBasicsPanel() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [activeLessonId, setActiveLessonId] = useState("");
+  const [activeCourseId, setActiveCourseId] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -182,7 +183,26 @@ function CatiaBasicsPanel() {
       setEnrollment((enrollRes.data || [])[0] || null);
       const catia =
         data.find((c) => c.slug === "catia-tool-for-beginners") || data[0];
-      setActiveLessonId((prev) => prev || catia?.lessons?.[0]?.id || "");
+
+      setActiveCourseId((currentCourseId) => {
+        const courseStillExists = data.some(
+          (course) => course.id === currentCourseId,
+        );
+
+        return courseStillExists
+          ? currentCourseId
+          : catia?.id || data[0]?.id || "";
+      });
+
+      setActiveLessonId((currentLessonId) => {
+        const lessonStillExists = data.some((course) =>
+          course.lessons?.some((lesson) => lesson.id === currentLessonId),
+        );
+
+        return lessonStillExists
+          ? currentLessonId
+          : catia?.lessons?.[0]?.id || "";
+      });
     } catch (e) {
       setErr(e.message || "Failed to load prerequisite videos.");
     } finally {
@@ -195,10 +215,55 @@ function CatiaBasicsPanel() {
   }, []);
 
   const catia =
-    courses.find((c) => c.slug === "catia-tool-for-beginners") || courses[0];
-  const optional = courses.filter((c) => c.slug !== "catia-tool-for-beginners");
-  const lessons = catia?.lessons || [];
-  const active = lessons.find((l) => l.id === activeLessonId) || lessons[0];
+    courses.find((course) => course.slug === "catia-tool-for-beginners") ||
+    courses[0];
+
+  const optional = courses.filter(
+    (course) => course.slug !== "catia-tool-for-beginners",
+  );
+
+  const activeCourse =
+    courses.find((course) => course.id === activeCourseId) ||
+    catia ||
+    courses[0];
+
+  const lessons = activeCourse?.lessons || [];
+
+  const active =
+    lessons.find((lesson) => lesson.id === activeLessonId) ||
+    lessons.find((lesson) => lesson.is_unlocked) ||
+    lessons[0];
+
+  const openCourse = (course) => {
+    if (!course) return;
+
+    const catiaCompleted =
+      Number(catia?.completed_lessons || 0) >=
+        Number(catia?.total_lessons || 0) &&
+      Number(catia?.total_lessons || 0) > 0;
+
+    const isCatia = course.id === catia?.id;
+
+    if (!isCatia && !catiaCompleted) {
+      alert("Complete all CATIA Basic videos before starting this course.");
+      return;
+    }
+
+    const firstAvailableLesson =
+      course.lessons?.find(
+        (lesson) => lesson.is_unlocked && !lesson.completed,
+      ) ||
+      course.lessons?.find((lesson) => lesson.is_unlocked) ||
+      course.lessons?.[0];
+
+    setActiveCourseId(course.id);
+    setActiveLessonId(firstAvailableLesson?.id || "");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   const complete = async () => {
     if (!active?.id) return;
@@ -208,10 +273,39 @@ function CatiaBasicsPanel() {
         watched_seconds: active.duration_seconds || 1800,
         last_position: active.duration_seconds || 1800,
       });
+      const currentCourseId = activeCourse?.id;
+      const currentLessonId = active.id;
+      const currentCourseIndex = courses.findIndex(
+        (course) => course.id === currentCourseId,
+      );
+
       await load();
-      const idx = lessons.findIndex((l) => l.id === active.id);
-      const next = lessons[idx + 1];
-      if (next) setActiveLessonId(next.id);
+
+      const currentLessonIndex = lessons.findIndex(
+        (lesson) => lesson.id === currentLessonId,
+      );
+
+      const nextLesson = lessons[currentLessonIndex + 1];
+
+      if (nextLesson) {
+        setActiveLessonId(nextLesson.id);
+        return;
+      }
+
+      const isLastLesson = currentLessonIndex === lessons.length - 1;
+
+      if (isLastLesson && currentCourseId === catia?.id) {
+        const nextCourse = courses[currentCourseIndex + 1];
+
+        if (nextCourse) {
+          const nextCourseLesson =
+            nextCourse.lessons?.find((lesson) => lesson.is_unlocked) ||
+            nextCourse.lessons?.[0];
+
+          setActiveCourseId(nextCourse.id);
+          setActiveLessonId(nextCourseLesson?.id || "");
+        }
+      }
     } catch (e) {
       alert(e.message || "Failed to save progress.");
     }
@@ -227,7 +321,7 @@ function CatiaBasicsPanel() {
           Second Step
         </p>
         <h1 className="text-2xl sm:text-4xl font-black mt-2 leading-tight">
-          CATIA basics video plan
+          {activeCourse?.title || "Prerequisite video plan"}
         </h1>
         <p className="mt-3 max-w-3xl text-white/85 text-sm sm:text-base leading-7">
           Complete videos in order. Each completion is saved and visible to
@@ -236,7 +330,8 @@ function CatiaBasicsPanel() {
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-white/12 p-4">
             <strong className="text-2xl">
-              {catia?.completed_lessons || 0}/{catia?.total_lessons || 10}
+              {activeCourse?.completed_lessons || 0}/
+              {activeCourse?.total_lessons || 0}
             </strong>
             <p className="text-xs opacity-80">Videos completed</p>
           </div>
@@ -287,7 +382,7 @@ function CatiaBasicsPanel() {
             <div className="p-5">
               <div className="flex flex-wrap gap-2 mb-2">
                 <span className="text-xs font-black text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
-                  CATIA Basics
+                  {activeCourse?.title || "Prerequisite Course"}
                 </span>
                 <span className="text-xs font-black text-green-700 bg-green-50 px-3 py-1 rounded-full">
                   Target:{" "}
@@ -365,23 +460,76 @@ function CatiaBasicsPanel() {
           <h2 className="text-lg font-black text-dct-dark">
             Optional after CATIA basics
           </h2>
-          {optional.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white rounded-3xl border border-gray-100 p-5 flex gap-4 items-start opacity-95"
-            >
-              <div className="text-2xl">{c.icon}</div>
-              <div>
-                <h3 className="font-black text-dct-dark">{c.title}</h3>
-                <p className="text-sm text-dct-gray mt-1 leading-6">
-                  {c.description}
-                </p>
-                <p className="text-xs font-bold mt-2 text-dct-primary">
-                  {c.completed_lessons}/{c.total_lessons} completed
-                </p>
-              </div>
-            </div>
-          ))}
+
+          {optional.map((course) => {
+            const catiaCompleted =
+              Number(catia?.completed_lessons || 0) >=
+                Number(catia?.total_lessons || 0) &&
+              Number(catia?.total_lessons || 0) > 0;
+
+            const isCurrent = course.id === activeCourse?.id;
+
+            return (
+              <button
+                key={course.id}
+                type="button"
+                disabled={!catiaCompleted}
+                onClick={() => openCourse(course)}
+                className={`w-full rounded-3xl border p-5 text-left transition ${
+                  isCurrent
+                    ? "border-dct-primary bg-blue-50"
+                    : "border-gray-100 bg-white hover:border-blue-200 hover:bg-blue-50/40"
+                } ${
+                  !catiaCompleted
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer"
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="text-2xl">{course.icon}</div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h3 className="font-black text-dct-dark">
+                        {course.title}
+                      </h3>
+
+                      {!catiaCompleted ? (
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-black text-gray-500">
+                          🔒 COMPLETE CATIA FIRST
+                        </span>
+                      ) : course.completed_lessons === course.total_lessons ? (
+                        <span className="rounded-full bg-green-50 px-3 py-1 text-[10px] font-black text-green-700">
+                          ✅ COMPLETED
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-dct-primary">
+                          ▶ START COURSE
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="mt-1 text-sm leading-6 text-dct-gray">
+                      {course.description}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <p className="text-xs font-bold text-dct-primary">
+                        {course.completed_lessons}/{course.total_lessons}{" "}
+                        completed
+                      </p>
+
+                      {catiaCompleted && (
+                        <span className="text-xs font-black text-dct-primary">
+                          {isCurrent ? "Currently open" : "Click to open →"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

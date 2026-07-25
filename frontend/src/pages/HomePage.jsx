@@ -323,7 +323,7 @@ const homepageHtml = `
       </div>
       <div>
         <h4>Contact</h4>
-        <p>Phone: +91 7977508768<br/>WhatsApp: +91 8591719044<br/>Email: digitalcadtraining@gmail.com</p>
+        <p>Phone: +91 7977508768/8554070478<br/>WhatsApp: +91 +91 7977508768<br/>Email: contact@learndigitalcadtraining .com</p>
       </div>
       <div>
         <h4>Courses</h4>
