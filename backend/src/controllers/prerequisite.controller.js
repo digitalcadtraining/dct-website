@@ -475,16 +475,16 @@ const updateAdminBatchAccess = async (req, res, next) => {
           : [];
 
     await prisma.$executeRaw`
-      UPDATE batches
-      SET
-        show_prerequisites = ${showPrerequisites},
-        show_sessions = ${showSessions},
-        show_assignments = ${showAssignments},
-        show_progress = ${showProgress},
-        visible_prerequisite_ids = ${visibleIds}::text[],
-        updated_at = NOW()
-      WHERE id = ${batchId}
-    `;
+  UPDATE batches
+  SET
+    show_prerequisites = ${showPrerequisites},
+    show_sessions = ${showSessions},
+    show_assignments = ${showAssignments},
+    show_progress = ${showProgress},
+    visible_prerequisite_ids = ${JSON.stringify(visibleIds)}::jsonb,
+    updated_at = NOW()
+  WHERE id = ${batchId}
+`;
 
     const updatedBatch = await prisma.batch.findUnique({
       where: { id: batchId },
