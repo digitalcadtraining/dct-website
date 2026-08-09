@@ -1281,11 +1281,25 @@ export default function AdminStudents() {
 
   const groups = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     const map = new Map();
 
+    // 1. Add ALL created batches first.
+    // This ensures batches appear even with 0 students.
+    for (const batch of availableBatches || []) {
+      if (!batch?.id) continue;
+
+      map.set(batch.id, {
+        ...batch,
+        id: batch.id,
+        name: batch.name || "Unnamed Batch",
+        items: [],
+      });
+    }
+
+    // 2. Add students/enrollments into their corresponding batches.
     for (const student of payload.students || []) {
       for (const enrollment of student.enrollments || []) {
+        // Do not show free CAD access as a separate fee-tracker enrollment.
         if (
           String(enrollment.discount_code || "").toUpperCase() ===
           "CAD_TOOL_ACCESS"
@@ -1294,16 +1308,10 @@ export default function AdminStudents() {
         }
 
         const batch = enrollment.batch || {};
-
-        const haystack =
-          `${student.name} ${student.email} ${student.phone} ${batch.name} ${batch.course?.name}`.toLowerCase();
-
-        if (query && !haystack.includes(query)) {
-          continue;
-        }
-
         const key = batch.id || "unassigned";
 
+        // Safety fallback for any enrollment whose batch
+        // was not returned by the batch API.
         if (!map.has(key)) {
           map.set(key, {
             ...batch,
@@ -1320,8 +1328,39 @@ export default function AdminStudents() {
       }
     }
 
-    return Array.from(map.values());
-  }, [payload.students, search]);
+    let result = Array.from(map.values());
+
+    // 3. Search batch OR student.
+    if (query) {
+      result = result.filter((batch) => {
+        const batchText =
+          `${batch.name || ""} ${batch.course?.name || ""}`.toLowerCase();
+
+        if (batchText.includes(query)) {
+          return true;
+        }
+
+        return (batch.items || []).some(({ student }) => {
+          const studentText = `${student?.name || ""} ${student?.email || ""} ${
+            student?.phone || ""
+          }`.toLowerCase();
+
+          return studentText.includes(query);
+        });
+      });
+    }
+
+    // 4. Newest batches first.
+    result.sort((a, b) => {
+      const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
+
+      const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+
+      return bDate - aDate;
+    });
+
+    return result;
+  }, [payload.students, availableBatches, search]);
 
   const markPaid = async (item) => {
     if (!item?.id || savingPaymentId) {
