@@ -453,24 +453,109 @@ function CadAccessModal({ target, onClose, onSaved }) {
   };
 
   const groups = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
     const map = new Map();
 
-    for (const batch of payload?.batches || []) {
-      const key = batch.tool_key || "other";
-
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          label: batch.tool_label || "CAD Software",
-          batches: [],
-        });
+    /*
+     * STEP 1
+     * Add every actual batch first.
+     *
+     * This is what allows a newly created batch with
+     * ZERO students to appear in the fee tracker.
+     */
+    for (const batch of availableBatches || []) {
+      if (!batch?.id) {
+        continue;
       }
 
-      map.get(key).batches.push(batch);
+      map.set(batch.id, {
+        ...batch,
+        name: batch.name || "Unnamed Batch",
+        items: [],
+      });
     }
 
-    return Array.from(map.values());
-  }, [payload]);
+    /*
+     * STEP 2
+     * Add existing student enrollments into their batches.
+     *
+     * Existing EMI/payment behaviour remains unchanged.
+     */
+    for (const student of payload.students || []) {
+      for (const enrollment of student.enrollments || []) {
+        /*
+         * Keep your existing free CAD access exclusion.
+         */
+        if (
+          String(enrollment.discount_code || "").toUpperCase() ===
+          "CAD_TOOL_ACCESS"
+        ) {
+          continue;
+        }
+
+        const batch = enrollment.batch || {};
+        const key = batch.id || "unassigned";
+
+        /*
+         * Safety fallback:
+         * If an enrollment belongs to a batch that wasn't
+         * returned in availableBatches, still show it.
+         */
+        if (!map.has(key)) {
+          map.set(key, {
+            ...batch,
+            id: key,
+            name: batch.name || "No Batch",
+            items: [],
+          });
+        }
+
+        map.get(key).items.push({
+          student,
+          enrollment,
+        });
+      }
+    }
+
+    /*
+     * STEP 3
+     * Apply your existing search to both:
+     * - empty batches
+     * - batches containing students
+     */
+    const result = Array.from(map.values()).filter((batch) => {
+      if (!query) {
+        return true;
+      }
+
+      const batchText =
+        `${batch.name || ""} ${batch.course?.name || ""}`.toLowerCase();
+
+      if (batchText.includes(query)) {
+        return true;
+      }
+
+      return (batch.items || []).some(({ student }) => {
+        const studentText = `${student?.name || ""} ${student?.email || ""} ${
+          student?.phone || ""
+        }`.toLowerCase();
+
+        return studentText.includes(query);
+      });
+    });
+
+    /*
+     * Newest batch first.
+     */
+    return result.sort((a, b) => {
+      const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
+
+      const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+
+      return bDate - aDate;
+    });
+  }, [payload.students, availableBatches, search]);
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">
@@ -664,7 +749,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
       setApplyingCoupon(true);
       const result = await calculate(form.coupon_code);
       if (result && form.coupon_code.trim()) {
-        setSuccessMessage(`Coupon ${result.discount_code || form.coupon_code.trim().toUpperCase()} applied.`);
+        setSuccessMessage(
+          `Coupon ${result.discount_code || form.coupon_code.trim().toUpperCase()} applied.`,
+        );
       }
     } finally {
       setApplyingCoupon(false);
@@ -730,16 +817,20 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
           <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
             <p className="text-sm font-black text-dct-dark">{batch.name}</p>
             <p className="mt-1 text-xs text-gray-600">
-              {batch.course?.name} · Starts {fmtDate(batch.start_date)} · {batch.status}
+              {batch.course?.name} · Starts {fmtDate(batch.start_date)} ·{" "}
+              {batch.status}
             </p>
             <p className="mt-2 text-xs text-blue-800">
-              Admin registration skips OTP and online payment. The entered registration amount is recorded as received.
+              Admin registration skips OTP and online payment. The entered
+              registration amount is recorded as received.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="sm:col-span-2">
-              <span className="text-xs font-black uppercase text-gray-500">Student Name *</span>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Student Name *
+              </span>
               <input
                 value={form.name}
                 onChange={(e) => update("name", e.target.value)}
@@ -748,7 +839,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
               />
             </label>
             <label>
-              <span className="text-xs font-black uppercase text-gray-500">Email *</span>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Email *
+              </span>
               <input
                 type="email"
                 value={form.email}
@@ -758,16 +851,25 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
               />
             </label>
             <label>
-              <span className="text-xs font-black uppercase text-gray-500">Phone Number *</span>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Phone Number *
+              </span>
               <input
                 value={form.phone}
-                onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onChange={(e) =>
+                  update(
+                    "phone",
+                    e.target.value.replace(/\D/g, "").slice(0, 10),
+                  )
+                }
                 className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
                 placeholder="10-digit WhatsApp number"
               />
             </label>
             <label className="sm:col-span-2">
-              <span className="text-xs font-black uppercase text-gray-500">Login Password *</span>
+              <span className="text-xs font-black uppercase text-gray-500">
+                Login Password *
+              </span>
               <input
                 type="text"
                 value={form.password}
@@ -783,7 +885,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
             <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
               <input
                 value={form.coupon_code}
-                onChange={(e) => update("coupon_code", e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  update("coupon_code", e.target.value.toUpperCase())
+                }
                 className="h-11 rounded-xl border border-gray-200 px-3 text-sm font-bold"
                 placeholder="Coupon code (optional)"
               />
@@ -798,7 +902,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
             </div>
 
             {successMessage && (
-              <p className="mt-2 text-xs font-bold text-green-700">{successMessage}</p>
+              <p className="mt-2 text-xs font-bold text-green-700">
+                {successMessage}
+              </p>
             )}
 
             <label className="mt-4 block">
@@ -831,14 +937,37 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
                 <p className="text-sm text-gray-500">Calculating price...</p>
               ) : preview ? (
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span>Original price</span><span className="font-black">{money(preview.original_price)}</span></div>
-                  <div className="flex justify-between"><span>Final course price</span><span className="font-black text-dct-primary">{money(preview.enrolled_price)}</span></div>
-                  <div className="flex justify-between"><span>Registration received</span><span className="font-black text-green-700">{money(preview.registration_amount)}</span></div>
-                  <div className="flex justify-between border-t border-gray-200 pt-2"><span>Remaining balance</span><span className="font-black">{money(preview.balance)}</span></div>
+                  <div className="flex justify-between">
+                    <span>Original price</span>
+                    <span className="font-black">
+                      {money(preview.original_price)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Final course price</span>
+                    <span className="font-black text-dct-primary">
+                      {money(preview.enrolled_price)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Registration received</span>
+                    <span className="font-black text-green-700">
+                      {money(preview.registration_amount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 pt-2">
+                    <span>Remaining balance</span>
+                    <span className="font-black">{money(preview.balance)}</span>
+                  </div>
                   <div className="mt-3 space-y-2">
                     {(preview.installments || []).map((item) => (
-                      <div key={item.installment_no} className="flex justify-between rounded-lg bg-white px-3 py-2 text-xs">
-                        <span>{item.label} · {fmtDate(item.due_date)}</span>
+                      <div
+                        key={item.installment_no}
+                        className="flex justify-between rounded-lg bg-white px-3 py-2 text-xs"
+                      >
+                        <span>
+                          {item.label} · {fmtDate(item.due_date)}
+                        </span>
                         <span className="font-black">{money(item.amount)}</span>
                       </div>
                     ))}
@@ -866,7 +995,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
             }
             className="h-12 w-full rounded-xl bg-dct-primary font-black text-white disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            {saving ? "Registering Student..." : "Register Student & Add to Batch"}
+            {saving
+              ? "Registering Student..."
+              : "Register Student & Add to Batch"}
           </button>
         </div>
       </form>
@@ -1102,6 +1233,8 @@ export default function AdminStudents() {
     summary: {},
   });
 
+  const [availableBatches, setAvailableBatches] = useState([]);
+
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1118,13 +1251,20 @@ export default function AdminStudents() {
     setError("");
 
     try {
-      const res = await adminApi.feeTracker();
+      const [trackerResponse, batchesResponse] = await Promise.all([
+        adminApi.feeTracker(),
+        manualRegistrationApi.batches(),
+      ]);
 
       setPayload(
-        res.data || {
+        trackerResponse.data || {
           students: [],
           summary: {},
         },
+      );
+
+      setAvailableBatches(
+        Array.isArray(batchesResponse?.data) ? batchesResponse.data : [],
       );
     } catch (err) {
       setError(err.message || "Failed to load fee tracker.");
