@@ -287,6 +287,43 @@ setTimeout(() => {
 
 function initTestimonials(add) {
   const homeTestimonials = [
+            {
+      name: "ADITYA A. Jadhav",
+      role: "Design Engineer",
+      company: "Lear Corporation",
+      city: "Pune",
+      image: "/images/Testimonials/aditya_jadhav2.png",
+      previousRole: "Quality Engineer",
+      previousPackage: "3 LPA",
+      currentPackage: "₹6 LPA",
+      story:
+      "i am March-26 DCT student, completed BE in 2022 and worked in quality control in non-automotive company for 4 years, DCT helped me switch to Plastic product design career for 6LPA package. if i can, then all mechanical engineers can, trust DCT"
+    },
+
+        {
+      name: "ADITYA JADHAV",
+      role: "Design Engineer",
+      company: "APPL global infotech pune",
+      city: "Pune",
+      image: "/images/Testimonials/aditya_jadhav.jpeg",
+      previousRole: "Tool Design engineer",
+      previousPackage: "2.5 LPA",
+      currentPackage: "₹5.5 LPA",
+      story:
+      "i am April 26 DCT student, completed diploma in 2024 and worked in production and quality in automoitve company, but always wanted to work in design, never expected this great package. In exact 5 months i got 4 interviews from DCT and got selected for OEM company finally, india's best institute in almost 5* less fees"
+    },
+    {
+      name: "ROHINI AHIRE",
+      role: "Jr. Design Engineer",
+      company: "Future Tech Design Solution",
+      city: "Pune",
+      image: "/images/Testimonials/rohini_img.jpeg",
+      previousRole: "Cad Designer",
+      previousPackage: "N.A",
+      currentPackage: "₹4 LPA",
+      story:
+      "Before joining DCT, I was working as cad designer in solidworks software for 10k salary. This training helped me understand Automotive Product Design in a practical way. Working on real parts like door trims, bumper trims and IP components improved my portfolio and interview confidence. in 4th month i gave first interview and got selected, I moved closer to my first design job."
+    },
     {
       name: "Khushal Kamble",
       role: "Jr. Design Engineer",

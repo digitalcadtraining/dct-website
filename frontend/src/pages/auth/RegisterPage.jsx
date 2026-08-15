@@ -6,7 +6,7 @@ import AuthHero from "../../components/shared/AuthHero.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 
 const REGISTRATION_FEE = 999;
-const COURSE_CURRENT_PRICE_OVERRIDES = { "plastic-product-design": 20999 };
+
 const CAD_SOFTWARE_COURSE_SLUG = "cad-software-tools";
 const CAD_SOFTWARE_PRICING = {
   1: { amount: 10000, label: "Any 1 Software Course" },
@@ -17,7 +17,27 @@ const CAD_TOOL_NAMES = { "catia-v5": "CATIA V5", "ug-nx": "UG NX", solidworks: "
 function cadToolsFromQuery(value){ return String(value||"").split(",").map(v=>v.trim()).filter(Boolean); }
 function cadPriceForTools(tools){ const count=Math.min(3, Math.max(1, tools.length || 1)); return CAD_SOFTWARE_PRICING[count] || CAD_SOFTWARE_PRICING[1]; }
 function isOfferLive(batch){ if(!batch?.offer_start_at||!batch?.offer_end_at)return false; const n=new Date(),s=new Date(batch.offer_start_at),e=new Date(batch.offer_end_at); return n>=s&&n<=e; }
-function getBatchPrice(batch,course){ if(isOfferLive(batch)&&Number(batch?.offer_price)>0)return Number(batch.offer_price); const override=COURSE_CURRENT_PRICE_OVERRIDES[course?.slug]; return Number(batch?.current_price||batch?.course_price||course?.current_price||override||batch?.price||course?.price||0); }
+function getBatchPrice(batch, course) {
+  if (!batch) {
+    return Number(course?.price || 0);
+  }
+
+  const batchOfferPrice = Number(batch?.offer_price || 0);
+
+  // Admin batch discounted price is the primary registration price.
+  if (batchOfferPrice > 0) {
+    return batchOfferPrice;
+  }
+
+return Number(
+    batch?.current_price ||
+      batch?.course_price ||
+      batch?.price ||
+      course?.current_price ||
+      course?.price ||
+      0
+  );
+}
 function getBatchOriginalPrice(batch,course){ return Number(batch?.original_price||course?.original_price||course?.slash_price||0); }
 function getDisplayPrice(value){ return Number(value||0).toLocaleString("en-IN"); }
 function fmtDate(d){ return d?new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"—"; }
