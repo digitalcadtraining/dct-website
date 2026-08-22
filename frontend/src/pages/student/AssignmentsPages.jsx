@@ -117,11 +117,38 @@ function SubmitModal({ assignment, onClose, onDone }) {
 
         <label className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer">
           <Upload size={22} />
-          <span className="text-sm text-dct-gray text-center">
-            {file
-              ? file.name
-              : "Select CATPart, CATProduct, PRT, STEP, ZIP, RAR or another CAD file"}
-          </span>
+
+          {file ? (
+            <>
+              <span className="text-sm font-semibold text-dct-dark text-center">
+                {file.name}
+              </span>
+
+              <span className="text-xs text-green-600 text-center">
+                New file selected for replacement
+              </span>
+            </>
+          ) : submission?.original_filename ? (
+            <>
+              <span className="text-xs text-dct-lightgray">
+                Currently uploaded
+              </span>
+
+              <span className="text-sm font-semibold text-dct-dark text-center break-all">
+                {submission.original_filename}
+              </span>
+
+              <span className="text-xs text-dct-primary">
+                Click here to select a replacement file
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-dct-gray text-center">
+              Select CATPart, CATProduct, PRT, STEP, ZIP, RAR or another CAD
+              file
+            </span>
+          )}
+
           <input
             type="file"
             className="hidden"
