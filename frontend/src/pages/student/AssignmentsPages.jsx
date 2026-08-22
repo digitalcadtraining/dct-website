@@ -120,26 +120,26 @@ function SubmitModal({ assignment, onClose, onDone }) {
 
           {file ? (
             <>
-              <span className="text-sm font-semibold text-dct-dark text-center">
-                {file.name}
+              <span className="text-xs font-semibold text-green-600">
+                New file selected
               </span>
 
-              <span className="text-xs text-green-600 text-center">
-                New file selected for replacement
+              <span className="text-sm font-semibold text-dct-dark text-center break-all">
+                {file.name}
               </span>
             </>
           ) : submission?.original_filename ? (
             <>
-              <span className="text-xs text-dct-lightgray">
-                Currently uploaded
+              <span className="text-xs font-semibold text-dct-primary">
+                Currently uploaded file
               </span>
 
               <span className="text-sm font-semibold text-dct-dark text-center break-all">
                 {submission.original_filename}
               </span>
 
-              <span className="text-xs text-dct-primary">
-                Click here to select a replacement file
+              <span className="text-xs text-dct-gray">
+                Click to choose a replacement
               </span>
             </>
           ) : (
