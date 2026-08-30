@@ -153,6 +153,28 @@ function combineDateTime(date, time) {
   return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
 }
 
+function daysBetweenDateInputs(fromDate, toDate) {
+  if (!fromDate || !toDate) return 0;
+
+  const [fy, fm, fd] = fromDate.split("-").map(Number);
+  const [ty, tm, td] = toDate.split("-").map(Number);
+
+  const from = Date.UTC(fy, fm - 1, fd);
+  const to = Date.UTC(ty, tm - 1, td);
+
+  return Math.round((to - from) / 86400000);
+}
+
+function shiftDateInput(dateValue, days) {
+  if (!dateValue || !days) return dateValue;
+
+  const [year, month, day] = dateValue.split("-").map(Number);
+
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+
+  return date.toISOString().slice(0, 10);
+}
+
 function NewBatchModal({ isOpen, onClose, onCreated }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -207,14 +229,14 @@ function NewBatchModal({ isOpen, onClose, onCreated }) {
       });
       onCreated(r.data);
       onClose();
-setForm({
-  course_id: courses.length === 1 ? courses[0].id : "",
-  start_date: "",
-  start_time: "",
-  end_time: "",
-  alt_days: false,
-  sunday_off: true,
-});
+      setForm({
+        course_id: courses.length === 1 ? courses[0].id : "",
+        start_date: "",
+        start_time: "",
+        end_time: "",
+        alt_days: false,
+        sunday_off: true,
+      });
     } catch (e) {
       setErr(e.message || "Failed to create batch.");
     } finally {
@@ -449,47 +471,201 @@ function EditFullBatchModal({ batch, onClose, onSaved }) {
   const setBatchEndTime = (newTime) =>
     setForm((f) => ({ ...f, end_time: newTime }));
 
-  const save = async () => {
-    if (!form.name.trim()) return setErr("Batch name is required.");
-    if (!form.start_date || !form.end_date)
-      return setErr("Start and end date are required.");
-    if (!form.start_time || !form.end_time)
-      return setErr("Batch start and end timing are required.");
-    if (form.start_time >= form.end_time)
-      return setErr("Batch end time must be later than start time.");
-    if (!form.sessions.length)
-      return setErr("At least one session is required.");
-    if (form.sessions.some((s) => !String(s.name || "").trim()))
-      return setErr("Every session topic needs a name.");
-    setErr("");
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        start_date: combineDateTime(form.start_date, "00:00"),
-        end_date: combineDateTime(form.end_date, "23:59"),
-        max_students: Number(form.max_students) || 50,
-        time_slots: [makeSlot(form.start_time, form.end_time)],
-        status: form.status,
-        description: form.description,
-        sessions: form.sessions.map((s, index) => ({
-          id: s.id || undefined,
-          session_number: index + 1,
-          name: String(s.name || "").trim(),
-          type: s.type || "BOTH",
-          scheduled_at: combineDateTime(s.date, s.time || form.start_time),
-          status: s.status || "UPCOMING",
-        })),
+  const setBatchStartDate = (newStartDate) => {
+    setForm((current) => {
+      if (!current) return current;
+
+      const oldStartDate = current.start_date;
+
+      const shiftDays = daysBetweenDateInputs(oldStartDate, newStartDate);
+
+      const updatedSessions = current.sessions.map((session) => ({
+        ...session,
+        date:
+          session.date && shiftDays
+            ? shiftDateInput(session.date, shiftDays)
+            : session.date,
+      }));
+
+      const updatedEndDate =
+        current.end_date && shiftDays
+          ? shiftDateInput(current.end_date, shiftDays)
+          : current.end_date;
+
+      const updatedName =
+        buildBatchName(batch.course?.name, newStartDate) || current.name;
+
+      return {
+        ...current,
+        name: updatedName,
+        start_date: newStartDate,
+        end_date: updatedEndDate,
+        sessions: updatedSessions,
       };
-      const r = await batchApi.updateFull(batch.id, payload);
-      onSaved(r.data || {});
-      onClose();
-    } catch (e) {
-      setErr(e.message || "Failed to save batch.");
-    } finally {
-      setSaving(false);
-    }
+    });
   };
+
+const save = async () => {
+  if (!form.start_date || !form.end_date)
+    return setErr(
+      "Start and end date are required.",
+    );
+
+  if (!form.start_time || !form.end_time)
+    return setErr(
+      "Batch start and end timing are required.",
+    );
+
+  if (form.start_time >= form.end_time)
+    return setErr(
+      "Batch end time must be later than start time.",
+    );
+
+  if (!form.sessions.length)
+    return setErr(
+      "At least one session is required.",
+    );
+
+  if (
+    form.sessions.some(
+      (session) =>
+        !String(session.name || "").trim(),
+    )
+  ) {
+    return setErr(
+      "Every session topic needs a name.",
+    );
+  }
+
+  setErr("");
+  setSaving(true);
+
+  try {
+    /*
+     * Repair old mismatched batches:
+     *
+     * Batch start may already be 5 Sep while
+     * Session 1 is still 1 Sep.
+     */
+    const firstSession =
+      form.sessions.find(
+        (session) => session.date,
+      );
+
+    const repairShiftDays =
+      firstSession?.date
+        ? daysBetweenDateInputs(
+            firstSession.date,
+            form.start_date,
+          )
+        : 0;
+
+    const finalSessions =
+      repairShiftDays !== 0
+        ? form.sessions.map((session) => ({
+            ...session,
+            date: session.date
+              ? shiftDateInput(
+                  session.date,
+                  repairShiftDays,
+                )
+              : session.date,
+          }))
+        : form.sessions;
+
+    /*
+     * Batch name must always follow the
+     * actual start date.
+     */
+    const finalBatchName =
+      buildBatchName(
+        batch.course?.name,
+        form.start_date,
+      ) || form.name.trim();
+
+    /*
+     * If repairing an old mismatch,
+     * shift end date too.
+     */
+    const finalEndDate =
+      repairShiftDays !== 0
+        ? shiftDateInput(
+            form.end_date,
+            repairShiftDays,
+          )
+        : form.end_date;
+
+    const payload = {
+      name: finalBatchName,
+
+      start_date: combineDateTime(
+        form.start_date,
+        "00:00",
+      ),
+
+      end_date: combineDateTime(
+        finalEndDate,
+        "23:59",
+      ),
+
+      max_students:
+        Number(form.max_students) || 50,
+
+      time_slots: [
+        makeSlot(
+          form.start_time,
+          form.end_time,
+        ),
+      ],
+
+      status: form.status,
+
+      description: form.description,
+
+      sessions: finalSessions.map(
+        (session, index) => ({
+          id: session.id || undefined,
+
+          session_number: index + 1,
+
+          name: String(
+            session.name || "",
+          ).trim(),
+
+          type:
+            session.type || "BOTH",
+
+          scheduled_at: combineDateTime(
+            session.date,
+            session.time ||
+              form.start_time,
+          ),
+
+          status:
+            session.status ||
+            "UPCOMING",
+        }),
+      ),
+    };
+
+    const response =
+      await batchApi.updateFull(
+        batch.id,
+        payload,
+      );
+
+    onSaved(response.data || {});
+
+    onClose();
+  } catch (error) {
+    setErr(
+      error.message ||
+        "Failed to save batch.",
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
@@ -558,7 +734,7 @@ function EditFullBatchModal({ batch, onClose, onSaved }) {
                     type="date"
                     className="dct-input"
                     value={form.start_date}
-                    onChange={(e) => set("start_date", e.target.value)}
+                    onChange={(e) => setBatchStartDate(e.target.value)}
                   />
                 </div>
                 <div>
