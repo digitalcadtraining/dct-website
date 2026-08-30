@@ -535,6 +535,48 @@ export default function CoursePage({ course }) {
             <a href="#projects">Projects</a>
             <a href="#demo">Watch Demo</a>
             <a href="#faq">FAQ</a>
+            <a
+              href="tel:+917977508768"
+              aria-label="Call Digital CAD Training"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                textDecoration: "none",
+                flexShrink: 0,
+                marginLeft: "8px",
+              }}
+            >
+              <span
+                style={{
+                  width: "46px",
+                  height: "46px",
+                  borderRadius: "50%",
+                  background: "#111111",
+                  color: "#ffffff",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "30px",
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                ☎
+              </span>
+
+              <span
+                style={{
+                  color: "#0667c8",
+                  fontSize: "20px",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                +91 7977508768
+              </span>
+            </a>
             <button
               onClick={handleEnroll}
               className="dct-course-nav-cta"

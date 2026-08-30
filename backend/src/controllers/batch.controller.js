@@ -380,16 +380,38 @@ const updateFullBatch = async (req, res, next) => {
   try {
     const batchId = req.params.id;
     const tutorId = req.user.id;
+
     const existingBatch = await prisma.batch.findFirst({
-      where: { id: batchId, tutor_id: tutorId },
+      where: {
+        id: batchId,
+        tutor_id: tutorId,
+      },
       include: {
+        course: {
+          select: {
+            name: true,
+          },
+        },
         scheduled_sessions: {
-          orderBy: { session_number: "asc" },
-          include: { _count: { select: { assignments: true, queries: true } } },
+          orderBy: {
+            session_number: "asc",
+          },
+          include: {
+            _count: {
+              select: {
+                assignments: true,
+                queries: true,
+              },
+            },
+          },
         },
       },
     });
-    if (!existingBatch) return error(res, 404, "Batch not found.");
+
+    if (!existingBatch) {
+      return error(res, 404, "Batch not found.");
+    }
+
     const {
       name,
       start_date,
@@ -400,99 +422,376 @@ const updateFullBatch = async (req, res, next) => {
       time_slots,
       sessions,
     } = req.body;
+
+    const currentSessions = existingBatch.scheduled_sessions || [];
+
+    const currentById = new Map(
+      currentSessions.map((session) => [session.id, session]),
+    );
+
+    /*
+     * --------------------------------------------------
+     * NORMALIZE TIME SLOTS
+     * --------------------------------------------------
+     */
+
+    let normalizedSlots = Array.isArray(existingBatch.time_slots)
+      ? existingBatch.time_slots
+      : [];
+
+    if (time_slots !== undefined) {
+      normalizedSlots = Array.isArray(time_slots)
+        ? time_slots.map((slot) => String(slot || "").trim()).filter(Boolean)
+        : typeof time_slots === "string" && time_slots.trim()
+          ? [time_slots.trim()]
+          : normalizedSlots;
+    }
+
+    const mainSlot = normalizedSlots[0] || null;
+
+    /*
+     * --------------------------------------------------
+     * START DATE
+     * --------------------------------------------------
+     */
+
+    let newStartDate = null;
+
+    if (start_date !== undefined && start_date) {
+      const parsed = new Date(start_date);
+
+      if (Number.isNaN(parsed.getTime())) {
+        return error(res, 400, "Please select valid batch start date.");
+      }
+
+      newStartDate = withSlotTime(parsed, mainSlot) || parsed;
+    }
+
+    /*
+     * --------------------------------------------------
+     * SESSION SHIFT
+     *
+     * Important:
+     * We calculate shift from SESSION 1 instead of only
+     * old batch.start_date.
+     *
+     * This also repairs existing batches where the
+     * batch date was already changed but sessions were
+     * still showing the old date.
+     * --------------------------------------------------
+     */
+
+    let sessionShiftMs = 0;
+    let shouldShiftSessions = false;
+
+    if (newStartDate) {
+      const firstScheduledSession = currentSessions.find(
+        (session) => session.status !== "CANCELLED" && session.scheduled_at,
+      );
+
+      if (firstScheduledSession?.scheduled_at) {
+        const oldFirstSessionDate = new Date(
+          firstScheduledSession.scheduled_at,
+        );
+
+        sessionShiftMs = newStartDate.getTime() - oldFirstSessionDate.getTime();
+
+        shouldShiftSessions = sessionShiftMs !== 0;
+      } else {
+        const oldBatchStart = new Date(existingBatch.start_date);
+
+        sessionShiftMs = newStartDate.getTime() - oldBatchStart.getTime();
+
+        shouldShiftSessions = sessionShiftMs !== 0;
+      }
+    }
+
+    /*
+     * --------------------------------------------------
+     * BATCH UPDATE DATA
+     * --------------------------------------------------
+     */
+
     const updateData = {};
-    if (name !== undefined)
+
+    if (newStartDate) {
+      updateData.start_date = newStartDate;
+
+      // Automatically rename batch from new date.
+      updateData.name = generateBatchName(
+        existingBatch.course?.name || existingBatch.name,
+        newStartDate,
+      );
+    } else if (name !== undefined) {
       updateData.name = String(name || "").trim() || existingBatch.name;
-    if (start_date !== undefined && start_date)
-      updateData.start_date = new Date(start_date);
-    if (end_date !== undefined && end_date)
-      updateData.end_date = new Date(end_date);
-    if (max_students !== undefined)
+    }
+
+    /*
+     * End date:
+     * - if tutor explicitly changes it → use new value
+     * - otherwise shift existing end date together with
+     *   the batch/session date change
+     */
+
+    if (end_date !== undefined && end_date) {
+      const parsedEnd = new Date(end_date);
+
+      if (Number.isNaN(parsedEnd.getTime())) {
+        return error(res, 400, "Please select valid batch end date.");
+      }
+
+      updateData.end_date = withSlotTime(parsedEnd, mainSlot) || parsedEnd;
+    } else if (shouldShiftSessions && existingBatch.end_date) {
+      updateData.end_date = new Date(
+        new Date(existingBatch.end_date).getTime() + sessionShiftMs,
+      );
+    }
+
+    if (
+      updateData.end_date &&
+      updateData.start_date &&
+      updateData.end_date <= updateData.start_date
+    ) {
+      return error(res, 400, "Batch end date must be after start date.");
+    }
+
+    if (max_students !== undefined) {
       updateData.max_students = Math.max(
         1,
         parseInt(max_students) || existingBatch.max_students,
       );
-    if (description !== undefined) updateData.description = description || null;
-    if (status !== undefined)
-      updateData.status = safeBatchStatus(status, existingBatch.status);
-    if (time_slots !== undefined) {
-      const normalizedSlots = Array.isArray(time_slots)
-        ? time_slots.map((slot) => String(slot || "").trim()).filter(Boolean)
-        : typeof time_slots === "string" && time_slots.trim()
-          ? [time_slots.trim()]
-          : existingBatch.time_slots || [];
-      if (normalizedSlots.length > 0) updateData.time_slots = normalizedSlots;
     }
-    const currentSessions = existingBatch.scheduled_sessions || [];
-    const currentById = new Map(currentSessions.map((s) => [s.id, s]));
+
+    if (description !== undefined) {
+      updateData.description = description || null;
+    }
+
+    if (status !== undefined) {
+      updateData.status = safeBatchStatus(status, existingBatch.status);
+    }
+
+    if (time_slots !== undefined) {
+      if (normalizedSlots.length > 0) {
+        updateData.time_slots = normalizedSlots;
+      }
+    }
+
     const incomingSessions = Array.isArray(sessions) ? sessions : null;
+
+    /*
+     * --------------------------------------------------
+     * TRANSACTION
+     * --------------------------------------------------
+     */
+
     const updatedBatch = await prisma.$transaction(async (tx) => {
-      await tx.batch.update({ where: { id: batchId }, data: updateData });
+      await tx.batch.update({
+        where: {
+          id: batchId,
+        },
+        data: updateData,
+      });
+
+      /*
+       * CASE 1:
+       * Tutor editor supplied session data.
+       */
+
       if (incomingSessions) {
         const incomingIds = new Set(
-          incomingSessions.filter((s) => s.id).map((s) => s.id),
+          incomingSessions
+            .filter((session) => session.id)
+            .map((session) => session.id),
         );
+
+        /*
+         * Keep existing safety:
+         * don't delete sessions containing
+         * assignments or queries.
+         */
+
         for (const oldSession of currentSessions) {
           if (!incomingIds.has(oldSession.id)) {
             if (
               (oldSession._count?.assignments || 0) > 0 ||
               (oldSession._count?.queries || 0) > 0
-            )
+            ) {
               await tx.scheduledSession.update({
-                where: { id: oldSession.id },
-                data: { status: "CANCELLED" },
+                where: {
+                  id: oldSession.id,
+                },
+                data: {
+                  status: "CANCELLED",
+                },
               });
-            else
+            } else {
               await tx.scheduledSession.delete({
-                where: { id: oldSession.id },
+                where: {
+                  id: oldSession.id,
+                },
               });
+            }
           }
         }
+
         for (let index = 0; index < incomingSessions.length; index += 1) {
           const item = incomingSessions[index] || {};
+
           const sessionNumber = index + 1;
+
+          const currentSession = item.id ? currentById.get(item.id) : null;
+
+          let scheduledAt = null;
+
+          /*
+           * Existing session:
+           * automatically shift old date when
+           * batch start changed.
+           */
+
+          if (shouldShiftSessions && currentSession?.scheduled_at) {
+            scheduledAt = new Date(
+              new Date(currentSession.scheduled_at).getTime() + sessionShiftMs,
+            );
+          }
+
+          /*
+           * If no automatic shift is required,
+           * use tutor supplied session date.
+           */
+
+          if (!shouldShiftSessions && item.scheduled_at) {
+            const suppliedDate = new Date(item.scheduled_at);
+
+            if (!Number.isNaN(suppliedDate.getTime())) {
+              scheduledAt = suppliedDate;
+            }
+          }
+
+          /*
+           * New session.
+           */
+
+          if (!currentSession && item.scheduled_at) {
+            const suppliedDate = new Date(item.scheduled_at);
+
+            if (!Number.isNaN(suppliedDate.getTime())) {
+              scheduledAt = suppliedDate;
+            }
+          }
+
           const sessionData = {
             session_number: sessionNumber,
+
             name: String(item.name || "").trim() || `Session ${sessionNumber}`,
+
             type: safeSessionType(item.type),
-            scheduled_at: item.scheduled_at
-              ? new Date(item.scheduled_at)
-              : null,
+
+            scheduled_at: scheduledAt,
+
             status: safeSessionStatus(item.status),
           };
-          if (item.id && currentById.has(item.id))
+
+          if (item.id && currentById.has(item.id)) {
             await tx.scheduledSession.update({
-              where: { id: item.id },
+              where: {
+                id: item.id,
+              },
               data: sessionData,
             });
-          else
+          } else {
             await tx.scheduledSession.create({
-              data: { batch_id: batchId, ...sessionData },
+              data: {
+                batch_id: batchId,
+                ...sessionData,
+              },
             });
+          }
+        }
+      } else if (shouldShiftSessions) {
+
+      /*
+       * CASE 2:
+       * No sessions sent by frontend, but batch
+       * start date changed.
+       *
+       * Shift every existing session automatically.
+       */
+        for (const session of currentSessions) {
+          if (!session.scheduled_at) {
+            continue;
+          }
+
+          const shiftedDate = new Date(
+            new Date(session.scheduled_at).getTime() + sessionShiftMs,
+          );
+
+          await tx.scheduledSession.update({
+            where: {
+              id: session.id,
+            },
+            data: {
+              scheduled_at: shiftedDate,
+            },
+          });
         }
       }
+
       return tx.batch.findUnique({
-        where: { id: batchId },
+        where: {
+          id: batchId,
+        },
         include: {
-          course: { select: { name: true, slug: true } },
-          tutor: { select: { name: true } },
+          course: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
+
+          tutor: {
+            select: {
+              name: true,
+            },
+          },
+
           scheduled_sessions: {
-            orderBy: { session_number: "asc" },
+            orderBy: {
+              session_number: "asc",
+            },
             include: {
               assignments: {
-                select: { id: true, title: true, due_date: true },
+                select: {
+                  id: true,
+                  title: true,
+                  due_date: true,
+                },
               },
             },
           },
-          assignments: { orderBy: { created_at: "asc" } },
-          _count: { select: { enrollments: true, scheduled_sessions: true } },
+
+          assignments: {
+            orderBy: {
+              created_at: "asc",
+            },
+          },
+
+          _count: {
+            select: {
+              enrollments: true,
+              scheduled_sessions: true,
+            },
+          },
         },
       });
     });
+
     return success(
       res,
       200,
-      "Full batch updated. Student dashboard will show latest data.",
+      shouldShiftSessions
+        ? `Batch updated. All sessions shifted to the new batch schedule and batch renamed to "${updatedBatch.name}".`
+        : "Full batch updated. Student dashboard will show latest data.",
       updatedBatch,
     );
   } catch (err) {
