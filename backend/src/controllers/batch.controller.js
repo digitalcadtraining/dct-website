@@ -14,24 +14,41 @@ function parseSlotStart(slot) {
   return { h, min };
 }
 
+function getIndiaDateString(dateValue) {
+  if (!dateValue) return null;
+
+  // If frontend gives YYYY-MM-DD, preserve it exactly.
+  if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue;
+  }
+
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 function withSlotTime(dateValue, slot) {
   if (!dateValue) return null;
 
-  let base = null;
+  const base = getIndiaDateString(dateValue);
 
-  if (dateValue instanceof Date) {
-    if (Number.isNaN(dateValue.getTime())) return null;
-    base = dateValue.toISOString().slice(0, 10);
-  } else {
-    const parsed = new Date(dateValue);
-    if (!Number.isNaN(parsed.getTime())) {
-      base = parsed.toISOString().slice(0, 10);
-    } else {
-      base = String(dateValue).slice(0, 10);
-    }
-  }
+  if (!base) return null;
 
   const slotStart = parseSlotStart(slot);
+
   const h = slotStart?.h ?? 0;
   const min = slotStart?.min ?? 0;
 
@@ -83,11 +100,20 @@ function generateSessionDates(startDate, totalSessions, altDays, sundayOff) {
 }
 
 function generateBatchName(courseName, startDate) {
-  const d = new Date(startDate);
-  const day = d.getDate();
-  const month = d.toLocaleString("en-IN", { month: "long" });
-  const year = String(d.getFullYear()).slice(2);
-  return `${courseName} - ${day} ${month} ${year}`;
+  const dateString = getIndiaDateString(startDate);
+
+  if (!dateString) {
+    return courseName || "Batch";
+  }
+
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  const monthName = new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(`${dateString}T12:00:00+05:30`));
+
+  return `${courseName} - ${day} ${monthName} ${String(year).slice(2)}`;
 }
 
 function projectMeta(project) {
@@ -709,14 +735,13 @@ const updateFullBatch = async (req, res, next) => {
           }
         }
       } else if (shouldShiftSessions) {
-
-      /*
-       * CASE 2:
-       * No sessions sent by frontend, but batch
-       * start date changed.
-       *
-       * Shift every existing session automatically.
-       */
+        /*
+         * CASE 2:
+         * No sessions sent by frontend, but batch
+         * start date changed.
+         *
+         * Shift every existing session automatically.
+         */
         for (const session of currentSessions) {
           if (!session.scheduled_at) {
             continue;

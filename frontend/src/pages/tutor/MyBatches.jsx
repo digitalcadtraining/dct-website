@@ -744,7 +744,7 @@ const save = async () => {
                   <input
                     type="date"
                     value={form.end_date}
-                    onChange={(e) => update("end_date", e.target.value)}
+                    onChange={(e) => set("end_date", e.target.value)}
                     required
                   />
                 </div>
