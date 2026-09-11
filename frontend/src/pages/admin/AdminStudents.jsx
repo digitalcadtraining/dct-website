@@ -1017,208 +1017,517 @@ function BatchGroup({
 }) {
   const [open, setOpen] = useState(false);
 
-  const active = batch.items.filter((x) => x.student.is_active).length;
+  /*
+   * IMPORTANT:
+   * Financial summaries use ACTIVE students only.
+   * Disabled students remain visible in the table,
+   * but their fees are excluded from all calculations.
+   */
+  const activeItems = batch.items.filter(
+    (item) => item.student.is_active,
+  );
 
+  const active = activeItems.length;
   const disabled = batch.items.length - active;
 
-  const activeItems = batch.items.filter((item) => item.student.is_active);
-
+  /*
+   * Existing overall figures.
+   */
   const received = activeItems.reduce(
     (sum, item) =>
-      sum + Number(item.enrollment.payment_summary?.installment_received || 0),
+      sum +
+      Number(
+        item.enrollment.payment_summary
+          ?.installment_received || 0,
+      ),
     0,
   );
 
   const pending = activeItems.reduce(
-    (sum, item) => sum + Number(item.enrollment.payment_summary?.pending || 0),
+    (sum, item) =>
+      sum +
+      Number(
+        item.enrollment.payment_summary?.pending ||
+          0,
+      ),
     0,
   );
 
   const overdue = activeItems.reduce(
-    (sum, item) => sum + Number(item.enrollment.payment_summary?.overdue || 0),
+    (sum, item) =>
+      sum +
+      Number(
+        item.enrollment.payment_summary?.overdue ||
+          0,
+      ),
     0,
+  );
+
+  /*
+   * EMI-wise summary.
+   *
+   * assigned  = total amount expected in that EMI
+   * received  = amount already marked PAID
+   * remaining = amount still unpaid
+   * overdue   = unpaid amount whose due date has passed
+   */
+  const getEmiSummary = (installmentNumber) => {
+    return activeItems.reduce(
+      (summary, item) => {
+        const installment = (
+          item.enrollment.installments || []
+        ).find(
+          (entry) =>
+            Number(entry.installment_no) ===
+            installmentNumber,
+        );
+
+        if (!installment) {
+          return summary;
+        }
+
+        const amount = Number(
+          installment.amount || 0,
+        );
+
+        summary.assigned += amount;
+        summary.students += 1;
+
+        if (
+          installment.display_status === "PAID"
+        ) {
+          summary.received += amount;
+          summary.paidStudents += 1;
+        } else {
+          summary.remaining += amount;
+          summary.pendingStudents += 1;
+
+          if (
+            installment.display_status === "DUE"
+          ) {
+            summary.overdue += amount;
+            summary.overdueStudents += 1;
+          }
+        }
+
+        return summary;
+      },
+      {
+        assigned: 0,
+        received: 0,
+        remaining: 0,
+        overdue: 0,
+        students: 0,
+        paidStudents: 0,
+        pendingStudents: 0,
+        overdueStudents: 0,
+      },
+    );
+  };
+
+  const emi1 = getEmiSummary(1);
+  const emi2 = getEmiSummary(2);
+  const emi3 = getEmiSummary(3);
+
+  const hasThirdEmi =
+    emi3.assigned > 0 || emi3.students > 0;
+
+  const EmiSummaryCard = ({
+    label,
+    data,
+  }) => (
+    <div className="min-w-[190px] rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-black text-dct-dark">
+          {label}
+        </span>
+
+        <span className="text-[9px] font-bold text-gray-400">
+          {data.paidStudents}/{data.students} paid
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        <div>
+          <p className="text-[9px] uppercase text-gray-400">
+            Received
+          </p>
+
+          <p className="text-xs font-black text-green-700">
+            {money(data.received)}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[9px] uppercase text-gray-400">
+            Remaining
+          </p>
+
+          <p
+            className={`text-xs font-black ${
+              data.remaining > 0
+                ? "text-amber-700"
+                : "text-green-700"
+            }`}
+          >
+            {money(data.remaining)}
+          </p>
+        </div>
+      </div>
+
+      {data.overdue > 0 && (
+        <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-2 py-1.5">
+          <span className="text-[9px] font-bold text-red-600">
+            Overdue
+          </span>
+
+          <span className="text-[10px] font-black text-red-700">
+            {money(data.overdue)}
+          </span>
+        </div>
+      )}
+    </div>
   );
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-gray-50">
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="min-w-0 flex-1 text-left"
-        >
-          <div className="flex items-center gap-2">
-            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 
-            <h3 className="truncate text-sm font-black text-dct-dark">
-              {batch.name}
-            </h3>
+      {/* BATCH HEADER */}
+      <div className="px-5 py-4 hover:bg-gray-50">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              setOpen((value) => !value)
+            }
+            className="min-w-0 flex-1 text-left"
+          >
+            <div className="flex items-center gap-2">
+              {open ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              )}
+
+              <h3 className="truncate text-sm font-black text-dct-dark">
+                {batch.name}
+              </h3>
+            </div>
+
+            <p className="mt-1 text-xs text-gray-500">
+              {active} active · {disabled} disabled
+              {" · "}EMI received{" "}
+              {money(received)}
+              {" · "}Remaining{" "}
+              {money(pending)}
+              {" · "}Overdue{" "}
+              {money(overdue)}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              onManualEnrollment({ batch })
+            }
+            className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
+          >
+            Register Student
+          </button>
+        </div>
+
+        {/* EMI-WISE FINANCIAL SUMMARY */}
+        <div className="mt-4 flex flex-wrap gap-3">
+          <EmiSummaryCard
+            label="First EMI"
+            data={emi1}
+          />
+
+          <EmiSummaryCard
+            label="Second EMI"
+            data={emi2}
+          />
+
+          {hasThirdEmi && (
+            <EmiSummaryCard
+              label="Third EMI / Extra"
+              data={emi3}
+            />
+          )}
+
+          <div className="min-w-[190px] rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase text-blue-700">
+              Total EMI Position
+            </p>
+
+            <div className="mt-2 flex justify-between gap-4">
+              <span className="text-[10px] text-gray-500">
+                Received
+              </span>
+
+              <strong className="text-xs text-green-700">
+                {money(received)}
+              </strong>
+            </div>
+
+            <div className="mt-1 flex justify-between gap-4">
+              <span className="text-[10px] text-gray-500">
+                Remaining
+              </span>
+
+              <strong className="text-xs text-amber-700">
+                {money(pending)}
+              </strong>
+            </div>
+
+            <div className="mt-1 flex justify-between gap-4">
+              <span className="text-[10px] text-gray-500">
+                Overdue
+              </span>
+
+              <strong
+                className={`text-xs ${
+                  overdue > 0
+                    ? "text-red-700"
+                    : "text-green-700"
+                }`}
+              >
+                {money(overdue)}
+              </strong>
+            </div>
           </div>
-
-          <p className="mt-1 text-xs text-gray-500">
-            {active} active · {disabled} disabled · EMI received{" "}
-            {money(received)} · Pending {money(pending)} · Overdue{" "}
-            {money(overdue)}
-          </p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onManualEnrollment({ batch })}
-          className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
-        >
-          Register Student
-        </button>
+        </div>
       </div>
 
+      {/* EXISTING STUDENT TABLE */}
       {open && (
         <div className="overflow-x-auto border-t border-gray-100">
           <table className="w-full min-w-[1050px] text-left">
             <thead className="bg-gray-50 text-[10px] uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3">Student</th>
-                <th className="px-4 py-3">Course Price</th>
-                <th className="px-4 py-3">First EMI</th>
-                <th className="px-4 py-3">Second EMI</th>
-                <th className="px-4 py-3">Third EMI / Extra</th>
-                <th className="px-4 py-3">Balance</th>
-                <th className="px-4 py-3">Account</th>
+                <th className="px-4 py-3">
+                  Student
+                </th>
+
+                <th className="px-4 py-3">
+                  Course Price
+                </th>
+
+                <th className="px-4 py-3">
+                  First EMI
+                </th>
+
+                <th className="px-4 py-3">
+                  Second EMI
+                </th>
+
+                <th className="px-4 py-3">
+                  Third EMI / Extra
+                </th>
+
+                <th className="px-4 py-3">
+                  Balance
+                </th>
+
+                <th className="px-4 py-3">
+                  Account
+                </th>
               </tr>
             </thead>
+
             <tbody>
               {[...batch.items]
                 .sort(
                   (a, b) =>
-                    Number(b.student.is_active) - Number(a.student.is_active),
+                    Number(
+                      b.student.is_active,
+                    ) -
+                    Number(
+                      a.student.is_active,
+                    ),
                 )
-                .map(({ student, enrollment }) => {
-                  const installments = enrollment.installments || [];
+                .map(
+                  ({
+                    student,
+                    enrollment,
+                  }) => {
+                    const installments =
+                      enrollment.installments ||
+                      [];
 
-                  return (
-                    <tr
-                      key={`${student.id}-${enrollment.id}`}
-                      className="border-t border-gray-50 align-top"
-                    >
-                      <td className="px-4 py-4">
-                        <p className="text-xs font-black text-dct-dark">
-                          {student.name}
-                        </p>
+                    return (
+                      <tr
+                        key={`${student.id}-${enrollment.id}`}
+                        className="border-t border-gray-50 align-top"
+                      >
+                        <td className="px-4 py-4">
+                          <p className="text-xs font-black text-dct-dark">
+                            {student.name}
+                          </p>
 
-                        <p className="text-[10px] text-gray-500">
-                          {student.phone} · {student.email}
-                        </p>
-                      </td>
+                          <p className="text-[10px] text-gray-500">
+                            {student.phone} ·{" "}
+                            {student.email}
+                          </p>
+                        </td>
 
-                      <td className="px-4 py-4 text-xs font-black text-dct-primary">
-                        {money(enrollment.enrolled_price)}
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <InstallmentCell
-                          item={installments.find(
-                            (item) => Number(item.installment_no) === 1,
+                        <td className="px-4 py-4 text-xs font-black text-dct-primary">
+                          {money(
+                            enrollment.enrolled_price,
                           )}
-                          onPaid={onPaid}
-                          onPending={onPending}
-                          savingPaymentId={savingPaymentId}
-                        />
-                      </td>
+                        </td>
 
-                      <td className="px-4 py-4">
-                        <InstallmentCell
-                          item={installments.find(
-                            (item) => Number(item.installment_no) === 2,
-                          )}
-                          onPaid={onPaid}
-                          onPending={onPending}
-                          savingPaymentId={savingPaymentId}
-                        />
-                      </td>
+                        <td className="px-4 py-4">
+                          <InstallmentCell
+                            item={installments.find(
+                              (item) =>
+                                Number(
+                                  item.installment_no,
+                                ) === 1,
+                            )}
+                            onPaid={onPaid}
+                            onPending={
+                              onPending
+                            }
+                            savingPaymentId={
+                              savingPaymentId
+                            }
+                          />
+                        </td>
 
-                      <td className="px-4 py-4">
-                        <InstallmentCell
-                          item={installments.find(
-                            (item) => Number(item.installment_no) === 3,
-                          )}
-                          onPaid={onPaid}
-                          onPending={onPending}
-                          savingPaymentId={savingPaymentId}
-                          emptyAction={() =>
-                            onEditEmi({
-                              student,
-                              enrollment,
-                            })
-                          }
-                        />
+                        <td className="px-4 py-4">
+                          <InstallmentCell
+                            item={installments.find(
+                              (item) =>
+                                Number(
+                                  item.installment_no,
+                                ) === 2,
+                            )}
+                            onPaid={onPaid}
+                            onPending={
+                              onPending
+                            }
+                            savingPaymentId={
+                              savingPaymentId
+                            }
+                          />
+                        </td>
 
-                        {installments.some(
-                          (item) => Number(item.installment_no) === 3,
-                        ) && (
-                          <button
-                            type="button"
-                            onClick={() =>
+                        <td className="px-4 py-4">
+                          <InstallmentCell
+                            item={installments.find(
+                              (item) =>
+                                Number(
+                                  item.installment_no,
+                                ) === 3,
+                            )}
+                            onPaid={onPaid}
+                            onPending={
+                              onPending
+                            }
+                            savingPaymentId={
+                              savingPaymentId
+                            }
+                            emptyAction={() =>
                               onEditEmi({
                                 student,
                                 enrollment,
                               })
                             }
-                            className="mt-2 text-[10px] font-bold text-dct-primary underline"
-                          >
-                            Edit EMI Structure
-                          </button>
-                        )}
-                      </td>
+                          />
 
-                      <td
-                        className={`px-4 py-4 text-xs font-black ${
-                          Number(enrollment.payment_summary?.balance || 0) > 0
-                            ? "text-red-600"
-                            : "text-green-700"
-                        }`}
-                      >
-                        {money(enrollment.payment_summary?.balance)}
-                      </td>
+                          {installments.some(
+                            (item) =>
+                              Number(
+                                item.installment_no,
+                              ) === 3,
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onEditEmi({
+                                  student,
+                                  enrollment,
+                                })
+                              }
+                              className="mt-2 text-[10px] font-bold text-dct-primary underline"
+                            >
+                              Edit EMI Structure
+                            </button>
+                          )}
+                        </td>
 
-                      <td className="px-4 py-4">
-                        <span
-                          className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                            student.is_active
-                              ? "bg-green-50 text-green-700"
-                              : "bg-red-50 text-red-700"
+                        <td
+                          className={`px-4 py-4 text-xs font-black ${
+                            Number(
+                              enrollment
+                                .payment_summary
+                                ?.balance ||
+                                0,
+                            ) > 0
+                              ? "text-red-600"
+                              : "text-green-700"
                           }`}
                         >
-                          {student.is_active ? "Active" : "Disabled"}
-                        </span>
+                          {money(
+                            enrollment
+                              .payment_summary
+                              ?.balance,
+                          )}
+                        </td>
 
-                        <button
-                          type="button"
-                          onClick={() => onToggle(student.id)}
-                          className="ml-2 rounded-lg border border-gray-200 p-2"
-                          title="Enable or disable student"
-                        >
-                          <Power size={13} />
-                        </button>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`rounded-full px-2 py-1 text-[10px] font-black ${
+                              student.is_active
+                                ? "bg-green-50 text-green-700"
+                                : "bg-red-50 text-red-700"
+                            }`}
+                          >
+                            {student.is_active
+                              ? "Active"
+                              : "Disabled"}
+                          </span>
 
-                        {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
-                          String(enrollment.batch?.name || ""),
-                        ) && (
                           <button
                             type="button"
                             onClick={() =>
-                              onManageCadAccess({
-                                student,
-                                enrollment,
-                              })
+                              onToggle(
+                                student.id,
+                              )
                             }
-                            className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-dct-primary"
+                            className="ml-2 rounded-lg border border-gray-200 p-2"
+                            title="Enable or disable student"
                           >
-                            Manage CAD Access
+                            <Power size={13} />
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+
+                          {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
+                            String(
+                              enrollment.batch
+                                ?.name || "",
+                            ),
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onManageCadAccess(
+                                  {
+                                    student,
+                                    enrollment,
+                                  },
+                                )
+                              }
+                              className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-dct-primary"
+                            >
+                              Manage CAD Access
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  },
+                )}
             </tbody>
           </table>
         </div>
