@@ -4,9 +4,9 @@
  * Admin only: create, update, delete courses
  */
 
-const { prisma }         = require("../config/db");
+const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
-const { slugify }        = require("../utils/helpers");
+const { slugify } = require("../utils/helpers");
 
 // Must match backend/prisma/schema.prisma BatchStatus enum.
 // Admin approval changes a batch from PENDING_APPROVAL to UPCOMING.
@@ -31,24 +31,23 @@ function publicBatchWhere(courseId) {
 async function getPricingByBatchIds(batchIds = []) {
   if (!batchIds.length) return new Map();
 
-  try {
-    const rows = await prisma.$queryRaw`
-      SELECT
-        id,
-        offer_name,
-        original_price,
-        offer_price,
-        offer_start_at,
-        offer_end_at
-      FROM batches
-      WHERE id = ANY(${batchIds})
-    `;
+  const rows = await prisma.batch.findMany({
+    where: {
+      id: {
+        in: batchIds,
+      },
+    },
+    select: {
+      id: true,
+      offer_name: true,
+      original_price: true,
+      offer_price: true,
+      offer_start_at: true,
+      offer_end_at: true,
+    },
+  });
 
-    return new Map(rows.map((r) => [r.id, r]));
-  } catch {
-    // Safe fallback if offer migration is not yet applied.
-    return new Map();
-  }
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 // ── PUBLIC: List all active courses ──────────────────────
@@ -56,17 +55,26 @@ async function getPricingByBatchIds(batchIds = []) {
 const listCourses = async (req, res, next) => {
   try {
     const courses = await prisma.course.findMany({
-      where:   { is_active: true },
+      where: { is_active: true },
       orderBy: { created_at: "asc" },
       select: {
-        id: true, name: true, slug: true, short_name: true,
-        description: true, duration_months: true, price: true,
-        overview_points: true, tools_covered: true, thumbnail_url: true,
+        id: true,
+        name: true,
+        slug: true,
+        short_name: true,
+        description: true,
+        duration_months: true,
+        price: true,
+        overview_points: true,
+        tools_covered: true,
+        thumbnail_url: true,
         _count: { select: { batches: true } },
       },
     });
     return success(res, 200, "Courses fetched.", courses);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── PUBLIC: Get single course + visible public batches ──────────
@@ -81,10 +89,7 @@ const getCourse = async (req, res, next) => {
             status: { in: PUBLIC_BATCH_STATUSES },
             start_date: { gte: getPublicBatchStartDateLimit() },
           },
-          orderBy: [
-            { start_date: "asc" },
-            { created_at: "desc" },
-          ],
+          orderBy: [{ start_date: "asc" }, { created_at: "desc" }],
           select: {
             id: true,
             name: true,
@@ -100,9 +105,12 @@ const getCourse = async (req, res, next) => {
       },
     });
 
-    if (!course || !course.is_active) return error(res, 404, "Course not found.");
+    if (!course || !course.is_active)
+      return error(res, 404, "Course not found.");
 
-    const pricingMap = await getPricingByBatchIds(course.batches.map((b) => b.id));
+    const pricingMap = await getPricingByBatchIds(
+      course.batches.map((b) => b.id),
+    );
     const batchesWithSeats = course.batches.map((b) => {
       const pricing = pricingMap.get(b.id) || {};
       return {
@@ -112,14 +120,19 @@ const getCourse = async (req, res, next) => {
         offer_price: pricing.offer_price || null,
         offer_start_at: pricing.offer_start_at || null,
         offer_end_at: pricing.offer_end_at || null,
-        enrolled:        b._count.enrollments,
+        enrolled: b._count.enrollments,
         available_seats: b.max_students - b._count.enrollments,
-        is_full:         b._count.enrollments >= b.max_students,
+        is_full: b._count.enrollments >= b.max_students,
       };
     });
 
-    return success(res, 200, "Course details.", { ...course, batches: batchesWithSeats });
-  } catch (err) { next(err); }
+    return success(res, 200, "Course details.", {
+      ...course,
+      batches: batchesWithSeats,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── PUBLIC: Get batches for a course (for registration dropdown) ──
@@ -128,10 +141,7 @@ const getCourseBatches = async (req, res, next) => {
   try {
     const batches = await prisma.batch.findMany({
       where: publicBatchWhere(req.params.courseId),
-      orderBy: [
-        { start_date: "asc" },
-        { created_at: "desc" },
-      ],
+      orderBy: [{ start_date: "asc" }, { created_at: "desc" }],
       select: {
         id: true,
         name: true,
@@ -152,77 +162,119 @@ const getCourseBatches = async (req, res, next) => {
       const pricing = pricingMap.get(b.id) || {};
 
       return {
-        id:              b.id,
-        name:            b.name,
-        start_date:      b.start_date,
-        end_date:        b.end_date,
-        created_at:      b.created_at,
-        status:          b.status,
-        tutor_name:      b.tutor?.name || "Industry Expert",
-        time_slots:      b.time_slots || [],
-        enrolled:        b._count.enrollments,
+        id: b.id,
+        name: b.name,
+        start_date: b.start_date,
+        end_date: b.end_date,
+        created_at: b.created_at,
+        status: b.status,
+        tutor_name: b.tutor?.name || "Industry Expert",
+        time_slots: b.time_slots || [],
+        enrolled: b._count.enrollments,
         available_seats: b.max_students - b._count.enrollments,
-        is_full:         b._count.enrollments >= b.max_students,
+        is_full: b._count.enrollments >= b.max_students,
 
-        offer_name:      pricing.offer_name || null,
-        original_price:  pricing.original_price || null,
-        offer_price:     pricing.offer_price || null,
-        offer_start_at:  pricing.offer_start_at || null,
-        offer_end_at:    pricing.offer_end_at || null,
+        offer_name: pricing.offer_name || null,
+        original_price: pricing.original_price || null,
+        offer_price: pricing.offer_price || null,
+        offer_start_at: pricing.offer_start_at || null,
+        offer_end_at: pricing.offer_end_at || null,
       };
     });
 
     return success(res, 200, "Batches fetched.", result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── ADMIN: Create course ──────────────────────────────────
 // POST /courses
 const createCourse = async (req, res, next) => {
   try {
-    const { name, short_name, description, duration_months, price, overview_points, tools_covered } = req.body;
+    const {
+      name,
+      short_name,
+      description,
+      duration_months,
+      price,
+      overview_points,
+      tools_covered,
+    } = req.body;
 
     if (!name || !short_name || !description || !duration_months || !price) {
-      return error(res, 400, "name, short_name, description, duration_months, price are required.");
+      return error(
+        res,
+        400,
+        "name, short_name, description, duration_months, price are required.",
+      );
     }
 
-    const slug   = slugify(name);
+    const slug = slugify(name);
     const exists = await prisma.course.findUnique({ where: { slug } });
-    if (exists) return error(res, 409, "A course with this name already exists.");
+    if (exists)
+      return error(res, 409, "A course with this name already exists.");
 
     const course = await prisma.course.create({
       data: {
-        name, slug, short_name, description,
+        name,
+        slug,
+        short_name,
+        description,
         duration_months: parseInt(duration_months),
         price,
         overview_points: overview_points || [],
-        tools_covered:   tools_covered   || [],
+        tools_covered: tools_covered || [],
       },
     });
 
     return success(res, 201, "Course created.", course);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── ADMIN: Update course ──────────────────────────────────
 // PATCH /courses/:id
 const updateCourse = async (req, res, next) => {
   try {
-    const { name, short_name, description, duration_months, price, overview_points, tools_covered, is_active } = req.body;
+    const {
+      name,
+      short_name,
+      description,
+      duration_months,
+      price,
+      overview_points,
+      tools_covered,
+      is_active,
+    } = req.body;
 
     const updateData = {};
-    if (name !== undefined)             updateData.name             = name;
-    if (short_name !== undefined)       updateData.short_name       = short_name;
-    if (description !== undefined)      updateData.description      = description;
-    if (duration_months !== undefined)  updateData.duration_months  = parseInt(duration_months);
-    if (price !== undefined)            updateData.price            = price;
-    if (overview_points !== undefined)  updateData.overview_points  = overview_points;
-    if (tools_covered !== undefined)    updateData.tools_covered    = tools_covered;
-    if (is_active !== undefined)        updateData.is_active        = is_active;
+    if (name !== undefined) updateData.name = name;
+    if (short_name !== undefined) updateData.short_name = short_name;
+    if (description !== undefined) updateData.description = description;
+    if (duration_months !== undefined)
+      updateData.duration_months = parseInt(duration_months);
+    if (price !== undefined) updateData.price = price;
+    if (overview_points !== undefined)
+      updateData.overview_points = overview_points;
+    if (tools_covered !== undefined) updateData.tools_covered = tools_covered;
+    if (is_active !== undefined) updateData.is_active = is_active;
 
-    const course = await prisma.course.update({ where: { id: req.params.id }, data: updateData });
+    const course = await prisma.course.update({
+      where: { id: req.params.id },
+      data: updateData,
+    });
     return success(res, 200, "Course updated.", course);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
-module.exports = { listCourses, getCourse, getCourseBatches, createCourse, updateCourse };
+module.exports = {
+  listCourses,
+  getCourse,
+  getCourseBatches,
+  createCourse,
+  updateCourse,
+};

@@ -243,23 +243,108 @@ function getYoutubeEmbedUrl(url = "") {
 }
 
 function getNearestBatch(batches = []) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const visibleStatuses = new Set(["APPROVED", "UPCOMING", "ACTIVE"]);
+  const now = new Date();
+
+  // Match backend rule:
+  // keep batches started within the last 10 days
+  // plus all future batches.
+  const minDate = new Date(now);
+  minDate.setHours(0, 0, 0, 0);
+  minDate.setDate(minDate.getDate() - 10);
+
+  const visibleStatuses = new Set([
+    "APPROVED",
+    "UPCOMING",
+    "ACTIVE",
+  ]);
+
   const allowedBatches = (batches || [])
     .filter((batch) => {
       if (!batch) return false;
+
+      const status = String(
+        batch.status || "",
+      ).toUpperCase();
+
       if (
-        batch.status &&
-        !visibleStatuses.has(String(batch.status).toUpperCase())
-      )
+        status &&
+        !visibleStatuses.has(status)
+      ) {
         return false;
-      if (!batch.start_date) return false;
-      const startDate = new Date(batch.start_date);
-      startDate.setHours(0, 0, 0, 0);
-      return startDate >= today;
+      }
+
+      if (!batch.start_date) {
+        return false;
+      }
+
+      const startDate = new Date(
+        batch.start_date,
+      );
+
+      return (
+        !Number.isNaN(startDate.getTime()) &&
+        startDate >= minDate
+      );
     })
-    .sort((a, b) => new Date(a.start_date || 0) - new Date(b.start_date || 0));
+    .sort((a, b) => {
+      /*
+       * Priority:
+       * 1. ACTIVE batch
+       * 2. Most recently started UPCOMING batch
+       * 3. Nearest future batch
+       */
+
+      const aStatus = String(
+        a.status || "",
+      ).toUpperCase();
+
+      const bStatus = String(
+        b.status || "",
+      ).toUpperCase();
+
+      if (
+        aStatus === "ACTIVE" &&
+        bStatus !== "ACTIVE"
+      ) {
+        return -1;
+      }
+
+      if (
+        bStatus === "ACTIVE" &&
+        aStatus !== "ACTIVE"
+      ) {
+        return 1;
+      }
+
+      const aDate = new Date(
+        a.start_date,
+      ).getTime();
+
+      const bDate = new Date(
+        b.start_date,
+      ).getTime();
+
+      const nowMs = now.getTime();
+
+      const aPast = aDate <= nowMs;
+      const bPast = bDate <= nowMs;
+
+      // If both are recently started,
+      // use the most recent one.
+      if (aPast && bPast) {
+        return bDate - aDate;
+      }
+
+      // Recently-started batch should remain
+      // primary instead of jumping to a later batch.
+      if (aPast !== bPast) {
+        return aPast ? -1 : 1;
+      }
+
+      // Both future: nearest future batch first.
+      return aDate - bDate;
+    });
+
   return allowedBatches[0] || null;
 }
 
@@ -460,7 +545,7 @@ export default function CoursePage({ course }) {
       course.regularOfferPrice ||
       course.regularPrice ||
       course.price ||
-      20999,
+      29,999,
   );
 
   const currentPrice =
