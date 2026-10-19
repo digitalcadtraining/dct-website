@@ -50,9 +50,9 @@ function firstExisting(candidates) {
 
 function assetCandidates(filenameCandidates, explicitPath) {
   const projectRoot = path.resolve(__dirname, "../../..");
-  const frontendPublic = path.resolve(projectRoot, "../frontend/public");
+  const frontendPublic = path.join(projectRoot, "frontend", "public");
   const frontendImages = path.join(frontendPublic, "images");
-  const backendAssets = path.resolve(projectRoot, "assets/certificates");
+  const backendAssets = path.join(projectRoot, "backend", "assets", "certificates");
 
   return [
     explicitPath,
