@@ -481,6 +481,16 @@ export const queryApi = {
       body: JSON.stringify({ answer }),
     }),
 };
+export const englishConfidenceApi = {
+  course: () => http("/english-confidence", { role: "student" }),
+  preference: (knows_english) => http("/english-confidence/preference", {
+    method: "PUT", role: "student", body: JSON.stringify({ knows_english }),
+  }),
+  submit: (day, answers, typing) => http(`/english-confidence/days/${day}/submit`, {
+    method: "POST", role: "student", body: JSON.stringify({ answers, typing }),
+  }),
+  report: () => http("/english-confidence/admin/report", { role: "admin" }),
+};
 export const prerequisiteApi = {
   list: () => http("/prerequisites", { role: "student" }),
   saveProgress: (lessonId, data) =>
