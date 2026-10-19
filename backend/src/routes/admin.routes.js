@@ -13,6 +13,7 @@ router.get("/applications", admin.listApplications);
 router.post("/applications/:id/approve", admin.approveApplication);
 router.post("/applications/:id/reject", admin.rejectApplication);
 router.get("/students", admin.listStudents);
+router.patch("/enrollments/:id/batch", admin.changeStudentBatch);
 
 // Use the registration-aware tracker so manually received registration
 // amounts are counted correctly. Existing EMI/receipt behaviour is preserved.
