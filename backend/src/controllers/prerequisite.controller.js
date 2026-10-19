@@ -1,6 +1,77 @@
 const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
 
+// Batch calendar helpers: all dates are interpreted in Asia/Kolkata.
+function indiaDateKey(value) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date(value));
+  const get = (type) => parts.find((p) => p.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function indiaDayNumber(value) {
+  return Date.parse(`${indiaDateKey(value)}T00:00:00Z`) / 86400000;
+}
+
+function indiaDayToDate(dayNumber, timeSource) {
+  const dateKey = new Date(dayNumber * 86400000).toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timeSource));
+  const get = (type) => parts.find((p) => p.type === type)?.value;
+  return new Date(`${dateKey}T${get("hour")}:${get("minute")}:00+05:30`);
+}
+
+function batchNameForDate(courseName, date) {
+  const key = indiaDateKey(date);
+  const [year, month, day] = key.split("-").map(Number);
+  const monthName = new Intl.DateTimeFormat("en-IN", {
+    month: "long", timeZone: "Asia/Kolkata",
+  }).format(new Date(`${key}T12:00:00+05:30`));
+  return `${courseName} - ${day} ${monthName} ${String(year).slice(2)}`;
+}
+
+function calculateRescheduledDates(sessions, newStartDate) {
+  const scheduled = sessions.filter(
+    (session) => session.scheduled_at && session.status !== "CANCELLED"
+  );
+  if (scheduled.length < 2) {
+    throw new Error("At least two scheduled sessions are needed to infer the timetable.");
+  }
+
+  const days = scheduled.map((session) => indiaDayNumber(session.scheduled_at));
+  const gaps = days.slice(1).map((day, index) => day - days[index]);
+  // Preserve the original timetable only if its daily/alternate-day pattern is clear.
+  const candidates = [1, 2].filter((cadence) =>
+    [false, true].some((sundayOff) => {
+      let day = days[0];
+      for (let index = 1; index < days.length; index += 1) {
+        day += cadence;
+        if (sundayOff && new Date(day * 86400000).getUTCDay() === 0) day += 1;
+        if (day !== days[index]) return false;
+      }
+      return true;
+    })
+  );
+  if (candidates.length !== 1 || gaps.some((gap) => gap < 1)) {
+    throw new Error("The existing session schedule is irregular or ambiguous; rescheduling was cancelled to protect session records.");
+  }
+  const cadence = candidates[0];
+  const sundayOff = days.every((day) =>
+    new Date(day * 86400000).getUTCDay() !== 0
+  );
+  let day = indiaDayNumber(newStartDate);
+  const result = new Map();
+  for (const session of scheduled) {
+    if (sundayOff && new Date(day * 86400000).getUTCDay() === 0) day += 1;
+    result.set(session.id, indiaDayToDate(day, newStartDate));
+    day += cadence;
+  }
+  return result;
+}
+
 const DEMO_VIMEO = "https://player.vimeo.com/video/900601730";
 
 const DEFAULT_COURSES = [
@@ -629,9 +700,6 @@ const updateAdminBatchAccess = async (req, res, next) => {
       return error(res, 400, "Valid batch start and end dates are required.");
     }
 
-    if (endDate <= startDate) {
-      return error(res, 400, "Batch end date must be after start date.");
-    }
 
     const maxStudents =
       req.body.max_students === undefined
