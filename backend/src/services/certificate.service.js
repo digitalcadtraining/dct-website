@@ -68,19 +68,19 @@ function resolveAssets() {
   return {
     dctLogo: firstExisting(
       assetCandidates(
-        ["real_dct_logo.png", "dct-logo.png", "digital-cad-training-logo.png"],
+        ["real_dct_logo.jpg", "real_dct_logo.png", "dct-logo.png"],
         process.env.CERTIFICATE_DCT_LOGO,
       ),
     ),
     cadpointLogo: firstExisting(
       assetCandidates(
-        ["cadpoint-logo.png", "cadpoint_authorized_logo.png", "cadpoint.png"],
+        ["cadpoint-logo.jpg", "cadpoint-logo.png", "cadpoint.png"],
         process.env.CERTIFICATE_CADPOINT_LOGO,
       ),
     ),
     msmeLogo: firstExisting(
       assetCandidates(
-        ["msme-logo.png", "msme.png", "udyam-msme-logo.png"],
+        ["msme-logo.png", "msme.png", "msme-logo.png"],
         process.env.CERTIFICATE_MSME_LOGO,
       ),
     ),
