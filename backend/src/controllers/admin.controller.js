@@ -338,6 +338,63 @@ const listStudents = async (req, res, next) => {
   }
 };
 
+// Move an existing enrollment to another batch of the SAME course.
+// The enrollment ID, paid installments, receipts and price are not modified.
+const changeStudentBatch = async (req, res, next) => {
+  try {
+    const enrollmentId = String(req.params.id || "");
+    const targetBatchId = String(req.body?.batch_id || "").trim();
+    if (!targetBatchId) return error(res, 400, "Please select a destination batch.");
+
+    const result = await prisma.$transaction(async (tx) => {
+      const enrollment = await tx.enrollment.findUnique({
+        where: { id: enrollmentId },
+        include: { batch: { select: { course_id: true, name: true } } },
+      });
+      if (!enrollment) return { status: 404, message: "Enrollment not found." };
+      if (enrollment.batch_id === targetBatchId) {
+        return { status: 400, message: "Student is already in this batch." };
+      }
+      const target = await tx.batch.findUnique({
+        where: { id: targetBatchId },
+        select: { id: true, name: true, course_id: true, status: true, max_students: true },
+      });
+      if (!target) return { status: 404, message: "Destination batch not found." };
+      if (target.course_id !== enrollment.batch.course_id) {
+        return { status: 400, message: "Batch transfer is allowed only within the same course." };
+      }
+      if (!["UPCOMING", "ACTIVE"].includes(String(target.status))) {
+        return { status: 400, message: "Select an upcoming or active batch." };
+      }
+      const duplicate = await tx.enrollment.findUnique({
+        where: { student_id_batch_id: { student_id: enrollment.student_id, batch_id: target.id } },
+        select: { id: true },
+      });
+      if (duplicate) {
+        return { status: 409, message: "Student already has an enrollment in the destination batch." };
+      }
+      const occupied = await tx.enrollment.count({ where: { batch_id: target.id } });
+      if (occupied >= target.max_students) {
+        return { status: 409, message: "Destination batch has reached its maximum capacity." };
+      }
+      const updated = await tx.enrollment.update({
+        where: { id: enrollment.id },
+        data: { batch_id: target.id },
+        select: { id: true, student_id: true, batch_id: true },
+      });
+      return { updated, from: enrollment.batch.name, to: target.name };
+    }, { isolationLevel: "Serializable" });
+
+    if (result.status) return error(res, result.status, result.message);
+    return success(res, 200, "Student batch changed successfully.", result);
+  } catch (err) {
+    if (err.code === "P2034") {
+      return error(res, 409, "Batch changed concurrently. Please try again.");
+    }
+    next(err);
+  }
+};
+
 const listTutors = async (req, res, next) => {
   try {
     const tutors = await prisma.user.findMany({
@@ -974,4 +1031,5 @@ module.exports = {
   markInstallmentPaid,
   markInstallmentPending,
   updateEnrollmentInstallments,
+  changeStudentBatch,
 };
