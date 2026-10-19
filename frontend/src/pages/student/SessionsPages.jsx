@@ -1014,7 +1014,7 @@ function SessionCard({
               fontFamily: "inherit",
             }}
           >
-            {isComp ? "Recording Not Added Yet" : "Zoom Link Not Added Yet"}
+            {isComp ? "Recording Of this session is uploaded in Drive Folder, Check link in wp group" : "Zoom Link Not Added Yet"}
           </button>
         )}
       </div>

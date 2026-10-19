@@ -13,31 +13,105 @@ const DEFAULT_COURSES = [
     icon: "⚙",
     order_index: 1,
     lessons: [
-      [1, "Sketcher Session 01", "CATIA sketcher introduction and basic sketch workflow.", "https://player.vimeo.com/video/900601730"],
-      [2, "Sketcher Session 02", "Profile creation, constraints and clean sketching practice.", "https://player.vimeo.com/video/900603176"],
-      [3, "Sketcher Session 03", "Advanced profile creation and sketch correction practice.", "https://player.vimeo.com/video/900609026"],
-      [4, "Sketcher Session 04", "Sketcher tools, trim, mirror, offset and reference use.", "https://player.vimeo.com/video/900610082"],
-      [5, "Sketcher Session 05", "Sketcher practice and common mistakes correction.", "https://player.vimeo.com/video/900611137"],
-      [6, "Part Design Session 01", "Part Design interface, pad, pocket and basic solid workflow.", "https://player.vimeo.com/video/900612354"],
-      [7, "Part Design Session 02", "Fillet, chamfer, hole, shell and feature order thinking.", "https://player.vimeo.com/video/900613490"],
-      [8, "Part Design Session 03", "Reference elements, planes, axis and design intent.", "https://player.vimeo.com/video/900614440"],
-      [9, "Part Design Session 04", "Practice model creation and tree structure discipline.", "https://player.vimeo.com/video/900615262"],
-      [10, "Part Design Session 05", "Final basic practice before live domain sessions.", "https://player.vimeo.com/video/900616202"],
+      [
+        1,
+        "Sketcher Session 01",
+        "CATIA sketcher introduction and basic sketch workflow.",
+        "https://player.vimeo.com/video/900601730",
+      ],
+      [
+        2,
+        "Sketcher Session 02",
+        "Profile creation, constraints and clean sketching practice.",
+        "https://player.vimeo.com/video/900603176",
+      ],
+      [
+        3,
+        "Sketcher Session 03",
+        "Advanced profile creation and sketch correction practice.",
+        "https://player.vimeo.com/video/900609026",
+      ],
+      [
+        4,
+        "Sketcher Session 04",
+        "Sketcher tools, trim, mirror, offset and reference use.",
+        "https://player.vimeo.com/video/900610082",
+      ],
+      [
+        5,
+        "Sketcher Session 05",
+        "Sketcher practice and common mistakes correction.",
+        "https://player.vimeo.com/video/900611137",
+      ],
+      [
+        6,
+        "Part Design Session 01",
+        "Part Design interface, pad, pocket and basic solid workflow.",
+        "https://player.vimeo.com/video/900612354",
+      ],
+      [
+        7,
+        "Part Design Session 02",
+        "Fillet, chamfer, hole, shell and feature order thinking.",
+        "https://player.vimeo.com/video/900613490",
+      ],
+      [
+        8,
+        "Part Design Session 03",
+        "Reference elements, planes, axis and design intent.",
+        "https://player.vimeo.com/video/900614440",
+      ],
+      [
+        9,
+        "Part Design Session 04",
+        "Practice model creation and tree structure discipline.",
+        "https://player.vimeo.com/video/900615262",
+      ],
+      [
+        10,
+        "Part Design Session 05",
+        "Final basic practice before live domain sessions.",
+        "https://player.vimeo.com/video/900616202",
+      ],
     ],
   },
   {
     slug: "ug-nx-tool-for-beginners",
     title: "UG NX Tool for Beginners",
     subtitle: "Optional after CATIA basics",
-    description: "NX awareness course for students who want extra CAD confidence.",
+    description:
+      "NX awareness course for students who want extra CAD confidence.",
     icon: "🔧",
     order_index: 2,
     lessons: [
-      [1, "NX Sketchers Introduction", "Learn NX sketcher basics.", "https://player.vimeo.com/video/997012965"],
-      [2, "NX Part-Design", "Learn NX part design basics.", "https://player.vimeo.com/video/997173059"],
-      [3, "NX Assembly Workbench", "Learn assembly basics.", "https://player.vimeo.com/video/707301515"],
-      [4, "Synchronous Modeling Basics", "Understand direct edit workflow used in industry corrections."],
-      [5, "NX Assembly & Drafting Basics", "Assembly positioning and drawing basics for mechanical parts."],
+      [
+        1,
+        "NX Sketchers Introduction",
+        "Learn NX sketcher basics.",
+        "https://player.vimeo.com/video/997012965",
+      ],
+      [
+        2,
+        "NX Part-Design",
+        "Learn NX part design basics.",
+        "https://player.vimeo.com/video/997173059",
+      ],
+      [
+        3,
+        "NX Assembly Workbench",
+        "Learn assembly basics.",
+        "https://player.vimeo.com/video/707301515",
+      ],
+      [
+        4,
+        "Synchronous Modeling Basics",
+        "Understand direct edit workflow used in industry corrections.",
+      ],
+      [
+        5,
+        "NX Assembly & Drafting Basics",
+        "Assembly positioning and drawing basics for mechanical parts.",
+      ],
     ],
   },
   {
@@ -48,36 +122,186 @@ const DEFAULT_COURSES = [
     icon: "📐",
     order_index: 3,
     lessons: [
-      [1, "Session 1 GD&T", "Introduction of the Course", "https://player.vimeo.com/video/723081241"],
-      [2, "Session 2 GD&T", "Overview Of the Course", "https://player.vimeo.com/video/723090995"],
-      [3, "Session 3 GD&T", "Test Your Current Skills", "https://player.vimeo.com/video/723082681"],
-      [4, "Session 4 GD&T", "Need Of GD&T", "https://player.vimeo.com/video/723092850"],
-      [5, "Session 5 GD&T", "Concept Of Tolerant Zone", "https://player.vimeo.com/video/723085556"],
-      [6, "Session 6 GD&T", "Concept Of Datums", "https://player.vimeo.com/video/723087613"],
-      [7, "Session 7 GD&T", "Concept Of MMC", "https://player.vimeo.com/video/723378996"],
-      [8, "Session 8 GD&T", "Inspection of a simple drawing", "https://player.vimeo.com/video/723389836"],
-      [9, "Session 9 GD&T", "Concept of polar coordinates_", "https://player.vimeo.com/video/723394823"],
-      [10, "Session 10 GD&T", "Circular Profile", "https://player.vimeo.com/video/723399837"],
-      [11, "Session 11 GD&T", "Virtual Size", "https://player.vimeo.com/video/723634058"],
-      [12, "Session 12 GD&T", "Understanding datums in detail", "https://player.vimeo.com/video/723640796"],
-      [13, "Session 13 GD&T", "Dimensioning a drawing", "https://player.vimeo.com/video/723643879"],
-      [14, "Session 14 GD&T", "Inspection of a component", "https://player.vimeo.com/video/723646990"],
-      [15, "Session 15 GD&T", "Inspection of a component 2", "https://player.vimeo.com/video/723650329"],
-      [16, "Session 16 GD&T", "Holes as datums", "https://player.vimeo.com/video/723665418"],
-      [17, "Session 17 GD&T", "Form controls", "https://player.vimeo.com/video/723660545"],
-      [18, "Session 18 GD&T", "Paradox", "https://player.vimeo.com/video/723662005"],
-      [19, "Session 19 GD&T", "Types of feature control frame", "https://player.vimeo.com/video/723675060"],
-      [20, "Session 20 GD&T", "Types of feature control frame 2", "https://player.vimeo.com/video/723680147"],
-      [21, "Session 21 GD&T", "Profile controls", "https://player.vimeo.com/video/723683604"],
-      [22, "Session 22 GD&T", "Coaxial datums", "https://player.vimeo.com/video/723686448"],
-      [23, "Session 23 GD&T", "Coaxial controls", "https://player.vimeo.com/video/723688113"],
-      [24, "Session 24 GD&T", "Projected tol_", "https://player.vimeo.com/video/723690013"],
-      [25, "Session 25 GD&T", "Concept of boundaries_", "https://player.vimeo.com/video/723692660"],
-      [26, "Session 26 GD&T", "Individual Stackup", "https://player.vimeo.com/video/723694617"],
-      [27, "Session 27 GD&T", "Set up for Assy Stackup", "https://player.vimeo.com/video/723695266"],
-      [28, "Session 28 GD&T", "Stackup problem 1", "https://player.vimeo.com/video/723695948"],
-      [29, "Session 29 GD&T", "Stackup problem 2", "https://player.vimeo.com/video/723696418"],
-      [30, "Session 30 GD&T", "Stackup problem 3", "https://player.vimeo.com/video/723696757"],
+      [
+        1,
+        "Session 1 GD&T",
+        "Introduction of the Course",
+        "https://player.vimeo.com/video/723081241",
+      ],
+      [
+        2,
+        "Session 2 GD&T",
+        "Overview Of the Course",
+        "https://player.vimeo.com/video/723090995",
+      ],
+      [
+        3,
+        "Session 3 GD&T",
+        "Test Your Current Skills",
+        "https://player.vimeo.com/video/723082681",
+      ],
+      [
+        4,
+        "Session 4 GD&T",
+        "Need Of GD&T",
+        "https://player.vimeo.com/video/723092850",
+      ],
+      [
+        5,
+        "Session 5 GD&T",
+        "Concept Of Tolerant Zone",
+        "https://player.vimeo.com/video/723085556",
+      ],
+      [
+        6,
+        "Session 6 GD&T",
+        "Concept Of Datums",
+        "https://player.vimeo.com/video/723087613",
+      ],
+      [
+        7,
+        "Session 7 GD&T",
+        "Concept Of MMC",
+        "https://player.vimeo.com/video/723378996",
+      ],
+      [
+        8,
+        "Session 8 GD&T",
+        "Inspection of a simple drawing",
+        "https://player.vimeo.com/video/723389836",
+      ],
+      [
+        9,
+        "Session 9 GD&T",
+        "Concept of polar coordinates_",
+        "https://player.vimeo.com/video/723394823",
+      ],
+      [
+        10,
+        "Session 10 GD&T",
+        "Circular Profile",
+        "https://player.vimeo.com/video/723399837",
+      ],
+      [
+        11,
+        "Session 11 GD&T",
+        "Virtual Size",
+        "https://player.vimeo.com/video/723634058",
+      ],
+      [
+        12,
+        "Session 12 GD&T",
+        "Understanding datums in detail",
+        "https://player.vimeo.com/video/723640796",
+      ],
+      [
+        13,
+        "Session 13 GD&T",
+        "Dimensioning a drawing",
+        "https://player.vimeo.com/video/723643879",
+      ],
+      [
+        14,
+        "Session 14 GD&T",
+        "Inspection of a component",
+        "https://player.vimeo.com/video/723646990",
+      ],
+      [
+        15,
+        "Session 15 GD&T",
+        "Inspection of a component 2",
+        "https://player.vimeo.com/video/723650329",
+      ],
+      [
+        16,
+        "Session 16 GD&T",
+        "Holes as datums",
+        "https://player.vimeo.com/video/723665418",
+      ],
+      [
+        17,
+        "Session 17 GD&T",
+        "Form controls",
+        "https://player.vimeo.com/video/723660545",
+      ],
+      [
+        18,
+        "Session 18 GD&T",
+        "Paradox",
+        "https://player.vimeo.com/video/723662005",
+      ],
+      [
+        19,
+        "Session 19 GD&T",
+        "Types of feature control frame",
+        "https://player.vimeo.com/video/723675060",
+      ],
+      [
+        20,
+        "Session 20 GD&T",
+        "Types of feature control frame 2",
+        "https://player.vimeo.com/video/723680147",
+      ],
+      [
+        21,
+        "Session 21 GD&T",
+        "Profile controls",
+        "https://player.vimeo.com/video/723683604",
+      ],
+      [
+        22,
+        "Session 22 GD&T",
+        "Coaxial datums",
+        "https://player.vimeo.com/video/723686448",
+      ],
+      [
+        23,
+        "Session 23 GD&T",
+        "Coaxial controls",
+        "https://player.vimeo.com/video/723688113",
+      ],
+      [
+        24,
+        "Session 24 GD&T",
+        "Projected tol_",
+        "https://player.vimeo.com/video/723690013",
+      ],
+      [
+        25,
+        "Session 25 GD&T",
+        "Concept of boundaries_",
+        "https://player.vimeo.com/video/723692660",
+      ],
+      [
+        26,
+        "Session 26 GD&T",
+        "Individual Stackup",
+        "https://player.vimeo.com/video/723694617",
+      ],
+      [
+        27,
+        "Session 27 GD&T",
+        "Set up for Assy Stackup",
+        "https://player.vimeo.com/video/723695266",
+      ],
+      [
+        28,
+        "Session 28 GD&T",
+        "Stackup problem 1",
+        "https://player.vimeo.com/video/723695948",
+      ],
+      [
+        29,
+        "Session 29 GD&T",
+        "Stackup problem 2",
+        "https://player.vimeo.com/video/723696418",
+      ],
+      [
+        30,
+        "Session 30 GD&T",
+        "Stackup problem 3",
+        "https://player.vimeo.com/video/723696757",
+      ],
     ],
   },
 ];
@@ -164,10 +388,7 @@ function isComplete(progress, lesson) {
       100,
   );
 
-  return (
-    Number(progress?.watched_seconds || 0) >= required &&
-    required > 0
-  );
+  return Number(progress?.watched_seconds || 0) >= required && required > 0;
 }
 
 function buildCoursePayload(course, progressesByLessonId) {
@@ -235,9 +456,7 @@ function normalizeAccessRow(row) {
     show_sessions: row?.show_sessions !== false,
     show_assignments: row?.show_assignments !== false,
     show_progress: row?.show_progress !== false,
-    visible_prerequisite_ids: Array.isArray(
-      row?.visible_prerequisite_ids,
-    )
+    visible_prerequisite_ids: Array.isArray(row?.visible_prerequisite_ids)
       ? row.visible_prerequisite_ids
       : [],
   };
@@ -384,6 +603,14 @@ const updateAdminBatchAccess = async (req, res, next) => {
 
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
+      include: {
+        course: {
+          select: { name: true },
+        },
+        scheduled_sessions: {
+          orderBy: { session_number: "asc" },
+        },
+      },
     });
 
     if (!batch) return error(res, 404, "Batch not found.");
@@ -398,10 +625,7 @@ const updateAdminBatchAccess = async (req, res, next) => {
         ? batch.end_date
         : new Date(req.body.end_date);
 
-    if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime())
-    ) {
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return error(res, 400, "Valid batch start and end dates are required.");
     }
 
@@ -427,14 +651,70 @@ const updateAdminBatchAccess = async (req, res, next) => {
               .filter(Boolean)
           : [];
 
-    await prisma.batch.update({
-      where: { id: batchId },
-      data: {
-        start_date: startDate,
-        end_date: endDate,
-        max_students: maxStudents,
-        time_slots: timeSlots,
-      },
+    const startChanged =
+      startDate.getTime() !== new Date(batch.start_date).getTime();
+
+    let recalculatedEndDate = endDate;
+    let recalculatedName = batch.name;
+    let newSessionDates = new Map();
+
+    if (startChanged) {
+      try {
+        newSessionDates = calculateRescheduledDates(
+          batch.scheduled_sessions || [],
+          startDate,
+        );
+      } catch (scheduleError) {
+        return error(res, 400, scheduleError.message);
+      }
+
+      const dates = [...newSessionDates.values()];
+
+      if (dates.length > 0) {
+        recalculatedEndDate = dates[dates.length - 1];
+      }
+
+      recalculatedName = batchNameForDate(batch.course.name, startDate);
+
+      const duplicate = await prisma.batch.findFirst({
+        where: {
+          id: { not: batchId },
+          name: recalculatedName,
+        },
+        select: { id: true },
+      });
+
+      if (duplicate) {
+        return error(
+          res,
+          409,
+          "Another batch already uses this course and start date.",
+        );
+      }
+    }
+
+    if (recalculatedEndDate <= startDate) {
+      return error(res, 400, "Batch end date must be after start date.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.batch.update({
+        where: { id: batchId },
+        data: {
+          name: recalculatedName,
+          start_date: startDate,
+          end_date: recalculatedEndDate,
+          max_students: maxStudents,
+          time_slots: timeSlots,
+        },
+      });
+
+      for (const [sessionId, scheduledAt] of newSessionDates) {
+        await tx.scheduledSession.update({
+          where: { id: sessionId },
+          data: { scheduled_at: scheduledAt },
+        });
+      }
     });
 
     const currentAccess =
@@ -461,8 +741,7 @@ const updateAdminBatchAccess = async (req, res, next) => {
         : Boolean(req.body.show_progress);
 
     const visibleIds =
-      showPrerequisites &&
-      Array.isArray(req.body.visible_prerequisite_ids)
+      showPrerequisites && Array.isArray(req.body.visible_prerequisite_ids)
         ? [
             ...new Set(
               req.body.visible_prerequisite_ids
@@ -500,15 +779,10 @@ const updateAdminBatchAccess = async (req, res, next) => {
 
     const updatedAccess = await getBatchAccess(batchId);
 
-    return success(
-      res,
-      200,
-      "Batch dates and student access updated.",
-      {
-        ...updatedBatch,
-        ...updatedAccess,
-      },
-    );
+    return success(res, 200, "Batch dates and student access updated.", {
+      ...updatedBatch,
+      ...updatedAccess,
+    });
   } catch (err) {
     next(err);
   }
@@ -632,10 +906,7 @@ const updateLessonProgress = async (req, res, next) => {
 
     const cappedWatched = completedFromClient
       ? lesson.duration_seconds
-      : Math.min(
-          Math.max(watched, position),
-          lesson.duration_seconds,
-        );
+      : Math.min(Math.max(watched, position), lesson.duration_seconds);
 
     const isNowComplete =
       cappedWatched >= requiredSeconds || completedFromClient;
@@ -677,9 +948,7 @@ const updateLessonProgress = async (req, res, next) => {
           position || cappedWatched,
           lesson.duration_seconds,
         ),
-        ...(isNowComplete
-          ? { completed_at: new Date() }
-          : {}),
+        ...(isNowComplete ? { completed_at: new Date() } : {}),
       },
     });
 
@@ -760,9 +1029,7 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
           title: course.title,
           total_lessons: total,
           completed_lessons: completed,
-          progress_percent: total
-            ? Math.round((completed / total) * 100)
-            : 0,
+          progress_percent: total ? Math.round((completed / total) * 100) : 0,
         };
       });
 
@@ -795,19 +1062,12 @@ const getAdminPrerequisiteProgress = async (req, res, next) => {
         catia_progress_percent: catia?.progress_percent || 0,
         total_lessons: allTotal,
         completed_lessons: allDone,
-        progress_percent: allTotal
-          ? Math.round((allDone / allTotal) * 100)
-          : 0,
+        progress_percent: allTotal ? Math.round((allDone / allTotal) * 100) : 0,
         courses: courseRows,
       };
     });
 
-    return success(
-      res,
-      200,
-      "Prerequisite progress fetched.",
-      rows,
-    );
+    return success(res, 200, "Prerequisite progress fetched.", rows);
   } catch (err) {
     next(err);
   }

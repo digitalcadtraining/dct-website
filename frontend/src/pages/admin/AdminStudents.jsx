@@ -6,6 +6,7 @@ import {
   RefreshCcw,
   Search,
   X,
+  Copy,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
@@ -130,6 +131,7 @@ function EmiEditor({ target, onClose, onSaved }) {
   const third = byNumber(3);
 
   const [values, setValues] = useState({
+    total_fees: Number(target?.enrollment?.enrolled_price || 0),
     emi1_amount: Number(first?.amount || 0),
     emi1_due_date: toDateInput(first?.due_date),
     emi2_amount: Number(second?.amount || 0),
@@ -146,10 +148,9 @@ function EmiEditor({ target, onClose, onSaved }) {
   const registrationPaid =
     target.enrollment.payment_status === "PAID" ? 999 : 0;
 
-  const expectedEmiTotal = Math.max(
-    0,
-    Number(target.enrollment.enrolled_price || 0) - registrationPaid,
-  );
+  const totalFees = Number(values.total_fees);
+
+  const expectedEmiTotal = Math.max(0, totalFees - registrationPaid);
 
   const enteredTotal =
     Number(values.emi1_amount || 0) +
@@ -168,11 +169,24 @@ function EmiEditor({ target, onClose, onSaved }) {
   const submit = async (event) => {
     event.preventDefault();
 
+    if (!Number.isFinite(totalFees) || totalFees < registrationPaid) {
+      setError(
+        "Total fees cannot be less than the registration amount received.",
+      );
+      return;
+    }
+
+    if (Math.abs(remaining) > 0.01) {
+      setError("EMI amounts must match the remaining course fees.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
 
       await adminApi.updateEnrollmentEmis(target.enrollment.id, {
+        total_fees: totalFees,
         installments: [
           {
             installment_no: 1,
@@ -250,30 +264,35 @@ function EmiEditor({ target, onClose, onSaved }) {
           </button>
         </div>
 
-        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm">
-          <div>
-            <p className="text-[10px] font-black uppercase text-gray-500">
-              Course Price
-            </p>
-            <p className="font-black text-dct-dark">
-              {money(target.enrollment.enrolled_price)}
-            </p>
-          </div>
+        <div className="mb-5 grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm sm:grid-cols-3">
+          <label>
+            <span className="text-[10px] font-black uppercase text-gray-500">
+              Total Course Fees (₹)
+            </span>
+            <input
+              type="number"
+              min={registrationPaid}
+              step="0.01"
+              value={values.total_fees}
+              onChange={(event) => update("total_fees", event.target.value)}
+              className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-3 py-2 font-black text-dct-dark"
+            />
+          </label>
 
           <div>
             <p className="text-[10px] font-black uppercase text-gray-500">
-              Registration
+              Registration Received
             </p>
-            <p className="font-black text-dct-dark">
+            <p className="mt-3 font-black text-dct-dark">
               {money(registrationPaid)}
             </p>
           </div>
 
           <div>
             <p className="text-[10px] font-black uppercase text-gray-500">
-              EMI Total
+              Required EMI Total
             </p>
-            <p className="font-black text-dct-dark">
+            <p className="mt-3 font-black text-dct-dark">
               {money(expectedEmiTotal)}
             </p>
           </div>
@@ -1007,6 +1026,7 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
 
 function BatchGroup({
   batch,
+  searchQuery = "",
   onPaid,
   onPending,
   onToggle,
@@ -1017,15 +1037,36 @@ function BatchGroup({
 }) {
   const [open, setOpen] = useState(false);
 
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const matchingStudentItems = normalizedSearch
+    ? batch.items.filter(({ student }) =>
+        `${student?.name || ""} ${student?.email || ""} ${student?.phone || ""}`
+          .toLowerCase()
+          .includes(normalizedSearch),
+      )
+    : batch.items;
+
+  const batchMatchesSearch =
+    normalizedSearch &&
+    `${batch.name || ""} ${batch.course?.name || ""}`
+      .toLowerCase()
+      .includes(normalizedSearch);
+
+  const visibleStudentItems =
+    normalizedSearch && !batchMatchesSearch
+      ? matchingStudentItems
+      : batch.items;
+
+  const showStudentTable = open || Boolean(normalizedSearch);
+
   /*
    * IMPORTANT:
    * Financial summaries use ACTIVE students only.
    * Disabled students remain visible in the table,
    * but their fees are excluded from all calculations.
    */
-  const activeItems = batch.items.filter(
-    (item) => item.student.is_active,
-  );
+  const activeItems = batch.items.filter((item) => item.student.is_active);
 
   const active = activeItems.length;
   const disabled = batch.items.length - active;
@@ -1035,31 +1076,17 @@ function BatchGroup({
    */
   const received = activeItems.reduce(
     (sum, item) =>
-      sum +
-      Number(
-        item.enrollment.payment_summary
-          ?.installment_received || 0,
-      ),
+      sum + Number(item.enrollment.payment_summary?.installment_received || 0),
     0,
   );
 
   const pending = activeItems.reduce(
-    (sum, item) =>
-      sum +
-      Number(
-        item.enrollment.payment_summary?.pending ||
-          0,
-      ),
+    (sum, item) => sum + Number(item.enrollment.payment_summary?.pending || 0),
     0,
   );
 
   const overdue = activeItems.reduce(
-    (sum, item) =>
-      sum +
-      Number(
-        item.enrollment.payment_summary?.overdue ||
-          0,
-      ),
+    (sum, item) => sum + Number(item.enrollment.payment_summary?.overdue || 0),
     0,
   );
 
@@ -1074,37 +1101,27 @@ function BatchGroup({
   const getEmiSummary = (installmentNumber) => {
     return activeItems.reduce(
       (summary, item) => {
-        const installment = (
-          item.enrollment.installments || []
-        ).find(
-          (entry) =>
-            Number(entry.installment_no) ===
-            installmentNumber,
+        const installment = (item.enrollment.installments || []).find(
+          (entry) => Number(entry.installment_no) === installmentNumber,
         );
 
         if (!installment) {
           return summary;
         }
 
-        const amount = Number(
-          installment.amount || 0,
-        );
+        const amount = Number(installment.amount || 0);
 
         summary.assigned += amount;
         summary.students += 1;
 
-        if (
-          installment.display_status === "PAID"
-        ) {
+        if (installment.display_status === "PAID") {
           summary.received += amount;
           summary.paidStudents += 1;
         } else {
           summary.remaining += amount;
           summary.pendingStudents += 1;
 
-          if (
-            installment.display_status === "DUE"
-          ) {
+          if (installment.display_status === "DUE") {
             summary.overdue += amount;
             summary.overdueStudents += 1;
           }
@@ -1129,18 +1146,12 @@ function BatchGroup({
   const emi2 = getEmiSummary(2);
   const emi3 = getEmiSummary(3);
 
-  const hasThirdEmi =
-    emi3.assigned > 0 || emi3.students > 0;
+  const hasThirdEmi = emi3.assigned > 0 || emi3.students > 0;
 
-  const EmiSummaryCard = ({
-    label,
-    data,
-  }) => (
+  const EmiSummaryCard = ({ label, data }) => (
     <div className="min-w-[190px] rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-black text-dct-dark">
-          {label}
-        </span>
+        <span className="text-[11px] font-black text-dct-dark">{label}</span>
 
         <span className="text-[9px] font-bold text-gray-400">
           {data.paidStudents}/{data.students} paid
@@ -1149,9 +1160,7 @@ function BatchGroup({
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
         <div>
-          <p className="text-[9px] uppercase text-gray-400">
-            Received
-          </p>
+          <p className="text-[9px] uppercase text-gray-400">Received</p>
 
           <p className="text-xs font-black text-green-700">
             {money(data.received)}
@@ -1159,15 +1168,11 @@ function BatchGroup({
         </div>
 
         <div>
-          <p className="text-[9px] uppercase text-gray-400">
-            Remaining
-          </p>
+          <p className="text-[9px] uppercase text-gray-400">Remaining</p>
 
           <p
             className={`text-xs font-black ${
-              data.remaining > 0
-                ? "text-amber-700"
-                : "text-green-700"
+              data.remaining > 0 ? "text-amber-700" : "text-green-700"
             }`}
           >
             {money(data.remaining)}
@@ -1177,9 +1182,7 @@ function BatchGroup({
 
       {data.overdue > 0 && (
         <div className="mt-2 flex items-center justify-between rounded-lg bg-red-50 px-2 py-1.5">
-          <span className="text-[9px] font-bold text-red-600">
-            Overdue
-          </span>
+          <span className="text-[9px] font-bold text-red-600">Overdue</span>
 
           <span className="text-[10px] font-black text-red-700">
             {money(data.overdue)}
@@ -1191,23 +1194,16 @@ function BatchGroup({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-
       {/* BATCH HEADER */}
       <div className="px-5 py-4 hover:bg-gray-50">
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() =>
-              setOpen((value) => !value)
-            }
+            onClick={() => setOpen((value) => !value)}
             className="min-w-0 flex-1 text-left"
           >
             <div className="flex items-center gap-2">
-              {open ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronRight size={16} />
-              )}
+              {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 
               <h3 className="truncate text-sm font-black text-dct-dark">
                 {batch.name}
@@ -1216,20 +1212,15 @@ function BatchGroup({
 
             <p className="mt-1 text-xs text-gray-500">
               {active} active · {disabled} disabled
-              {" · "}EMI received{" "}
-              {money(received)}
-              {" · "}Remaining{" "}
-              {money(pending)}
-              {" · "}Overdue{" "}
-              {money(overdue)}
+              {" · "}EMI received {money(received)}
+              {" · "}Remaining {money(pending)}
+              {" · "}Overdue {money(overdue)}
             </p>
           </button>
 
           <button
             type="button"
-            onClick={() =>
-              onManualEnrollment({ batch })
-            }
+            onClick={() => onManualEnrollment({ batch })}
             className="shrink-0 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700 hover:bg-green-100"
           >
             Register Student
@@ -1238,21 +1229,12 @@ function BatchGroup({
 
         {/* EMI-WISE FINANCIAL SUMMARY */}
         <div className="mt-4 flex flex-wrap gap-3">
-          <EmiSummaryCard
-            label="First EMI"
-            data={emi1}
-          />
+          <EmiSummaryCard label="First EMI" data={emi1} />
 
-          <EmiSummaryCard
-            label="Second EMI"
-            data={emi2}
-          />
+          <EmiSummaryCard label="Second EMI" data={emi2} />
 
           {hasThirdEmi && (
-            <EmiSummaryCard
-              label="Third EMI / Extra"
-              data={emi3}
-            />
+            <EmiSummaryCard label="Third EMI / Extra" data={emi3} />
           )}
 
           <div className="min-w-[190px] rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5">
@@ -1261,9 +1243,7 @@ function BatchGroup({
             </p>
 
             <div className="mt-2 flex justify-between gap-4">
-              <span className="text-[10px] text-gray-500">
-                Received
-              </span>
+              <span className="text-[10px] text-gray-500">Received</span>
 
               <strong className="text-xs text-green-700">
                 {money(received)}
@@ -1271,9 +1251,7 @@ function BatchGroup({
             </div>
 
             <div className="mt-1 flex justify-between gap-4">
-              <span className="text-[10px] text-gray-500">
-                Remaining
-              </span>
+              <span className="text-[10px] text-gray-500">Remaining</span>
 
               <strong className="text-xs text-amber-700">
                 {money(pending)}
@@ -1281,15 +1259,11 @@ function BatchGroup({
             </div>
 
             <div className="mt-1 flex justify-between gap-4">
-              <span className="text-[10px] text-gray-500">
-                Overdue
-              </span>
+              <span className="text-[10px] text-gray-500">Overdue</span>
 
               <strong
                 className={`text-xs ${
-                  overdue > 0
-                    ? "text-red-700"
-                    : "text-green-700"
+                  overdue > 0 ? "text-red-700" : "text-green-700"
                 }`}
               >
                 {money(overdue)}
@@ -1300,234 +1274,186 @@ function BatchGroup({
       </div>
 
       {/* EXISTING STUDENT TABLE */}
-      {open && (
+      {showStudentTable && (
         <div className="overflow-x-auto border-t border-gray-100">
           <table className="w-full min-w-[1050px] text-left">
             <thead className="bg-gray-50 text-[10px] uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-3">
-                  Student
-                </th>
+                <th className="px-4 py-3">Student</th>
 
-                <th className="px-4 py-3">
-                  Course Price
-                </th>
+                <th className="px-4 py-3">Course Price</th>
 
-                <th className="px-4 py-3">
-                  First EMI
-                </th>
+                <th className="px-4 py-3">First EMI</th>
 
-                <th className="px-4 py-3">
-                  Second EMI
-                </th>
+                <th className="px-4 py-3">Second EMI</th>
 
-                <th className="px-4 py-3">
-                  Third EMI / Extra
-                </th>
+                <th className="px-4 py-3">Third EMI / Extra</th>
 
-                <th className="px-4 py-3">
-                  Balance
-                </th>
+                <th className="px-4 py-3">Balance</th>
 
-                <th className="px-4 py-3">
-                  Account
-                </th>
+                <th className="px-4 py-3">Account</th>
               </tr>
             </thead>
 
             <tbody>
-              {[...batch.items]
+              {[...visibleStudentItems]
                 .sort(
                   (a, b) =>
-                    Number(
-                      b.student.is_active,
-                    ) -
-                    Number(
-                      a.student.is_active,
-                    ),
+                    Number(b.student.is_active) - Number(a.student.is_active),
                 )
-                .map(
-                  ({
-                    student,
-                    enrollment,
-                  }) => {
-                    const installments =
-                      enrollment.installments ||
-                      [];
+                .map(({ student, enrollment }) => {
+                  const installments = enrollment.installments || [];
 
-                    return (
-                      <tr
-                        key={`${student.id}-${enrollment.id}`}
-                        className="border-t border-gray-50 align-top"
-                      >
-                        <td className="px-4 py-4">
-                          <p className="text-xs font-black text-dct-dark">
-                            {student.name}
-                          </p>
+                  return (
+                    <tr
+                      key={`${student.id}-${enrollment.id}`}
+                      className="border-t border-gray-50 align-top"
+                    >
+                      <td className="px-4 py-4">
+                        <p className="text-xs font-black text-dct-dark">
+                          {student.name}
+                        </p>
 
-                          <p className="text-[10px] text-gray-500">
-                            {student.phone} ·{" "}
-                            {student.email}
-                          </p>
-                        </td>
+                        <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-gray-500">
+                          <span>{student.phone}</span>
 
-                        <td className="px-4 py-4 text-xs font-black text-dct-primary">
-                          {money(
-                            enrollment.enrolled_price,
+                          {student.phone && (
+                            <button
+                              type="button"
+                              title="Copy phone number"
+                              aria-label={`Copy phone number for ${student.name}`}
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    String(student.phone),
+                                  );
+                                } catch {
+                                  window.prompt(
+                                    "Copy phone number:",
+                                    String(student.phone),
+                                  );
+                                }
+                              }}
+                              className="rounded p-1 text-gray-400 hover:bg-blue-50 hover:text-dct-primary"
+                            >
+                              <Copy size={12} />
+                            </button>
                           )}
-                        </td>
 
-                        <td className="px-4 py-4">
-                          <InstallmentCell
-                            item={installments.find(
-                              (item) =>
-                                Number(
-                                  item.installment_no,
-                                ) === 1,
-                            )}
-                            onPaid={onPaid}
-                            onPending={
-                              onPending
-                            }
-                            savingPaymentId={
-                              savingPaymentId
-                            }
-                          />
-                        </td>
+                          <span>· {student.email}</span>
+                        </div>
+                      </td>
 
-                        <td className="px-4 py-4">
-                          <InstallmentCell
-                            item={installments.find(
-                              (item) =>
-                                Number(
-                                  item.installment_no,
-                                ) === 2,
-                            )}
-                            onPaid={onPaid}
-                            onPending={
-                              onPending
-                            }
-                            savingPaymentId={
-                              savingPaymentId
-                            }
-                          />
-                        </td>
+                      <td className="px-4 py-4 text-xs font-black text-dct-primary">
+                        {money(enrollment.enrolled_price)}
+                      </td>
 
-                        <td className="px-4 py-4">
-                          <InstallmentCell
-                            item={installments.find(
-                              (item) =>
-                                Number(
-                                  item.installment_no,
-                                ) === 3,
-                            )}
-                            onPaid={onPaid}
-                            onPending={
-                              onPending
-                            }
-                            savingPaymentId={
-                              savingPaymentId
-                            }
-                            emptyAction={() =>
+                      <td className="px-4 py-4">
+                        <InstallmentCell
+                          item={installments.find(
+                            (item) => Number(item.installment_no) === 1,
+                          )}
+                          onPaid={onPaid}
+                          onPending={onPending}
+                          savingPaymentId={savingPaymentId}
+                        />
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <InstallmentCell
+                          item={installments.find(
+                            (item) => Number(item.installment_no) === 2,
+                          )}
+                          onPaid={onPaid}
+                          onPending={onPending}
+                          savingPaymentId={savingPaymentId}
+                        />
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <InstallmentCell
+                          item={installments.find(
+                            (item) => Number(item.installment_no) === 3,
+                          )}
+                          onPaid={onPaid}
+                          onPending={onPending}
+                          savingPaymentId={savingPaymentId}
+                          emptyAction={() =>
+                            onEditEmi({
+                              student,
+                              enrollment,
+                            })
+                          }
+                        />
+
+                        {installments.some(
+                          (item) => Number(item.installment_no) === 3,
+                        ) && (
+                          <button
+                            type="button"
+                            onClick={() =>
                               onEditEmi({
                                 student,
                                 enrollment,
                               })
                             }
-                          />
+                            className="mt-2 text-[10px] font-bold text-dct-primary underline"
+                          >
+                            Edit EMI Structure
+                          </button>
+                        )}
+                      </td>
 
-                          {installments.some(
-                            (item) =>
-                              Number(
-                                item.installment_no,
-                              ) === 3,
-                          ) && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onEditEmi({
-                                  student,
-                                  enrollment,
-                                })
-                              }
-                              className="mt-2 text-[10px] font-bold text-dct-primary underline"
-                            >
-                              Edit EMI Structure
-                            </button>
-                          )}
-                        </td>
+                      <td
+                        className={`px-4 py-4 text-xs font-black ${
+                          Number(enrollment.payment_summary?.balance || 0) > 0
+                            ? "text-red-600"
+                            : "text-green-700"
+                        }`}
+                      >
+                        {money(enrollment.payment_summary?.balance)}
+                      </td>
 
-                        <td
-                          className={`px-4 py-4 text-xs font-black ${
-                            Number(
-                              enrollment
-                                .payment_summary
-                                ?.balance ||
-                                0,
-                            ) > 0
-                              ? "text-red-600"
-                              : "text-green-700"
+                      <td className="px-4 py-4">
+                        <span
+                          className={`rounded-full px-2 py-1 text-[10px] font-black ${
+                            student.is_active
+                              ? "bg-green-50 text-green-700"
+                              : "bg-red-50 text-red-700"
                           }`}
                         >
-                          {money(
-                            enrollment
-                              .payment_summary
-                              ?.balance,
-                          )}
-                        </td>
+                          {student.is_active ? "Active" : "Disabled"}
+                        </span>
 
-                        <td className="px-4 py-4">
-                          <span
-                            className={`rounded-full px-2 py-1 text-[10px] font-black ${
-                              student.is_active
-                                ? "bg-green-50 text-green-700"
-                                : "bg-red-50 text-red-700"
-                            }`}
-                          >
-                            {student.is_active
-                              ? "Active"
-                              : "Disabled"}
-                          </span>
+                        <button
+                          type="button"
+                          onClick={() => onToggle(student.id)}
+                          className="ml-2 rounded-lg border border-gray-200 p-2"
+                          title="Enable or disable student"
+                        >
+                          <Power size={13} />
+                        </button>
 
+                        {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
+                          String(enrollment.batch?.name || ""),
+                        ) && (
                           <button
                             type="button"
                             onClick={() =>
-                              onToggle(
-                                student.id,
-                              )
+                              onManageCadAccess({
+                                student,
+                                enrollment,
+                              })
                             }
-                            className="ml-2 rounded-lg border border-gray-200 p-2"
-                            title="Enable or disable student"
+                            className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-dct-primary"
                           >
-                            <Power size={13} />
+                            Manage CAD Access
                           </button>
-
-                          {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
-                            String(
-                              enrollment.batch
-                                ?.name || "",
-                            ),
-                          ) && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onManageCadAccess(
-                                  {
-                                    student,
-                                    enrollment,
-                                  },
-                                )
-                              }
-                              className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-dct-primary"
-                            >
-                              Manage CAD Access
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  },
-                )}
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -1710,8 +1636,25 @@ export default function AdminStudents() {
   };
 
   const toggle = async (id) => {
-    await adminApi.toggleUserStatus(id);
-    await load();
+    try {
+      setError("");
+
+      await adminApi.toggleUserStatus(id);
+
+      setPayload((current) => ({
+        ...current,
+        students: (current.students || []).map((student) =>
+          student.id === id
+            ? { ...student, is_active: !student.is_active }
+            : student,
+        ),
+      }));
+
+      await load(true);
+    } catch (err) {
+      setError(err.message || "Could not update student status.");
+      await load(true);
+    }
   };
 
   const emiSaved = async () => {
@@ -1826,6 +1769,7 @@ export default function AdminStudents() {
               <BatchGroup
                 key={batch.id}
                 batch={batch}
+                searchQuery={search}
                 onPaid={markPaid}
                 onPending={markPending}
                 onToggle={toggle}

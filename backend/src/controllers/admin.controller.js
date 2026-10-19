@@ -653,19 +653,15 @@ const feeTracker = async (req, res, next) => {
           installments,
         });
 
-if (student.is_active) {
-  registrationReceived +=
-    paymentSummary.registration_received;
+        if (student.is_active) {
+          registrationReceived += paymentSummary.registration_received;
 
-  emiReceived +=
-    paymentSummary.installment_received;
+          emiReceived += paymentSummary.installment_received;
 
-  pendingEmi +=
-    paymentSummary.pending;
+          pendingEmi += paymentSummary.pending;
 
-  overdueEmi +=
-    paymentSummary.overdue;
-}
+          overdueEmi += paymentSummary.overdue;
+        }
 
         return {
           ...enrollment,
@@ -823,23 +819,31 @@ const updateEnrollmentInstallments = async (req, res, next) => {
       }
     }
 
-for (const emi of normalizedInstallments) {
-    if (emi.amount === 0) {
+    for (const emi of normalizedInstallments) {
+      if (emi.amount === 0) {
         emi.due_date = null;
+      }
     }
-}
 
     const registrationAmount =
       String(enrollment.payment_status || "").toUpperCase() === "PAID"
         ? 999
         : 0;
 
-    const enrolledPrice = Number(enrollment.enrolled_price || 0);
+    const enrolledPrice =
+      req.body.total_fees === undefined
+        ? Number(enrollment.enrolled_price || 0)
+        : Number(req.body.total_fees);
 
-    const expectedEmiTotal = Math.max(
-      0,
-      enrolledPrice - registrationAmount,
-    );
+    if (!Number.isFinite(enrolledPrice) || enrolledPrice < registrationAmount) {
+      return error(
+        res,
+        400,
+        "Total fees must be valid and cannot be less than registration received.",
+      );
+    }
+
+    const expectedEmiTotal = Math.max(0, enrolledPrice - registrationAmount);
 
     const enteredEmiTotal = normalizedInstallments.reduce(
       (sum, item) => sum + item.amount,
@@ -883,6 +887,11 @@ for (const emi of normalizedInstallments) {
 
     const updatedInstallments = await prisma.$transaction(async (tx) => {
       const results = [];
+
+      await tx.enrollment.update({
+        where: { id: enrollment.id },
+        data: { enrolled_price: enrolledPrice },
+      });
 
       for (const item of normalizedInstallments) {
         const existing = existingInstallments.get(item.installment_no);

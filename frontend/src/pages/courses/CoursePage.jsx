@@ -245,22 +245,15 @@ function getYoutubeEmbedUrl(url = "") {
 function getNearestBatch(batches = []) {
   const now = new Date();
 
-  // Match backend rule:
-  // keep batches started within the last 10 days
-  // plus all future batches.
-  const minDate = new Date(now);
-  minDate.setHours(0, 0, 0, 0);
-  minDate.setDate(minDate.getDate() - 10);
-
   const visibleStatuses = new Set([
     "APPROVED",
     "UPCOMING",
     "ACTIVE",
   ]);
 
-  const allowedBatches = (batches || [])
+  const validBatches = (batches || [])
     .filter((batch) => {
-      if (!batch) return false;
+      if (!batch?.start_date) return false;
 
       const status = String(
         batch.status || "",
@@ -273,79 +266,94 @@ function getNearestBatch(batches = []) {
         return false;
       }
 
-      if (!batch.start_date) {
-        return false;
-      }
-
-      const startDate = new Date(
+      const start = new Date(
         batch.start_date,
       );
 
-      return (
-        !Number.isNaN(startDate.getTime()) &&
-        startDate >= minDate
+      return !Number.isNaN(
+        start.getTime(),
       );
-    })
-    .sort((a, b) => {
-      /*
-       * Priority:
-       * 1. ACTIVE batch
-       * 2. Most recently started UPCOMING batch
-       * 3. Nearest future batch
-       */
-
-      const aStatus = String(
-        a.status || "",
-      ).toUpperCase();
-
-      const bStatus = String(
-        b.status || "",
-      ).toUpperCase();
-
-      if (
-        aStatus === "ACTIVE" &&
-        bStatus !== "ACTIVE"
-      ) {
-        return -1;
-      }
-
-      if (
-        bStatus === "ACTIVE" &&
-        aStatus !== "ACTIVE"
-      ) {
-        return 1;
-      }
-
-      const aDate = new Date(
-        a.start_date,
-      ).getTime();
-
-      const bDate = new Date(
-        b.start_date,
-      ).getTime();
-
-      const nowMs = now.getTime();
-
-      const aPast = aDate <= nowMs;
-      const bPast = bDate <= nowMs;
-
-      // If both are recently started,
-      // use the most recent one.
-      if (aPast && bPast) {
-        return bDate - aDate;
-      }
-
-      // Recently-started batch should remain
-      // primary instead of jumping to a later batch.
-      if (aPast !== bPast) {
-        return aPast ? -1 : 1;
-      }
-
-      // Both future: nearest future batch first.
-      return aDate - bDate;
     });
 
-  return allowedBatches[0] || null;
+  /*
+   * FIRST PRIORITY:
+   * nearest FUTURE batch.
+   *
+   * This is the batch currently accepting
+   * new admissions.
+   */
+  const futureBatches = validBatches
+    .filter(
+      (batch) =>
+        new Date(
+          batch.start_date,
+        ).getTime() > now.getTime(),
+    )
+    .sort(
+      (a, b) =>
+        new Date(
+          a.start_date,
+        ).getTime() -
+        new Date(
+          b.start_date,
+        ).getTime(),
+    );
+
+  if (futureBatches.length > 0) {
+    return futureBatches[0];
+  }
+
+  /*
+   * FALLBACK:
+   * no future batch exists.
+   *
+   * Use ACTIVE batch first.
+   */
+  const activeBatch = validBatches
+    .filter(
+      (batch) =>
+        String(
+          batch.status || "",
+        ).toUpperCase() ===
+        "ACTIVE",
+    )
+    .sort(
+      (a, b) =>
+        new Date(
+          b.start_date,
+        ).getTime() -
+        new Date(
+          a.start_date,
+        ).getTime(),
+    )[0];
+
+  if (activeBatch) {
+    return activeBatch;
+  }
+
+  /*
+   * LAST FALLBACK:
+   * latest already-started batch.
+   */
+  return (
+    validBatches
+      .filter(
+        (batch) =>
+          new Date(
+            batch.start_date,
+          ).getTime() <=
+          now.getTime(),
+      )
+      .sort(
+        (a, b) =>
+          new Date(
+            b.start_date,
+          ).getTime() -
+          new Date(
+            a.start_date,
+          ).getTime(),
+      )[0] || null
+  );
 }
 
 function makeProjectPracticeSessions(
@@ -545,7 +553,7 @@ export default function CoursePage({ course }) {
       course.regularOfferPrice ||
       course.regularPrice ||
       course.price ||
-      29,999,
+      29999,
   );
 
   const currentPrice =

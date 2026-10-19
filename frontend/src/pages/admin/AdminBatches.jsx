@@ -64,8 +64,7 @@ function toLocalInput(value) {
     hour12: false,
   }).formatToParts(date);
 
-  const get = (type) =>
-    parts.find((part) => part.type === type)?.value || "";
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
 
   return `${get("year")}-${get("month")}-${get("day")}T${get(
     "hour",
@@ -81,33 +80,19 @@ function indiaLocalToISO(value) {
   const [year, month, day] = datePart.split("-").map(Number);
   const [hour, minute] = timePart.split(":").map(Number);
 
-  if (
-    ![year, month, day, hour, minute].every(Number.isFinite)
-  ) {
+  if (![year, month, day, hour, minute].every(Number.isFinite)) {
     return null;
   }
 
-  const utcMs = Date.UTC(
-    year,
-    month - 1,
-    day,
-    hour - 5,
-    minute - 30,
-    0,
-    0,
-  );
+  const utcMs = Date.UTC(year, month - 1, day, hour - 5, minute - 30, 0, 0);
 
   return new Date(utcMs).toISOString();
 }
 
 function offerLabel(batch) {
-  const start = batch.offer_start_at
-    ? new Date(batch.offer_start_at)
-    : null;
+  const start = batch.offer_start_at ? new Date(batch.offer_start_at) : null;
 
-  const end = batch.offer_end_at
-    ? new Date(batch.offer_end_at)
-    : null;
+  const end = batch.offer_end_at ? new Date(batch.offer_end_at) : null;
 
   const now = new Date();
 
@@ -123,9 +108,7 @@ function ToggleField({ checked, label, onChange }) {
       <input
         type="checkbox"
         checked={Boolean(checked)}
-        onChange={(event) =>
-          onChange(event.target.checked)
-        }
+        onChange={(event) => onChange(event.target.checked)}
         className="h-4 w-4"
       />
       {label}
@@ -154,9 +137,7 @@ export default function AdminBatches() {
         setCatalog(catalogResponse.data || []);
       })
       .catch((error) => {
-        setErrorMessage(
-          error.message || "Could not load batch settings.",
-        );
+        setErrorMessage(error.message || "Could not load batch settings.");
       })
       .finally(() => setLoading(false));
   };
@@ -171,9 +152,7 @@ export default function AdminBatches() {
 
       setBatches((items) =>
         items.map((batch) =>
-          batch.id === id
-            ? { ...batch, status: "UPCOMING" }
-            : batch,
+          batch.id === id ? { ...batch, status: "UPCOMING" } : batch,
         ),
       );
 
@@ -189,9 +168,7 @@ export default function AdminBatches() {
     try {
       await adminApi.rejectBatch(id);
 
-      setBatches((items) =>
-        items.filter((batch) => batch.id !== id),
-      );
+      setBatches((items) => items.filter((batch) => batch.id !== id));
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -211,57 +188,27 @@ export default function AdminBatches() {
       setEditing({
         id: batch.id,
         name: batch.name,
-        offer_name:
-          batch.offer_name || "Limited Batch Offer",
-        original_price:
-          batch.original_price ||
-          batch.course?.price ||
-          "",
-        offer_price:
-          batch.offer_price ||
-          batch.course?.price ||
-          "",
-        offer_start_at: toLocalInput(
-          batch.offer_start_at,
-        ),
-        offer_end_at: toLocalInput(
-          batch.offer_end_at,
-        ),
-        start_date: toLocalInput(
-          access.start_date || batch.start_date,
-        ),
-        end_date: toLocalInput(
-          access.end_date || batch.end_date,
-        ),
-        max_students:
-          access.max_students ||
-          batch.max_students ||
-          50,
-        time_slots: Array.isArray(
-          access.time_slots || batch.time_slots,
-        )
-          ? (access.time_slots || batch.time_slots).join(
-              "\n",
-            )
+        offer_name: batch.offer_name || "Limited Batch Offer",
+        original_price: batch.original_price || batch.course?.price || "",
+        offer_price: batch.offer_price || batch.course?.price || "",
+        offer_start_at: toLocalInput(batch.offer_start_at),
+        offer_end_at: toLocalInput(batch.offer_end_at),
+        start_date: toLocalInput(access.start_date || batch.start_date),
+        end_date: toLocalInput(access.end_date || batch.end_date),
+        max_students: access.max_students || batch.max_students || 50,
+        time_slots: Array.isArray(access.time_slots || batch.time_slots)
+          ? (access.time_slots || batch.time_slots).join("\n")
           : "",
-        show_prerequisites:
-          access.show_prerequisites !== false,
-        show_sessions:
-          access.show_sessions !== false,
-        show_assignments:
-          access.show_assignments !== false,
-        show_progress:
-          access.show_progress !== false,
-        visible_prerequisite_ids: Array.isArray(
-          access.visible_prerequisite_ids,
-        )
+        show_prerequisites: access.show_prerequisites !== false,
+        show_sessions: access.show_sessions !== false,
+        show_assignments: access.show_assignments !== false,
+        show_progress: access.show_progress !== false,
+        visible_prerequisite_ids: Array.isArray(access.visible_prerequisite_ids)
           ? access.visible_prerequisite_ids
           : [],
       });
     } catch (error) {
-      setErrorMessage(
-        error.message || "Could not open batch settings.",
-      );
+      setErrorMessage(error.message || "Could not open batch settings.");
     }
   };
 
@@ -278,12 +225,8 @@ export default function AdminBatches() {
           offer_name: editing.offer_name,
           original_price: editing.original_price,
           offer_price: editing.offer_price,
-          offer_start_at: indiaLocalToISO(
-            editing.offer_start_at,
-          ),
-          offer_end_at: indiaLocalToISO(
-            editing.offer_end_at,
-          ),
+          offer_start_at: indiaLocalToISO(editing.offer_start_at),
+          offer_end_at: indiaLocalToISO(editing.offer_end_at),
         },
         "admin",
       );
@@ -291,31 +234,20 @@ export default function AdminBatches() {
       const accessResponse = await api.patch(
         `/prerequisites/admin/batches/${editing.id}/access`,
         {
-          start_date: indiaLocalToISO(
-            editing.start_date,
-          ),
-          end_date: indiaLocalToISO(
-            editing.end_date,
-          ),
-          max_students: Number(
-            editing.max_students,
-          ),
-          time_slots: String(
-            editing.time_slots || "",
-          )
+          start_date: indiaLocalToISO(editing.start_date),
+          
+          max_students: Number(editing.max_students),
+          time_slots: String(editing.time_slots || "")
             .split(/\n|,/)
             .map((slot) => slot.trim())
             .filter(Boolean),
-          show_prerequisites:
-            editing.show_prerequisites,
+          show_prerequisites: editing.show_prerequisites,
           show_sessions: editing.show_sessions,
-          show_assignments:
-            editing.show_assignments,
+          show_assignments: editing.show_assignments,
           show_progress: editing.show_progress,
-          visible_prerequisite_ids:
-            editing.show_prerequisites
-              ? editing.visible_prerequisite_ids
-              : [],
+          visible_prerequisite_ids: editing.show_prerequisites
+            ? editing.visible_prerequisite_ids
+            : [],
         },
         "admin",
       );
@@ -327,21 +259,15 @@ export default function AdminBatches() {
 
       setBatches((items) =>
         items.map((batch) =>
-          batch.id === editing.id
-            ? { ...batch, ...updated }
-            : batch,
+          batch.id === editing.id ? { ...batch, ...updated } : batch,
         ),
       );
 
       setEditing(null);
 
-      alert(
-        "✅ Batch dates, offer and student access updated.",
-      );
+      alert("✅ Batch dates, offer and student access updated.");
     } catch (error) {
-      setErrorMessage(
-        error.message || "Could not save batch settings.",
-      );
+      setErrorMessage(error.message || "Could not save batch settings.");
     } finally {
       setSaving(false);
     }
@@ -350,13 +276,10 @@ export default function AdminBatches() {
   const filtered =
     filter === "ALL"
       ? batches
-      : batches.filter(
-          (batch) => batch.status === filter,
-        );
+      : batches.filter((batch) => batch.status === filter);
 
   const pendingCount = batches.filter(
-    (batch) =>
-      batch.status === "PENDING_APPROVAL",
+    (batch) => batch.status === "PENDING_APPROVAL",
   ).length;
 
   return (
@@ -371,16 +294,12 @@ export default function AdminBatches() {
               Batch Management
             </h1>
 
-            <p
-              className="text-sm"
-              style={{ color: C.gray }}
-            >
+            <p className="text-sm" style={{ color: C.gray }}>
               {pendingCount > 0 && (
                 <span className="font-bold text-yellow-600">
                   {pendingCount} pending approval ·{" "}
                 </span>
               )}
-
               {batches.length} total batches
             </p>
           </div>
@@ -393,40 +312,30 @@ export default function AdminBatches() {
         )}
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          {[
-            "PENDING_APPROVAL",
-            "ALL",
-            "UPCOMING",
-            "ACTIVE",
-            "COMPLETED",
-          ].map((item) => (
-            <button
-              key={item}
-              onClick={() => setFilter(item)}
-              className="rounded-xl px-4 py-2 text-xs font-semibold transition-all"
-              style={{
-                background:
-                  filter === item
-                    ? `linear-gradient(135deg,${C.blue},${C.primary})`
-                    : "#f3f4f6",
-                color:
-                  filter === item
-                    ? "white"
-                    : C.gray,
-              }}
-            >
-              {item === "PENDING_APPROVAL"
-                ? `Pending (${pendingCount})`
-                : item}
-            </button>
-          ))}
+          {["PENDING_APPROVAL", "ALL", "UPCOMING", "ACTIVE", "COMPLETED"].map(
+            (item) => (
+              <button
+                key={item}
+                onClick={() => setFilter(item)}
+                className="rounded-xl px-4 py-2 text-xs font-semibold transition-all"
+                style={{
+                  background:
+                    filter === item
+                      ? `linear-gradient(135deg,${C.blue},${C.primary})`
+                      : "#f3f4f6",
+                  color: filter === item ? "white" : C.gray,
+                }}
+              >
+                {item === "PENDING_APPROVAL"
+                  ? `Pending (${pendingCount})`
+                  : item}
+              </button>
+            ),
+          )}
         </div>
 
         {loading && (
-          <p
-            className="py-12 text-center text-sm"
-            style={{ color: C.gray }}
-          >
+          <p className="py-12 text-center text-sm" style={{ color: C.gray }}>
             Loading batches…
           </p>
         )}
@@ -438,10 +347,7 @@ export default function AdminBatches() {
               className="mx-auto mb-3"
               style={{ color: "#22c55e" }}
             />
-            <p
-              className="font-bold"
-              style={{ color: C.dark }}
-            >
+            <p className="font-bold" style={{ color: C.dark }}>
               No batches here
             </p>
           </div>
@@ -449,21 +355,13 @@ export default function AdminBatches() {
 
         <div className="space-y-4">
           {filtered.map((batch, index) => {
-            const status =
-              STATUS_STYLE[batch.status] ||
-              STATUS_STYLE.UPCOMING;
+            const status = STATUS_STYLE[batch.status] || STATUS_STYLE.UPCOMING;
 
             const slots = batch.time_slots || [];
 
-            const original =
-              batch.original_price ||
-              batch.course?.price ||
-              0;
+            const original = batch.original_price || batch.course?.price || 0;
 
-            const offer =
-              batch.offer_price ||
-              batch.course?.price ||
-              0;
+            const offer = batch.offer_price || batch.course?.price || 0;
 
             const timer = offerLabel(batch);
 
@@ -472,8 +370,7 @@ export default function AdminBatches() {
                 key={batch.id}
                 className="rounded-2xl border border-gray-100 bg-white p-5"
                 style={{
-                  boxShadow:
-                    "0 2px 12px rgba(0,0,0,0.05)",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
                 }}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -498,21 +395,14 @@ export default function AdminBatches() {
                       </h3>
                     </div>
 
-                    <p
-                      className="mb-2 text-xs"
-                      style={{ color: C.gray }}
-                    >
+                    <p className="mb-2 text-xs" style={{ color: C.gray }}>
                       Tutor:{" "}
-                      <strong
-                        style={{ color: C.dark }}
-                      >
+                      <strong style={{ color: C.dark }}>
                         {batch.tutor?.name}
                       </strong>
                       {" · "}
                       Course:{" "}
-                      <strong
-                        style={{ color: C.dark }}
-                      >
+                      <strong style={{ color: C.dark }}>
                         {batch.course?.name}
                       </strong>
                     </p>
@@ -523,39 +413,25 @@ export default function AdminBatches() {
                         style={{ color: C.gray }}
                       >
                         📅{" "}
-                        {new Date(
-                          batch.start_date,
-                        ).toLocaleDateString("en-IN")}{" "}
-                        →{" "}
-                        {new Date(
-                          batch.end_date,
-                        ).toLocaleDateString("en-IN")}
+                        {new Date(batch.start_date).toLocaleDateString("en-IN")}{" "}
+                        → {new Date(batch.end_date).toLocaleDateString("en-IN")}
                       </span>
 
                       <span
                         className="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold"
                         style={{ color: C.gray }}
                       >
-                        <Users
-                          size={10}
-                          className="mr-1 inline"
-                        />
-                        {batch._count?.enrollments ||
-                          0}
-                        /{batch.max_students} students
+                        <Users size={10} className="mr-1 inline" />
+                        {batch._count?.enrollments || 0}/{batch.max_students}{" "}
+                        students
                       </span>
 
                       <span
                         className="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold"
                         style={{ color: C.gray }}
                       >
-                        <BookOpen
-                          size={10}
-                          className="mr-1 inline"
-                        />
-                        {batch._count
-                          ?.scheduled_sessions || 0}{" "}
-                        sessions
+                        <BookOpen size={10} className="mr-1 inline" />
+                        {batch._count?.scheduled_sessions || 0} sessions
                       </span>
                     </div>
 
@@ -564,20 +440,16 @@ export default function AdminBatches() {
                         className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold"
                         style={{ color: C.blue }}
                       >
-                        Offer:{" "}
-                        {batch.offer_name ||
-                          "Limited Batch Offer"}
+                        Offer: {batch.offer_name || "Limited Batch Offer"}
                       </span>
 
                       <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700">
                         Price ₹{rupee(offer)}
                       </span>
 
-                      {Number(original) >
-                        Number(offer) && (
+                      {Number(original) > Number(offer) && (
                         <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
-                          Original ₹
-                          {rupee(original)}
+                          Original ₹{rupee(original)}
                         </span>
                       )}
 
@@ -616,9 +488,7 @@ export default function AdminBatches() {
 
                   <div className="flex flex-shrink-0 flex-col gap-2">
                     <button
-                      onClick={() =>
-                        startEdit(batch)
-                      }
+                      onClick={() => startEdit(batch)}
                       className="flex items-center gap-1.5 rounded-xl border-2 px-4 py-2 text-xs font-bold transition-all hover:bg-blue-50"
                       style={{
                         borderColor: "#bfdbfe",
@@ -629,13 +499,10 @@ export default function AdminBatches() {
                       Edit Batch
                     </button>
 
-                    {batch.status ===
-                      "PENDING_APPROVAL" && (
+                    {batch.status === "PENDING_APPROVAL" && (
                       <>
                         <button
-                          onClick={() =>
-                            handleApprove(batch.id)
-                          }
+                          onClick={() => handleApprove(batch.id)}
                           className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all hover:-translate-y-0.5"
                           style={{
                             background:
@@ -647,9 +514,7 @@ export default function AdminBatches() {
                         </button>
 
                         <button
-                          onClick={() =>
-                            handleReject(batch.id)
-                          }
+                          onClick={() => handleReject(batch.id)}
                           className="flex items-center gap-1.5 rounded-xl border-2 px-4 py-2 text-xs font-bold transition-all hover:bg-red-50"
                           style={{
                             borderColor: "#fca5a5",
@@ -678,10 +543,7 @@ export default function AdminBatches() {
                 Edit Batch & Student Access
               </h2>
 
-              <p
-                className="mb-5 text-xs"
-                style={{ color: C.gray }}
-              >
+              <p className="mb-5 text-xs" style={{ color: C.gray }}>
                 {editing.name}
               </p>
 
@@ -708,8 +570,7 @@ export default function AdminBatches() {
                         onChange={(event) =>
                           setEditing({
                             ...editing,
-                            offer_name:
-                              event.target.value,
+                            offer_name: event.target.value,
                           })
                         }
                         className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -727,14 +588,11 @@ export default function AdminBatches() {
 
                         <input
                           type="number"
-                          value={
-                            editing.original_price
-                          }
+                          value={editing.original_price}
                           onChange={(event) =>
                             setEditing({
                               ...editing,
-                              original_price:
-                                event.target.value,
+                              original_price: event.target.value,
                             })
                           }
                           className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -755,8 +613,7 @@ export default function AdminBatches() {
                           onChange={(event) =>
                             setEditing({
                               ...editing,
-                              offer_price:
-                                event.target.value,
+                              offer_price: event.target.value,
                             })
                           }
                           className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -775,14 +632,11 @@ export default function AdminBatches() {
 
                         <input
                           type="datetime-local"
-                          value={
-                            editing.offer_start_at
-                          }
+                          value={editing.offer_start_at}
                           onChange={(event) =>
                             setEditing({
                               ...editing,
-                              offer_start_at:
-                                event.target.value,
+                              offer_start_at: event.target.value,
                             })
                           }
                           className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -803,8 +657,7 @@ export default function AdminBatches() {
                           onChange={(event) =>
                             setEditing({
                               ...editing,
-                              offer_end_at:
-                                event.target.value,
+                              offer_end_at: event.target.value,
                             })
                           }
                           className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -837,8 +690,7 @@ export default function AdminBatches() {
                         onChange={(event) =>
                           setEditing({
                             ...editing,
-                            start_date:
-                              event.target.value,
+                            start_date: event.target.value,
                           })
                         }
                         className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -859,8 +711,7 @@ export default function AdminBatches() {
                         onChange={(event) =>
                           setEditing({
                             ...editing,
-                            end_date:
-                              event.target.value,
+                            end_date: event.target.value,
                           })
                         }
                         className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -884,8 +735,7 @@ export default function AdminBatches() {
                         onChange={(event) =>
                           setEditing({
                             ...editing,
-                            max_students:
-                              event.target.value,
+                            max_students: event.target.value,
                           })
                         }
                         className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none"
@@ -906,14 +756,11 @@ export default function AdminBatches() {
                         onChange={(event) =>
                           setEditing({
                             ...editing,
-                            time_slots:
-                              event.target.value,
+                            time_slots: event.target.value,
                           })
                         }
                         className="mt-1 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 outline-none"
-                        placeholder={
-                          "8:30 PM – 9:30 PM\n10:00 AM – 11:00 AM"
-                        }
+                        placeholder={"8:30 PM – 9:30 PM\n10:00 AM – 11:00 AM"}
                       />
                     </div>
                   </div>
@@ -931,18 +778,14 @@ export default function AdminBatches() {
                     className="mb-3 mt-1 text-[11px]"
                     style={{ color: C.gray }}
                   >
-                    For CAD Tools, disable
-                    Pre-Requisites. For BIW,
-                    enable them and choose only
-                    the required courses.
+                    For CAD Tools, disable Pre-Requisites. For BIW, enable them
+                    and choose only the required courses.
                   </p>
 
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <ToggleField
                       label="Show Pre-Requisites"
-                      checked={
-                        editing.show_prerequisites
-                      }
+                      checked={editing.show_prerequisites}
                       onChange={(value) =>
                         setEditing({
                           ...editing,
@@ -964,9 +807,7 @@ export default function AdminBatches() {
 
                     <ToggleField
                       label="Show Assignments"
-                      checked={
-                        editing.show_assignments
-                      }
+                      checked={editing.show_assignments}
                       onChange={(value) =>
                         setEditing({
                           ...editing,
@@ -998,12 +839,8 @@ export default function AdminBatches() {
                             Visible Pre-Requisite Courses
                           </p>
 
-                          <p
-                            className="text-[10px]"
-                            style={{ color: C.gray }}
-                          >
-                            No selection means show
-                            all. Select specific items
+                          <p className="text-[10px]" style={{ color: C.gray }}>
+                            No selection means show all. Select specific items
                             for BIW.
                           </p>
                         </div>
@@ -1013,8 +850,7 @@ export default function AdminBatches() {
                           onClick={() =>
                             setEditing({
                               ...editing,
-                              visible_prerequisite_ids:
-                                [],
+                              visible_prerequisite_ids: [],
                             })
                           }
                           className="text-[10px] font-bold underline"
@@ -1043,28 +879,15 @@ export default function AdminBatches() {
                                 checked={selected}
                                 onChange={(event) => {
                                   const current =
-                                    editing.visible_prerequisite_ids ||
-                                    [];
+                                    editing.visible_prerequisite_ids || [];
 
-                                  const next =
-                                    event.target
-                                      .checked
-                                      ? [
-                                          ...new Set([
-                                            ...current,
-                                            course.id,
-                                          ]),
-                                        ]
-                                      : current.filter(
-                                          (id) =>
-                                            id !==
-                                            course.id,
-                                        );
+                                  const next = event.target.checked
+                                    ? [...new Set([...current, course.id])]
+                                    : current.filter((id) => id !== course.id);
 
                                   setEditing({
                                     ...editing,
-                                    visible_prerequisite_ids:
-                                      next,
+                                    visible_prerequisite_ids: next,
                                   });
                                 }}
                                 className="mt-0.5 h-4 w-4"
@@ -1077,8 +900,7 @@ export default function AdminBatches() {
                                     color: C.dark,
                                   }}
                                 >
-                                  {course.icon || "•"}{" "}
-                                  {course.title}
+                                  {course.icon || "•"} {course.title}
                                 </span>
 
                                 <span
@@ -1087,10 +909,7 @@ export default function AdminBatches() {
                                     color: C.gray,
                                   }}
                                 >
-                                  {course._count
-                                    ?.lessons ||
-                                    0}{" "}
-                                  lessons
+                                  {course._count?.lessons || 0} lessons
                                 </span>
                               </span>
                             </label>
