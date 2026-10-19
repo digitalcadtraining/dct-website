@@ -557,6 +557,12 @@ export const adminApi = {
       role: "admin",
     }),
 
+  changeStudentBatch: (enrollmentId, batchId) =>
+    http(`/admin/enrollments/${encodeURIComponent(enrollmentId)}/batch`, {
+      method: "PATCH",
+      role: "admin",
+      body: JSON.stringify({ batch_id: batchId }),
+    }),
   updateEnrollmentEmis: (enrollmentId, data) =>
     http(`/admin/enrollments/${enrollmentId}/installments`, {
       method: "PATCH",
