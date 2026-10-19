@@ -29,6 +29,7 @@ import MyQueriesPage from "../pages/student/MyQueriesPage.jsx";
 import SyllabusPage from "../pages/student/SyllabusPage.jsx";
 import StudentDashboard from "../pages/student/StudentDashboard.jsx";
 import PrerequisitesPage from "../pages/student/PrerequisitesPage.jsx";
+import EnglishConfidencePage from "../pages/student/EnglishConfidencePage.jsx";
 import MyBatches from "../pages/tutor/MyBatches.jsx";
 import TutorAssignments from "../pages/tutor/TutorAssignments.jsx";
 import TutorSessionsPage from "../pages/tutor/TutorSessions.jsx";
@@ -106,6 +107,9 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/student/prerequisites/english-confidence" element={
+        <ProtectedRoute roles={["student"]}><EnglishConfidencePage /></ProtectedRoute>
+      } />
       <Route
         path="/student/prerequisites"
         element={
