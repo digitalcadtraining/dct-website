@@ -13,6 +13,7 @@ router.use("/registration-payments", require("./registrationPayment.routes"));
 router.use("/discount-codes", require("./discountCode.routes"));
 router.use("/referrals", require("./referral.routes"));
 router.use("/prerequisites", require("./prerequisite.routes"));
+router.use("/english-confidence", require("./englishConfidence.routes"));
 router.use("/tutor-applications", require("./tutor.routes"));
 router.use("/installments", require("./installment.routes"));
 router.use("/certificates", require("./certificate.routes"));
