@@ -573,6 +573,13 @@ export default function PrerequisitesPage() {
         </div>
 
         {current === "install" ? <InstallationPanel /> : <CatiaBasicsPanel />}
+        <button onClick={() => navigate("/student/prerequisites/english-confidence")}
+          className="mt-5 w-full rounded-3xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 text-left shadow-sm transition hover:shadow-md">
+          <span className="text-xs font-black uppercase tracking-wider text-indigo-700">Bonus · Optional · No prerequisites</span>
+          <span className="mt-2 block text-xl font-black text-gray-900">⭐ English Confidence Builder</span>
+          <span className="mt-2 block text-sm text-gray-600">Basic grammar → workplace English → HR interview answers. 90 days, 15 minutes daily, easy MCQs. Start anytime — CATIA completion is not required.</span>
+          <span className="mt-3 block text-sm font-black text-blue-700">Start learning →</span>
+        </button>
       </PageWrapper>
     </AppShell>
   );
