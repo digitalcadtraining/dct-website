@@ -1032,7 +1032,7 @@ function ChangeBatchModal({ target, batches, onClose, onSaved }) {
   const options = batches.filter(
     (batch) =>
       batch.id !== current?.id &&
-      batch.course_id === current?.course_id &&
+      batch.course_id === (current?.course_id || current?.course?.id) &&
       ["UPCOMING", "ACTIVE"].includes(String(batch.status))
   );
   const submit = async (event) => {
