@@ -1024,6 +1024,66 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
   );
 }
 
+function ChangeBatchModal({ target, batches, onClose, onSaved }) {
+  const [batchId, setBatchId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const current = target.enrollment.batch;
+  const options = batches.filter(
+    (batch) =>
+      batch.id !== current?.id &&
+      batch.course_id === current?.course_id &&
+      ["UPCOMING", "ACTIVE"].includes(String(batch.status))
+  );
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!batchId || saving) return;
+    const selected = options.find((batch) => batch.id === batchId);
+    if (!window.confirm(
+      `Move ${target.student.name} from "${current?.name}" to "${selected?.name}"?\n\nFees, paid EMIs and receipts are preserved. Previous session progress will not be transferred.`
+    )) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      await adminApi.changeStudentBatch(target.enrollment.id, batchId);
+      await onSaved();
+    } catch (err) {
+      setMessage(err.message || "Could not change student batch.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+      <form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-black text-dct-dark">Change Student Batch</h2>
+          <button type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        </div>
+        <p className="mt-3 text-sm font-semibold">{target.student.name}</p>
+        <p className="mt-1 text-xs text-gray-500">Current: {current?.name || "Unknown batch"}</p>
+        <label className="mt-5 block text-xs font-bold text-gray-700">
+          New batch (same course)
+          <select required value={batchId} onChange={(event) => setBatchId(event.target.value)}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm">
+            <option value="">Select new batch</option>
+            {options.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}
+          </select>
+        </label>
+        {options.length === 0 && <p className="mt-3 text-xs text-amber-700">No other active or upcoming batches are available for this course.</p>}
+        <p className="mt-3 text-xs text-gray-500">Existing payment records remain linked to the student. Previous batch-specific progress is not migrated.</p>
+        {message && <p className="mt-3 text-sm text-red-600">{message}</p>}
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl border px-4 py-2 text-sm">Cancel</button>
+          <button type="submit" disabled={!batchId || saving} className="rounded-xl bg-dct-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+            {saving ? "Changing..." : "Confirm Change"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function BatchGroup({
   batch,
   searchQuery = "",
@@ -1033,6 +1093,7 @@ function BatchGroup({
   onEditEmi,
   onManageCadAccess,
   onManualEnrollment,
+  onChangeBatch,
   savingPaymentId,
 }) {
   const [open, setOpen] = useState(false);
@@ -1434,6 +1495,14 @@ function BatchGroup({
                           <Power size={13} />
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={() => onChangeBatch({ student, enrollment })}
+                          className="mt-2 block rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[10px] font-black text-indigo-700"
+                        >
+                          Change Batch
+                        </button>
+
                         {/(catia|solidworks|solid works|ug nx|\bnx\b)/i.test(
                           String(enrollment.batch?.name || ""),
                         ) && (
@@ -1477,6 +1546,7 @@ export default function AdminStudents() {
   const [emiTarget, setEmiTarget] = useState(null);
   const [cadAccessTarget, setCadAccessTarget] = useState(null);
   const [manualEnrollmentTarget, setManualEnrollmentTarget] = useState(null);
+  const [changeBatchTarget, setChangeBatchTarget] = useState(null);
 
   const load = async (silent = false) => {
     if (!silent) {
@@ -1700,6 +1770,15 @@ export default function AdminStudents() {
         />
       )}
 
+      {changeBatchTarget && (
+        <ChangeBatchModal
+          target={changeBatchTarget}
+          batches={availableBatches}
+          onClose={() => setChangeBatchTarget(null)}
+          onSaved={async () => { setChangeBatchTarget(null); await load(true); }}
+        />
+      )}
+
       <PageWrapper>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -1776,6 +1855,7 @@ export default function AdminStudents() {
                 onEditEmi={setEmiTarget}
                 onManageCadAccess={setCadAccessTarget}
                 onManualEnrollment={setManualEnrollmentTarget}
+                onChangeBatch={setChangeBatchTarget}
                 savingPaymentId={savingPaymentId}
               />
             ))}
