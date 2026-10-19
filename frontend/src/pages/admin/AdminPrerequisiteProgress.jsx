@@ -10,6 +10,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import AppShell from "../../components/layout/AppShell.jsx";
+import EnglishConfidenceAdminReport from "./EnglishConfidenceAdminReport.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { prerequisiteApi, adminApi } from "../../services/api.js";
 
@@ -516,6 +517,7 @@ export default function AdminPrerequisiteProgress() {
             ))}
           </div>
         )}
+        <EnglishConfidenceAdminReport />
       </PageWrapper>
     </AppShell>
   );
