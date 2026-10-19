@@ -615,6 +615,32 @@ model PrerequisiteProgress {
   @@map("prerequisite_progress")
 }
 
+// Optional 90-day English confidence course; independent of CAD video prerequisites.
+model EnglishConfidenceProgress {
+  id          String   @id @default(cuid())
+  student_id  String
+  day_number  Int
+  answers     Json
+  score       Int
+  total       Int
+  attempts    Int      @default(1)
+  completed_at DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([student_id, day_number])
+  @@index([student_id])
+  @@map("english_confidence_progress")
+}
+
+model EnglishConfidenceProfile {
+  id          String   @id @default(cuid())
+  student_id  String   @unique
+  knows_english Boolean @default(false)
+  updated_at  DateTime @updatedAt
+
+  @@map("english_confidence_profiles")
+}
+
 model RefreshToken {
   id         String   @id @default(cuid())
   user_id    String
