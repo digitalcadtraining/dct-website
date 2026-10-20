@@ -27,10 +27,10 @@ const getCourse = async (req,res,next) => {
       prisma.englishConfidenceProfile.findUnique({where:{student_id:req.user.id}}),
       prisma.englishConfidenceProgress.findMany({
         where:{student_id:req.user.id},orderBy:{day_number:"asc"},
-        select:{day_number:true,score:true,total:true,attempts:true,completed_at:true}
+        select:{day_number:true,score:true,total:true,attempts:true,completed_at:true,answers:true}
       })
     ]);
-    const done = new Set(progress.filter(p=>p.score>=2).map(p=>p.day_number));
+    const done = new Set(progress.filter(p=>p.answers?.v2_completed === true || (p.answers?.v2_completed === undefined && p.total === 3 && p.score >= 2)).map(p=>p.day_number));
     const next = DAYS.find(d=>!done.has(d.day))?.day || 90;
     const earned = MILESTONES.filter(m=>Array.from({length:m},(_,i)=>i+1).every(d=>done.has(d)));
     return success(res,200,"English confidence course loaded.",{
@@ -134,12 +134,12 @@ const adminReport = async(req,res,next)=>{
     }
     const rows=students.map(student=>{
       const items=groups.get(student.id)||[];
-      const completed=items.filter(p=>p.score>=2);
-      const weak=items.filter(p=>p.score<2).map(p=>({day:p.day_number,concept:DAYS[p.day_number-1]?.concept}));
+      const completed=items.filter(p=>p.answers?.v2_completed === true || (p.answers?.v2_completed === undefined && p.total === 3 && p.score >= 2));
+      const weak=items.filter(p=>p.answers?.v2_completed === false || (p.answers?.v2_completed === undefined && p.score<2)).map(p=>({day:p.day_number,concept:DAYS[p.day_number-1]?.concept}));
       const typing=items.filter(p=>p.answers?.typing_accuracy!==null&&p.answers?.typing_accuracy!==undefined);
       return {...student,knows_english:prefs.get(student.id)?.knows_english||false,
         completed_days:completed.length,attempts:items.reduce((a,p)=>a+p.attempts,0),
-        average_score:items.length?Math.round(items.reduce((a,p)=>a+p.score,0)*100/(items.length*3)):null,
+        average_score:items.length?Math.round(items.reduce((a,p)=>a+p.score/Math.max(1,p.total),0)*100/items.length):null,
         typing_accuracy:typing.length?Math.round(typing.reduce((a,p)=>a+p.answers.typing_accuracy,0)/typing.length):null,
         weak_concepts:weak};
     });
