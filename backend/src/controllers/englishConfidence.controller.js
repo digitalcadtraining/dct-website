@@ -54,41 +54,70 @@ const setPreference = async(req,res,next)=>{
     return success(res,200,"Preference saved.",row);
   }catch(e){next(e);}
 };
-const submitDay = async(req,res,next)=>{
-  try{
-    const number=Number(req.params.day);
-    const day=DAYS[number-1];
-    if(!day || !Number.isInteger(number))return error(res,404,"Lesson not found.");
-    const answers=req.body?.answers;
-    if(!Array.isArray(answers)||answers.length!==3||answers.some(v=>!Number.isInteger(v)||v<0||v>2))
-      return error(res,400,"Please answer all three questions.");
-    const previous=await prisma.englishConfidenceProgress.findMany({
-      where:{student_id:req.user.id,day_number:{lt:number},score:{gte:2}},
-      select:{day_number:true}
+// V2: preserve the first-attempt score, require correction of every mistake,
+// and never mistake an unfinished submission for a completed lesson.
+// The lesson bank must be expanded and reviewed separately before V2 release.
+const submitDay = async (req,res,next) => {
+  try {
+    const number = Number(req.params.day);
+    if (!Number.isInteger(number) || number < 1 || number > DAYS.length)
+      return error(res,404,"Lesson not found.");
+    const day = DAYS[number-1];
+    const answers = req.body?.answers;
+    if (!Array.isArray(answers) || answers.length !== day.questions.length ||
+        answers.some(v => !Number.isInteger(v) || v < 0 || v > 2))
+      return error(res,400,`Please answer all ${day.questions.length} questions.`);
+
+    const previous = await prisma.englishConfidenceProgress.findMany({
+      where:{student_id:req.user.id,day_number:{lt:number}},
+      select:{day_number:true,answers:true}
     });
-    if(previous.length<number-1)return error(res,403,"Complete the previous English lessons first.");
-    const correct=day.questions.map(q=>q.correct);
-    const score=answers.reduce((n,a,i)=>n+(a===correct[i]?1:0),0);
-    const typingText=String(req.body?.typing||"").slice(0,2000);
-    const typed=day.typing?typingScore(typingText,day.typing):null;
-    const existing=await prisma.englishConfidenceProgress.findUnique({
+    const completedBefore = new Set(previous.filter(p => p.answers?.v2_completed === true ||
+      (p.answers?.v2_completed === undefined && p.score >= 2 && p.total === 3)).map(p=>p.day_number));
+    if (completedBefore.size < number-1)
+      return error(res,403,"Complete the previous English lessons first.");
+
+    const existing = await prisma.englishConfidenceProgress.findUnique({
       where:{student_id_day_number:{student_id:req.user.id,day_number:number}}
     });
-    const best=Math.max(score,existing?.score||0);
+    const old = existing?.answers || {};
+    const isFirst = !old.v2_first_attempt;
+    const correctIndices = day.questions.map(q=>q.correct);
+    const incorrect = answers.flatMap((choice,i)=>choice === correctIndices[i] ? [] : [i]);
+    const score = answers.length-incorrect.length;
+    const remaining = isFirst
+      ? incorrect
+      : (old.v2_pending || []).filter(i=>incorrect.includes(i));
+    const completed = remaining.length===0;
+    const firstScore = isFirst ? score : old.v2_first_score;
+    const typingText = String(req.body?.typing||"").slice(0,2000);
+    const typed = day.typing ? typingScore(typingText,day.typing) : null;
+    const payload = {
+      ...old,
+      v2_first_attempt:true,
+      v2_first_score:firstScore,
+      v2_pending:remaining,
+      v2_completed:completed,
+      v2_last_choices:answers,
+      v2_corrections:(old.v2_corrections||0)+(isFirst?0:1),
+      typing:typingText,
+      typing_accuracy:typed
+    };
     await prisma.englishConfidenceProgress.upsert({
       where:{student_id_day_number:{student_id:req.user.id,day_number:number}},
-      create:{student_id:req.user.id,day_number:number,answers:{choices:answers,typing:typingText,typing_accuracy:typed},score,total:3},
-      update:{answers:{choices:answers,typing:typingText,typing_accuracy:typed},score:best,attempts:{increment:1}}
+      create:{student_id:req.user.id,day_number:number,answers:payload,score:firstScore,total:day.questions.length},
+      update:{answers:payload,score:firstScore,total:day.questions.length,attempts:{increment:1}}
     });
-    const passed=score>=2;
-    const milestone=MILESTONES.includes(number)&&passed?number:null;
     return success(res,200,"Answers checked.",{
-      score,total:3,passed,best_score:best,typing_accuracy:typed,
-      milestone,feedback:day.questions.map((q,i)=>({
+      score:firstScore,total:day.questions.length,passed:completed,
+      remaining,first_attempt_score:firstScore,
+      milestone:completed&&MILESTONES.includes(number)?number:null,
+      typing_accuracy:typed,
+      feedback:day.questions.map((q,i)=>({
         correct:answers[i]===q.correct,correct_index:q.correct,explanation:q.explanation
       }))
     });
-  }catch(e){next(e);}
+  } catch(e){next(e);}
 };
 const adminReport = async(req,res,next)=>{
   try{
