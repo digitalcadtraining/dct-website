@@ -11,6 +11,46 @@ const C = {
   gray: "#6A6B6D",
 };
 
+const BUNNY_LIBRARY_ID = "818190";
+
+const CATIA_BUNNY_VIDEOS = {
+  // Sketcher Sessions 01–05
+  900601730: "dafba3fa-43dd-4a6a-bb85-a19c684285b9",
+  900603176: "79f39dcf-bfa4-4dda-aea8-3d630fa3803c",
+  900609026: "c77c4a39-bbc9-4988-ab87-b4619fe04dcd",
+  900610082: "585db7da-5d23-4d96-9f5b-99f709f56e56",
+  900611137: "d283cabb-3674-49dd-b193-87865f31c1bb",
+
+  // Part Design Sessions 01–05
+  900612354: "6f682f6a-dacc-47b5-b43b-5f9474ca59aa",
+  900613490: "fc53a9e9-4e19-41d7-8c34-baea90050af6",
+  900614440: "4df3f00d-859f-437e-b453-34e0d748645c",
+  900615262: "757a57e2-3df1-4e5f-9956-6ad95e0082e3",
+  900616202: "b3bc5fa3-a05e-4434-9a16-f67a37645ca4",
+};
+
+function getPrerequisitePlayerUrl(lesson, course) {
+  const originalUrl = String(lesson?.vimeo_url || "");
+
+  if (course?.slug !== "catia-tool-for-beginners") {
+    return originalUrl;
+  }
+
+  const vimeoId = originalUrl.match(
+    /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/,
+  )?.[1];
+
+  const bunnyId = CATIA_BUNNY_VIDEOS[vimeoId];
+
+  if (!bunnyId) return originalUrl;
+
+  return (
+    `https://iframe.mediadelivery.net/embed/` +
+    `${BUNNY_LIBRARY_ID}/${bunnyId}` +
+    `?autoplay=false&preload=true&responsive=true`
+  );
+}
+
 function fmtDate(date) {
   if (!date) return "Flexible";
   return new Date(date).toLocaleDateString("en-IN", {
@@ -169,6 +209,7 @@ function CatiaBasicsPanel() {
   const [err, setErr] = useState("");
   const [activeLessonId, setActiveLessonId] = useState("");
   const [activeCourseId, setActiveCourseId] = useState("");
+  const [completing, setCompleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -267,6 +308,8 @@ function CatiaBasicsPanel() {
 
   const complete = async () => {
     if (!active?.id) return;
+    if (completing) return;
+    setCompleting(true);
     try {
       await prerequisiteApi.saveProgress(active.id, {
         completed: true,
@@ -308,6 +351,8 @@ function CatiaBasicsPanel() {
       }
     } catch (e) {
       alert(e.message || "Failed to save progress.");
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -369,20 +414,36 @@ function CatiaBasicsPanel() {
       {!loading && !err && active && (
         <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
           <section className="bg-white rounded-3xl border border-blue-100 overflow-hidden shadow-sm">
-            <div className="aspect-video bg-slate-950">
-              <iframe
-                key={active.id}
-                src={
-                  String(active.vimeo_url || "").includes("900601730")
-                    ? "https://iframe.mediadelivery.net/embed/818190/dafba3fa-43dd-4a6a-bb85-a19c684285b9"
-                    : active.vimeo_url
-                }
-                title={active.title}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-                loading="lazy"
-                className="w-full h-full border-0"
-              />
+            <div className="bg-slate-950">
+              <div className="relative w-full aspect-video overflow-hidden bg-black">
+                <iframe
+                  key={active.id}
+                  src={getPrerequisitePlayerUrl(active, activeCourse)}
+                  title={active.title}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="absolute inset-0 w-full h-full border-0"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-slate-900 text-white">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-green-400 text-sm">●</span>
+                  <span className="text-xs sm:text-sm font-semibold truncate">
+                    {active.completed
+                      ? "Lesson completed"
+                      : "Learning in progress"}
+                  </span>
+                </div>
+
+                <span className="text-xs text-slate-300">
+                  Session {String(active.order_number || 1).padStart(2, "0")}
+                  {" / "}
+                  {lessons.length}
+                </span>
+              </div>
             </div>
 
             <div className="p-5">
@@ -401,11 +462,30 @@ function CatiaBasicsPanel() {
                 {active.title}
               </h2>
               <p className="text-sm text-dct-gray mt-2">{active.description}</p>
+
+              <h2 className="text-xl font-black text-dct-dark">
+                {active.title}
+              </h2>
+
+              <p className="text-sm text-dct-gray mt-2">{active.description}</p>
+
               <button
+                type="button"
                 onClick={complete}
-                className="mt-4 inline-flex items-center gap-2 bg-dct-primary hover:bg-dct-blue text-white font-black px-5 py-3 rounded-2xl"
+                disabled={completing || active.completed || !active.is_unlocked}
+                className={`mt-4 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-black transition
+    ${
+      active.completed
+        ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
+        : "bg-dct-primary hover:bg-dct-blue text-white shadow-md hover:shadow-lg"
+    }
+    disabled:opacity-70`}
               >
-                ✅ Mark Complete
+                {completing
+                  ? "Saving progress..."
+                  : active.completed
+                    ? "✓ Lesson Completed"
+                    : "✓ Mark Complete & Continue"}
               </button>
             </div>
           </section>
