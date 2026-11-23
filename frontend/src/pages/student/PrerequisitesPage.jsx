@@ -32,23 +32,35 @@ const CATIA_BUNNY_VIDEOS = {
 function getPrerequisitePlayerUrl(lesson, course) {
   const originalUrl = String(lesson?.vimeo_url || "");
 
+  // Other prerequisite courses remain unchanged.
   if (course?.slug !== "catia-tool-for-beginners") {
     return originalUrl;
   }
 
-  const vimeoId = originalUrl.match(
-    /(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/,
-  )?.[1];
+  // Match CATIA videos by their session number.
+  const sessionNumber = Number(lesson?.order_number);
 
-  const bunnyId = CATIA_BUNNY_VIDEOS[vimeoId];
+  const bunnyVideoIds = [
+    "dafba3fa-43dd-4a6a-bb85-a19c684285b9",
+    "79f39dcf-bfa4-4dda-aea8-3d630fa3803c",
+    "c77c4a39-bbc9-4988-ab87-b4619fe04dcd",
+    "585db7da-5d23-4d96-9f5b-99f709f56e56",
+    "d283cabb-3674-49dd-b193-87865f31c1bb",
+    "6f682f6a-dacc-47b5-b43b-5f9474ca59aa",
+    "fc53a9e9-4e19-41d7-8c34-baea90050af6",
+    "4df3f00d-859f-437e-b453-34e0d748645c",
+    "757a57e2-3df1-4e5f-9956-6ad95e0082e3",
+    "b3bc5fa3-a05e-4434-9a16-f67a37645ca4",
+  ];
 
-  if (!bunnyId) return originalUrl;
+  const bunnyId = bunnyVideoIds[sessionNumber - 1];
 
-  return (
-    `https://iframe.mediadelivery.net/embed/` +
-    `${BUNNY_LIBRARY_ID}/${bunnyId}` +
-    `?autoplay=false&preload=true&responsive=true`
-  );
+  if (!bunnyId) {
+    console.warn("No Bunny video mapped for CATIA session:", sessionNumber);
+    return "";
+  }
+
+  return `https://iframe.mediadelivery.net/embed/818190/${bunnyId}`;
 }
 
 function fmtDate(date) {
