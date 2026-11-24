@@ -33,15 +33,34 @@ function formatDate(value) {
 function fileToDataUri(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return "";
 
+  const buffer = fs.readFileSync(filePath);
   const ext = path.extname(filePath).toLowerCase();
-  const mime =
-    ext === ".svg"
-      ? "image/svg+xml"
-      : ext === ".jpg" || ext === ".jpeg"
-        ? "image/jpeg"
-        : "image/png";
 
-  return `data:${mime};base64,${fs.readFileSync(filePath).toString("base64")}`;
+  let mime = "image/png";
+
+  // Detect actual JPEG format.
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    mime = "image/jpeg";
+  }
+
+  // Detect actual PNG format.
+  else if (buffer.subarray(0, 8).toString("hex") === "89504e470d0a1a0a") {
+    mime = "image/png";
+  }
+
+  // Detect WebP format.
+  else if (
+    buffer.subarray(0, 4).toString() === "RIFF" &&
+    buffer.subarray(8, 12).toString() === "WEBP"
+  ) {
+    mime = "image/webp";
+  } else if (ext === ".svg") {
+    mime = "image/svg+xml";
+  } else if (ext === ".jpg" || ext === ".jpeg") {
+    mime = "image/jpeg";
+  }
+
+  return `data:${mime};base64,${buffer.toString("base64")}`;
 }
 
 function firstExisting(candidates) {
