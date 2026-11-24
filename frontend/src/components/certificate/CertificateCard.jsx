@@ -131,7 +131,7 @@ export default function CertificateCard({ certificate }) {
 
   const progress = Number(certificate.progress || 0);
   const unlockProgress = Number(
-    certificate.unlock_progress || 80,
+    certificate.unlock_progress || 70,
   );
   const unlocked = Boolean(certificate.can_download);
 
@@ -172,7 +172,7 @@ export default function CertificateCard({ certificate }) {
               <p className="mt-1 text-[9px] text-gray-500 sm:text-[10px]">
                 {unlocked
                   ? certificate.certificate_number
-                  : `${progress}% completed · unlocks at ${unlockProgress}%`}
+                  : `${progress}% batch completed · unlocks at ${unlockProgress}%`}
               </p>
             </div>
 

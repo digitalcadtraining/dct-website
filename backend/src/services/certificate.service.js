@@ -45,7 +45,9 @@ function fileToDataUri(filePath) {
 }
 
 function firstExisting(candidates) {
-  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || "";
+  return (
+    candidates.find((candidate) => candidate && fs.existsSync(candidate)) || ""
+  );
 }
 
 function assetCandidates(filenameCandidates, explicitPath) {
@@ -113,7 +115,7 @@ function buildCertificateSvg(data) {
   const batchName = escapeXml(data.batch_name);
   const certificateNumber = isIssued
     ? escapeXml(data.certificate_number)
-    : "PENDING — UNLOCKS AT 80% COMPLETION";
+    : `PENDING — UNLOCKS AT ${Number(data.unlock_progress || 70)}%`;
   const issueDate = isIssued ? formatDate(data.issued_at) : "Pending";
   const trainingPeriod = `${formatDate(data.batch_start_date)} – ${formatDate(
     data.batch_end_date,
@@ -131,7 +133,7 @@ function buildCertificateSvg(data) {
          <text x="${WIDTH / 2}" y="${HEIGHT - 105}" text-anchor="middle"
            font-family="Arial, sans-serif" font-size="40" font-weight="800"
            letter-spacing="5" fill="${NAVY}">
-           COMPLETE 80% OF THE COURSE TO UNLOCK THE OFFICIAL CERTIFICATE
+           CERTIFICATE UNLOCKS AT ${Number(data.unlock_progress || 70)}% BATCH COMPLETION
          </text>
        </g>`
     : "";
@@ -197,7 +199,7 @@ function buildCertificateSvg(data) {
   <line x1="875" y1="1225" x2="${WIDTH - 875}" y2="1225" stroke="${GOLD}" stroke-width="13"/>
 
   <text x="${WIDTH / 2}" y="1450" text-anchor="middle" font-family="Georgia, serif" font-size="62" fill="${NAVY}">
-    has successfully completed the prescribed coursework and practical training in
+    is enrolled in the professional training programme in
   </text>
   <text x="${WIDTH / 2}" y="1545" text-anchor="middle" font-family="Georgia, serif" font-size="78" font-weight="700" fill="${NAVY}">${courseName}</text>
 
@@ -209,10 +211,10 @@ function buildCertificateSvg(data) {
   <polygon points="${WIDTH - 710},1815 ${WIDTH - 735},1790 ${WIDTH - 760},1815 ${WIDTH - 735},1840" fill="${GOLD}"/>
 
   <text x="${WIDTH / 2}" y="1940" text-anchor="middle" font-family="Georgia, serif" font-size="50" fill="${NAVY}">
-    Demonstrated practical proficiency through structured assignments,
+    Awarded under the DCT batch completion milestone policy,
   </text>
   <text x="${WIDTH / 2}" y="2010" text-anchor="middle" font-family="Georgia, serif" font-size="50" fill="${NAVY}">
-    projects and hands-on CAD training.
+    covering structured projects and hands-on CAD training.
   </text>
 
   ${imageTag(cadpointLogo, 650, 2070, 520, 230)}
@@ -239,7 +241,7 @@ function buildCertificateSvg(data) {
 
   <text x="${WIDTH - 1180}" y="2175" font-family="Arial, sans-serif" font-size="34" fill="#111827">Certificate No: ${certificateNumber}</text>
   <text x="${WIDTH - 1180}" y="2240" font-family="Arial, sans-serif" font-size="39" fill="#111827">Issued: ${escapeXml(issueDate)}</text>
-  <text x="${WIDTH - 1180}" y="2305" font-family="Arial, sans-serif" font-size="34" fill="#4B5563">Course progress: ${progress}%</text>
+  <text x="${WIDTH - 1180}" y="2305" font-family="Arial, sans-serif" font-size="34" fill="#4B5563">Batch progress: ${progress}%</text>
 
   ${watermark}
 </svg>`;
@@ -259,7 +261,10 @@ async function sendPng(data, res, disposition = "attachment") {
   const filename = `${String(base).replace(/[^\w-]+/g, "-")}.png`;
 
   res.setHeader("Content-Type", "image/png");
-  res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"`);
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename="${filename}"`,
+  );
   res.setHeader("Content-Length", png.length);
   res.end(png);
 }

@@ -7,7 +7,75 @@ const {
   streamPreviewPng,
 } = require("../services/certificate.service");
 
-const UNLOCK_PROGRESS = 80;
+const UNLOCK_PROGRESS = 70;
+
+function slotMinutes(value) {
+  const match = String(value || "")
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+
+  if (!match) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const period = match[3]?.toUpperCase();
+
+  if (
+    minutes > 59 ||
+    (period && (hours < 1 || hours > 12)) ||
+    (!period && hours > 23)
+  ) {
+    return null;
+  }
+
+  if (period) {
+    hours = (hours % 12) + (period === "PM" ? 12 : 0);
+  }
+
+  return hours * 60 + minutes;
+}
+
+function batchSessionDuration(batch, session) {
+  const slots = batch.time_slots;
+  const slot = Array.isArray(slots) ? slots[0] : slots;
+
+  const [start, end] = String(slot || "")
+    .split(/[–—-]/)
+    .map(slotMinutes);
+
+  if (start != null && end != null) {
+    const minutes = (end - start + 1440) % 1440;
+
+    if (minutes > 0) return minutes;
+  }
+
+  return Math.max(1, Number(session.duration_minutes) || 60);
+}
+
+function getBatchProgress(enrollment, now = Date.now()) {
+  const batch = enrollment.batch || {};
+
+  const sessions = (batch.scheduled_sessions || []).filter(
+    (session) => session.status !== "CANCELLED",
+  );
+
+  if (!sessions.length) return 0;
+
+  const completed = sessions.filter((session) => {
+    if (session.status === "COMPLETED") return true;
+
+    if (!session.scheduled_at) return false;
+
+    const start = new Date(session.scheduled_at).getTime();
+
+    return (
+      Number.isFinite(start) &&
+      start + batchSessionDuration(batch, session) * 60000 <= now
+    );
+  }).length;
+
+  return Math.floor((completed * 100) / sessions.length);
+}
 
 const COURSE_CODES = {
   "plastic-product-design": {
@@ -60,27 +128,17 @@ function cleanBatchName(value) {
 function toCertificateView(enrollment) {
   const identity = courseIdentity(enrollment.batch?.course);
   const certificate = enrollment.certificate;
-  const progress = Number(enrollment.progress || 0);
+  const progress = getBatchProgress(enrollment);
 
-  /*
-   * A certificate record may already exist because of earlier testing.
-   * It must remain visually pending until the student's course progress
-   * reaches the official 80% completion threshold.
-   */
   const isIssued =
-    Boolean(certificate?.is_active) &&
-    progress >= UNLOCK_PROGRESS;
+    Boolean(certificate?.is_active) && progress >= UNLOCK_PROGRESS;
 
   return {
     id: isIssued ? certificate.id : null,
     enrollment_id: enrollment.id,
-    certificate_number: isIssued
-      ? certificate.certificate_number
-      : null,
+    certificate_number: isIssued ? certificate.certificate_number : null,
     student_name: enrollment.student.name,
-    course_name: isIssued
-      ? certificate.course_name
-      : identity.name,
+    course_name: isIssued ? certificate.course_name : identity.name,
     batch_name: isIssued
       ? certificate.batch_name
       : cleanBatchName(enrollment.batch.name),
@@ -90,9 +148,7 @@ function toCertificateView(enrollment) {
     batch_end_date: isIssued
       ? certificate.batch_end_date
       : enrollment.batch.end_date,
-    issued_at: isIssued
-      ? certificate.issued_at
-      : null,
+    issued_at: isIssued ? certificate.issued_at : null,
     is_issued: isIssued,
     progress,
     unlock_progress: UNLOCK_PROGRESS,
@@ -112,6 +168,13 @@ const enrollmentInclude = {
   batch: {
     include: {
       course: true,
+      scheduled_sessions: {
+        select: {
+          status: true,
+          scheduled_at: true,
+          duration_minutes: true,
+        },
+      },
     },
   },
   certificate: true,
@@ -149,6 +212,115 @@ async function generateCertificateNumber(tx, courseCode, year) {
   };
 }
 
+async function ensureCertificate(
+  enrollment,
+  { issuedById = null, allowReissue = false } = {},
+) {
+  if (
+    !enrollment ||
+    getBatchProgress(enrollment) < UNLOCK_PROGRESS ||
+    !enrollment.batch?.end_date
+  ) {
+    return enrollment;
+  }
+
+  // Keep existing certificates and respect revoked certificates.
+  if (
+    enrollment.certificate &&
+    (!allowReissue || enrollment.certificate.is_active)
+  ) {
+    return enrollment;
+  }
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const current = await tx.enrollment.findUnique({
+            where: { id: enrollment.id },
+            include: enrollmentInclude,
+          });
+
+          if (
+            !current ||
+            getBatchProgress(current) < UNLOCK_PROGRESS ||
+            !current.batch?.end_date
+          ) {
+            return current;
+          }
+
+          if (
+            current.certificate &&
+            (!allowReissue || current.certificate.is_active)
+          ) {
+            return current;
+          }
+
+          const identity = courseIdentity(current.batch.course);
+          const issuedAt = new Date();
+          const issueYear = issuedAt.getFullYear();
+
+          const certificateDetails = {
+            student_name: current.student.name,
+            course_name: identity.name,
+            batch_name: cleanBatchName(current.batch.name),
+            batch_start_date: current.batch.start_date,
+            batch_end_date: current.batch.end_date,
+            issued_at: issuedAt,
+            issued_by_id: issuedById,
+            is_active: true,
+          };
+
+          let certificate;
+
+          if (current.certificate) {
+            // Only explicit admin reissue can reactivate a certificate.
+            certificate = await tx.courseCertificate.update({
+              where: {
+                enrollment_id: current.id,
+              },
+              data: certificateDetails,
+            });
+          } else {
+            const number = await generateCertificateNumber(
+              tx,
+              identity.code,
+              issueYear,
+            );
+
+            certificate = await tx.courseCertificate.create({
+              data: {
+                enrollment_id: current.id,
+                certificate_number: number.certificateNumber,
+                course_code: identity.code,
+                issue_year: issueYear,
+                sequence: number.sequence,
+                ...certificateDetails,
+              },
+            });
+          }
+
+          return {
+            ...current,
+            certificate,
+          };
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        },
+      );
+    } catch (err) {
+      if ((err.code === "P2002" || err.code === "P2034") && attempt < 4) {
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  return enrollment;
+}
+
 async function issueCertificate(req, res, next) {
   try {
     const enrollment = await findEnrollment(req.params.enrollmentId);
@@ -157,13 +329,13 @@ async function issueCertificate(req, res, next) {
       return error(res, 404, "Enrollment not found.");
     }
 
-    const progress = Number(enrollment.progress || 0);
+    const progress = getBatchProgress(enrollment);
 
     if (progress < UNLOCK_PROGRESS) {
       return error(
         res,
         400,
-        `Certificate can be issued only after ${UNLOCK_PROGRESS}% course completion. Current progress is ${progress}%.`,
+        `Certificate unlocks after ${UNLOCK_PROGRESS}% batch live-session completion. Current batch progress is ${progress}%.`,
       );
     }
 
@@ -177,74 +349,20 @@ async function issueCertificate(req, res, next) {
     }
 
     if (!enrollment.batch?.end_date) {
-      return error(
-        res,
-        400,
-        "Batch completion date is required before issuing the certificate.",
-      );
+      return error(res, 400, "Batch completion date is required.");
     }
 
-    const identity = courseIdentity(enrollment.batch.course);
-    const issuedAt = new Date();
-    const issueYear = issuedAt.getFullYear();
-    let certificate;
+    const updatedEnrollment = await ensureCertificate(enrollment, {
+      issuedById: req.user.id,
+      allowReissue: true,
+    });
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        certificate = await prisma.$transaction(
-          async (tx) => {
-            const number = await generateCertificateNumber(
-              tx,
-              identity.code,
-              issueYear,
-            );
-
-            return tx.courseCertificate.upsert({
-              where: { enrollment_id: enrollment.id },
-              update: {
-                is_active: true,
-                issued_at: issuedAt,
-                issued_by_id: req.user.id,
-                student_name: enrollment.student.name,
-                course_name: identity.name,
-                batch_name: cleanBatchName(enrollment.batch.name),
-                batch_start_date: enrollment.batch.start_date,
-                batch_end_date: enrollment.batch.end_date,
-              },
-              create: {
-                enrollment_id: enrollment.id,
-                certificate_number: number.certificateNumber,
-                course_code: identity.code,
-                issue_year: issueYear,
-                sequence: number.sequence,
-                student_name: enrollment.student.name,
-                course_name: identity.name,
-                batch_name: cleanBatchName(enrollment.batch.name),
-                batch_start_date: enrollment.batch.start_date,
-                batch_end_date: enrollment.batch.end_date,
-                issued_at: issuedAt,
-                issued_by_id: req.user.id,
-                is_active: true,
-              },
-            });
-          },
-          {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          },
-        );
-        break;
-      } catch (err) {
-        if (
-          (err.code === "P2002" || err.code === "P2034") &&
-          attempt < 4
-        ) {
-          continue;
-        }
-        throw err;
-      }
+    if (
+      !updatedEnrollment ||
+      !toCertificateView(updatedEnrollment).can_download
+    ) {
+      return error(res, 400, "Certificate eligibility has changed.");
     }
-
-    const updatedEnrollment = await findEnrollment(enrollment.id);
 
     return success(
       res,
@@ -290,12 +408,26 @@ async function myCertificates(req, res, next) {
       include: enrollmentInclude,
     });
 
-    return success(
-      res,
-      200,
-      "Certificate previews fetched.",
-      enrollments.map(toCertificateView),
-    );
+    const certificates = [];
+
+    for (const enrollment of enrollments) {
+      let updatedEnrollment = enrollment;
+
+      try {
+        updatedEnrollment = (await ensureCertificate(enrollment)) || enrollment;
+      } catch (err) {
+        // A certificate issue must not prevent My Courses from loading.
+        console.error(
+          "Automatic certificate issuance failed:",
+          enrollment.id,
+          err.message,
+        );
+      }
+
+      certificates.push(toCertificateView(updatedEnrollment));
+    }
+
+    return success(res, 200, "Certificates fetched.", certificates);
   } catch (err) {
     next(err);
   }
@@ -321,10 +453,7 @@ async function getStudentEnrollment(req, enrollmentId) {
 
 async function previewCertificatePng(req, res, next) {
   try {
-    const enrollment = await getStudentEnrollment(
-      req,
-      req.params.enrollmentId,
-    );
+    const enrollment = await getStudentEnrollment(req, req.params.enrollmentId);
 
     await streamPreviewPng(toCertificateView(enrollment), res);
   } catch (err) {
@@ -360,7 +489,7 @@ async function getIssuedEnrollment(req, certificateId) {
 
   if (!view.can_download) {
     const err = new Error(
-      `Certificate download unlocks after ${UNLOCK_PROGRESS}% course completion.`,
+      `Certificate download unlocks after ${UNLOCK_PROGRESS}% batch live-session completion.`,
     );
     err.statusCode = 403;
     throw err;
