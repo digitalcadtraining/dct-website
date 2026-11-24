@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
@@ -751,34 +751,97 @@ export default function MyCourses() {
   const [error, setError] = useState("");
   const [receiptItem, setReceiptItem] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError("");
+  // Certificate information is independent of courses and payments.
+  const [certificates, setCertificates] = useState([]);
+  const [certificateStatus, setCertificateStatus] = useState("loading");
 
-    try {
-      const [courseRes, paymentRes, certificateRes] = await Promise.all([
-        batchApi.enrolled(),
-        installmentApi.mine(),
-        certificateApi.mine(),
-      ]);
+  const courseRequestRef = useRef(null);
+  const certificateRequestRef = useRef(null);
 
-      setEnrollments(
-        mergeCertificateData(
-          mergePaymentData(courseRes?.data || [], paymentRes?.data || []),
-          certificateRes?.data || [],
-        ),
-      );
-    } catch (err) {
-      setError(err.message || "Failed to load courses.");
-    } finally {
-      setLoading(false);
+  const loadCertificates = () => {
+    // Prevent simultaneous duplicate API requests.
+    if (certificateRequestRef.current) {
+      return certificateRequestRef.current;
     }
+
+    setCertificateStatus((previous) =>
+      previous === "ready" ? "ready" : "loading",
+    );
+
+    const request = certificateApi
+      .mine()
+      .then((response) => {
+        if (!Array.isArray(response?.data)) {
+          throw new Error("Certificate information unavailable.");
+        }
+
+        setCertificates(response.data);
+        setCertificateStatus("ready");
+      })
+      .catch((err) => {
+        console.warn(
+          "Certificate information could not be loaded:",
+          err.message,
+        );
+
+        setCertificates([]);
+        setCertificateStatus("error");
+      })
+      .finally(() => {
+        certificateRequestRef.current = null;
+      });
+
+    certificateRequestRef.current = request;
+
+    return request;
+  };
+
+  const load = ({ silent = false } = {}) => {
+    // Certificate API runs independently.
+    // It never blocks loading of courses or payments.
+    void loadCertificates();
+
+    if (courseRequestRef.current) {
+      return courseRequestRef.current;
+    }
+
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
+
+    const request = Promise.all([batchApi.enrolled(), installmentApi.mine()])
+      .then(([courseRes, paymentRes]) => {
+        setEnrollments(
+          mergePaymentData(courseRes?.data || [], paymentRes?.data || []),
+        );
+
+        setError("");
+      })
+      .catch((err) => {
+        if (!silent) {
+          setError(err.message || "Failed to load courses.");
+        } else {
+          console.warn("Background course refresh failed:", err.message);
+        }
+      })
+      .finally(() => {
+        courseRequestRef.current = null;
+        setLoading(false);
+      });
+
+    courseRequestRef.current = request;
+
+    return request;
   };
 
   useEffect(() => {
     load();
 
-    const onFocus = () => load();
+    // Refresh data without removing visible course cards.
+    const onFocus = () => {
+      load({ silent: true });
+    };
 
     window.addEventListener("focus", onFocus);
 
@@ -993,20 +1056,50 @@ export default function MyCourses() {
               marginBottom: 32,
             }}
           >
-            {enrollments.map((enrollment, index) => (
-              <div
-                key={enrollmentKey(enrollment) || index}
-                className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(280px,1fr)]"
-              >
-                <CourseCard
-                  enrollment={enrollment}
-                  index={index}
-                  onReceipt={openReceipt}
-                />
+            {mergeCertificateData(enrollments, certificates).map(
+              (enrollment, index) => (
+                <div
+                  key={enrollmentKey(enrollment) || index}
+                  className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(280px,1fr)]"
+                >
+                  <CourseCard
+                    enrollment={enrollment}
+                    index={index}
+                    onReceipt={openReceipt}
+                  />
 
-                <CertificateCard certificate={enrollment.certificate} />
-              </div>
-            ))}
+                  {enrollment.certificate ? (
+                    <CertificateCard certificate={enrollment.certificate} />
+                  ) : (
+                    <aside className="w-full max-w-[430px] self-start rounded-2xl border border-amber-200 bg-white p-5 text-center shadow-sm">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-dct-primary">
+                        <FileText size={20} />
+                      </div>
+
+                      <p className="text-sm font-bold text-dct-dark">
+                        Course Certificate
+                      </p>
+
+                      <p className="mt-2 text-xs text-gray-500">
+                        {certificateStatus === "loading"
+                          ? "Checking certificate eligibility..."
+                          : "Certificate information is temporarily unavailable."}
+                      </p>
+
+                      {certificateStatus !== "loading" && (
+                        <button
+                          type="button"
+                          onClick={loadCertificates}
+                          className="mt-3 rounded-xl bg-blue-50 px-4 py-2 text-xs font-bold text-dct-primary hover:bg-blue-100"
+                        >
+                          Retry Certificate
+                        </button>
+                      )}
+                    </aside>
+                  )}
+                </div>
+              ),
+            )}
           </div>
         )}
 

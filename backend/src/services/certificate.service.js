@@ -120,7 +120,7 @@ function imageTag(dataUri, x, y, width, height, preserve = "xMidYMid meet") {
   return `<image href="${dataUri}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="${preserve}" />`;
 }
 
-function buildCertificateSvg(data) {
+function buildCertificateSvg(data, renderWidth = WIDTH, renderHeight = HEIGHT) {
   const assets = resolveAssets();
   const isIssued = Boolean(data.is_issued);
 
@@ -158,7 +158,7 @@ function buildCertificateSvg(data) {
     : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${renderWidth}" height="${renderHeight}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
     <linearGradient id="gold" x1="0" x2="1">
       <stop offset="0" stop-color="#C98D19"/>
@@ -233,7 +233,7 @@ function buildCertificateSvg(data) {
     Awarded under the DCT batch completion milestone policy,
   </text>
   <text x="${WIDTH / 2}" y="2010" text-anchor="middle" font-family="Georgia, serif" font-size="50" fill="${NAVY}">
-    covering structured projects and hands-on CAD training.
+    covering structured 8 hands-on projects in CATIA V5 and 4 Projects in UGNX.
   </text>
 
   ${imageTag(cadpointLogo, 650, 2070, 520, 230)}
@@ -260,20 +260,30 @@ function buildCertificateSvg(data) {
 
   <text x="${WIDTH - 1180}" y="2175" font-family="Arial, sans-serif" font-size="34" fill="#111827">Certificate No: ${certificateNumber}</text>
   <text x="${WIDTH - 1180}" y="2240" font-family="Arial, sans-serif" font-size="39" fill="#111827">Issued: ${escapeXml(issueDate)}</text>
-  <text x="${WIDTH - 1180}" y="2305" font-family="Arial, sans-serif" font-size="34" fill="#4B5563">Batch progress: ${progress}%</text>
 
   ${watermark}
 </svg>`;
 }
 
-async function renderPng(data) {
-  return sharp(Buffer.from(buildCertificateSvg(data)))
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
+async function renderPng(data, preview = false) {
+  const renderWidth = preview ? 1169 : WIDTH;
+  const renderHeight = preview ? 827 : HEIGHT;
+
+  const svg = buildCertificateSvg(data, renderWidth, renderHeight);
+
+  return sharp(Buffer.from(svg))
+    .png({
+      compressionLevel: preview ? 6 : 9,
+      adaptiveFiltering: true,
+    })
     .toBuffer();
 }
 
 async function sendPng(data, res, disposition = "attachment") {
-  const png = await renderPng(data);
+  const png = await renderPng(
+  data,
+  disposition === "inline",
+);
   const base = data.is_issued
     ? data.certificate_number
     : `DCT-Certificate-Preview-${data.enrollment_id}`;
