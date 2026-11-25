@@ -1031,7 +1031,7 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
 
             <label className="mt-4 block">
               <span className="text-xs font-black uppercase text-gray-500">
-                Registration Amount Received
+                {isForeign ? "Registration Amount Received (INR)" : "Registration Amount Received"}
               </span>
               <input
                 type="number"
@@ -1103,7 +1103,16 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
                       <p className="font-black">
                         Approx. USD course fee: {studentMoney(preview?.enrolled_price, { fx: usdQuote })}
                       </p>
-                      <p className="mt-1">Reference rate dated {usdQuote.date}{usdQuote.stale ? " (cached)" : ""}.
+                      <div className="mt-2 grid gap-1">
+                        <p>Approx. registration: {studentMoney(preview?.registration_amount, { fx: usdQuote })}</p>
+                        <p>Approx. balance: {studentMoney(preview?.balance, { fx: usdQuote })}</p>
+                        {(preview?.installments || []).map((item) => (
+                          <p key={item.installment_no}>
+                            Approx. {item.label}: {studentMoney(item.amount, { fx: usdQuote })}
+                          </p>
+                        ))}
+                      </div>
+                      <p className="mt-2">Reference rate dated {usdQuote.date}{usdQuote.stale ? " (cached)" : ""}.
                         All amounts entered here and all accounting records remain in INR.
                       </p>
                     </>
