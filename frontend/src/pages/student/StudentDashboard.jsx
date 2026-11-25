@@ -86,7 +86,9 @@ function PaymentCard({ enrollment }) {
               ? formatAmount(enrollment.payment_summary?.registration_received)
               : "₹999"}
           </p>
-          <p className="text-[11px] font-bold text-green-700">PAID</p>
+          <p className="text-[11px] font-bold text-green-700">
+            {international ? (enrollment.payment_status === "PAID" ? "PAID" : "PENDING") : "PAID"}
+          </p>
         </div>
 
         {(enrollment.installments || []).map((item) => {
