@@ -890,9 +890,18 @@ const getEnrolledBatches = async (req, res, next) => {
 
     // Optional profile: existing Indian students continue receiving the same
     // payload and original INR accounting. We never modify payment records.
-    const profile = await prisma.studentInternationalProfile.findUnique({
-      where: { student_id: studentId },
-    });
+    // Safe rollout: if the new table/client has not been deployed yet,
+    // existing Indian student dashboards retain their legacy payload.
+    let profile = null;
+    if (prisma.studentInternationalProfile) {
+      try {
+        profile = await prisma.studentInternationalProfile.findUnique({
+          where: { student_id: studentId },
+        });
+      } catch (err) {
+        if (err?.code !== "P2021") throw err;
+      }
+    }
     let international = null;
     let registrationById = new Map();
     let nextSessionByBatch = new Map();
