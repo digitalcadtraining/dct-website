@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import AppShell from "../../components/layout/AppShell.jsx";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { batchApi } from "../../services/api.js";
+import { studentMoney, zonedDateTime, timeZoneLabel } from "../../utils/internationalDisplay.js";
 
 const QUICK = [
   {
@@ -52,8 +53,17 @@ const fmtDate = (value) =>
     : "—";
 
 function PaymentCard({ enrollment }) {
+  const international = enrollment.international || null;
+  const formatAmount = (amount) => studentMoney(amount, international);
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+      {international && (
+        <p className="mb-3 text-xs text-blue-700">
+          Displayed amounts are approximate USD values
+          {international.fx?.date ? ` · Rate date: ${international.fx.date}` : ""}.
+          Confirm the payment currency with DCT before transferring funds.
+        </p>
+      )}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="font-black text-dct-dark">Payment Status</h3>
@@ -64,14 +74,18 @@ function PaymentCard({ enrollment }) {
         </div>
 
         <span className="text-sm font-black text-dct-primary">
-          Balance {money(enrollment.payment_summary?.balance)}
+          Balance {formatAmount(enrollment.payment_summary?.balance)}
         </span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-green-50 p-4">
           <p className="text-xs font-bold text-green-700">Registration</p>
-          <p className="mt-1 text-lg font-black text-green-800">₹999</p>
+          <p className="mt-1 text-lg font-black text-green-800">
+            {international
+              ? formatAmount(enrollment.payment_summary?.registration_received)
+              : "₹999"}
+          </p>
           <p className="text-[11px] font-bold text-green-700">PAID</p>
         </div>
 
@@ -88,7 +102,7 @@ function PaymentCard({ enrollment }) {
               <p className="text-xs font-bold">{item.label}</p>
 
               <p className="mt-1 text-lg font-black">
-                {money(item.amount)}
+                {formatAmount(item.amount)}
               </p>
 
               <p className="text-[11px] font-black">
@@ -206,6 +220,32 @@ export default function StudentDashboard() {
 
         {!loadingPayments && !paymentError && payments.length > 0 && (
           <div className="space-y-5">
+            {payments.filter((enrollment) => enrollment.international).map((enrollment) => {
+              const profile = enrollment.international;
+              const next = enrollment.batch?.next_live_session;
+              const local = next && zonedDateTime(next.scheduled_at, profile.time_zone, {
+                weekday: "short", day: "numeric", month: "short", year: "numeric",
+                hour: "numeric", minute: "2-digit", timeZoneName: "short",
+              });
+              return (
+                <div key={`international-${enrollment.id}`}
+                  className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                  <p className="text-xs font-black uppercase text-blue-700">Your local batch schedule</p>
+                  <p className="mt-1 font-black text-dct-dark">
+                    {enrollment.batch?.name} · {profile.country_name}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-dct-primary">
+                    {next && local
+                      ? `Next: ${next.name || `Session ${next.session_number}`} · ${local}`
+                      : "No upcoming live session has been scheduled."}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    Time zone: {timeZoneLabel(profile.time_zone)} · Dates automatically
+                    account for daylight saving time.
+                  </p>
+                </div>
+              );
+            })}
             {payments.map((enrollment) => (
               <PaymentCard
                 key={enrollment.id}
