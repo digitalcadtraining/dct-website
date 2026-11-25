@@ -224,11 +224,6 @@ async function previewManualRegistration(req, res, next) {
       registration_amount: registrationAmount,
       balance: Math.max(0, pricing.enrolled_price - registrationAmount),
       installments,
-      international: foreignProfile ? {
-        country_code: foreignProfile.country_code,
-        time_zone: foreignProfile.time_zone,
-        currency: "USD",
-      } : null,
     });
   } catch (err) {
     if (err.statusCode) return error(res, err.statusCode, err.message);
