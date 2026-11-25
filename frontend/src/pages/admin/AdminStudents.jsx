@@ -970,23 +970,31 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
               <span className="text-xs font-black uppercase text-gray-500">
                 Phone Number *
               </span>
-              <div className="mt-1 flex items-center gap-2">
-                {isForeign && (
+              {isForeign ? (
+                <div className="mt-1 flex items-center gap-2">
                   <span className="flex h-11 min-w-16 items-center justify-center rounded-xl bg-gray-100 px-3 text-sm font-bold">
                     {chosenCountry?.dial_code || "+?"}
                   </span>
-                )}
+                  <input
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 14))}
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-gray-200 px-3 text-sm"
+                    placeholder="Local number (without country code)"
+                  />
+                </div>
+              ) : (
                 <input
                   value={form.phone}
                   onChange={(e) =>
-                    update("phone",
-                      e.target.value.replace(/\D/g, "").slice(0, isForeign ? 14 : 10),
+                    update(
+                      "phone",
+                      e.target.value.replace(/\D/g, "").slice(0, 10),
                     )
                   }
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-gray-200 px-3 text-sm"
-                  placeholder={isForeign ? "Local number (without country code)" : "10-digit WhatsApp number"}
+                  className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                  placeholder="10-digit WhatsApp number"
                 />
-              </div>
+              )}
             </label>
             <label className="sm:col-span-2">
               <span className="text-xs font-black uppercase text-gray-500">
