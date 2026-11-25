@@ -543,10 +543,15 @@ function CourseCard({ enrollment, index, onReceipt }) {
               color: C.lg,
             }}
           >
-            Registration paid: {enrollment.international
+            {enrollment.international ? "Registration received" : "Registration paid"}: {enrollment.international
               ? formatMoney(enrollment.payment_summary?.registration_received)
               : "₹999"}
           </p>
+          {enrollment.international && (
+            <p className="mt-2 text-[10px] text-gray-500">
+              Approximate USD values · Reference date: {enrollment.international.fx?.date || "unavailable"}
+            </p>
+          )}
         </div>
 
         <div style={{ marginBottom: 12 }}>
