@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import AppShell from "../../components/layout/AppShell.jsx";
+import { zonedDateTime, timeZoneLabel } from "../../utils/internationalDisplay.js";
 import { PageWrapper } from "../../components/ui/index.jsx";
 import { motion } from "framer-motion";
 import {
@@ -161,7 +162,30 @@ function deriveStatus(session, timeSlots = []) {
   return "COMPLETED";
 }
 
-function fmtDate(iso) {
+// International students use the actual scheduled UTC instant and an IANA zone.
+function deriveInternationalStatus(session, timeZone) {
+  if (session.status === "CANCELLED" || session.status === "COMPLETED") {
+    return session.status;
+  }
+  if (!session.scheduled_at) return session.status || "UPCOMING";
+  const start = new Date(session.scheduled_at).getTime();
+  if (!Number.isFinite(start)) return session.status || "UPCOMING";
+  const now = Date.now();
+  const duration = Math.max(1, Number(session.duration_minutes || 60));
+  if (now >= start + duration * 60000) return "COMPLETED";
+  if (now >= start) return "LIVE";
+  const options = { year: "numeric", month: "2-digit", day: "2-digit" };
+  const today = zonedDateTime(new Date(now).toISOString(), timeZone, options);
+  const sessionDay = zonedDateTime(session.scheduled_at, timeZone, options);
+  return today && sessionDay && today === sessionDay ? "TODAY" : "UPCOMING";
+}
+
+function fmtDate(iso, timeZone = null) {
+  if (timeZone && iso) {
+    return zonedDateTime(iso, timeZone, {
+      day: "2-digit", month: "short", year: "numeric",
+    }) || "TBD";
+  }
   return iso
     ? new Date(iso).toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -171,8 +195,11 @@ function fmtDate(iso) {
     : "TBD";
 }
 
-function fmtDay(iso) {
+function fmtDay(iso, timeZone = null) {
   if (!iso) return "";
+  if (timeZone) {
+    return zonedDateTime(iso, timeZone, { weekday: "long" }) || "";
+  }
 
   const d = dayStart(iso);
   const t = dayStart();
@@ -188,7 +215,13 @@ function fmtDay(iso) {
   });
 }
 
-function fmtTime(iso, fallback) {
+function fmtTime(iso, fallback, timeZone = null) {
+  if (timeZone && iso) {
+    return zonedDateTime(iso, timeZone, {
+      hour: "numeric", minute: "2-digit", hour12: true,
+      timeZoneName: "short",
+    }) || "TBD";
+  }
   if (!iso) return displaySlotStart(fallback);
 
   const d = new Date(iso);
@@ -776,6 +809,7 @@ function AssignmentArea({ session, isCompleted, onSubmit }) {
 function SessionCard({
   session,
   timeSlots,
+  timeZone,
   onAskQuestion,
   onSubmitAssignment,
   index,
@@ -783,7 +817,7 @@ function SessionCard({
   const status = session._derivedStatus || deriveStatus(session);
   const isComp = status === "COMPLETED";
   const isLive = status === "LIVE";
-  const sessionTime = fmtTime(session.scheduled_at, timeSlots?.[0]);
+  const sessionTime = fmtTime(session.scheduled_at, timeSlots?.[0], timeZone);
   const joinUrl = session.zoom_link || session.recording_url || "";
 
   return (
@@ -883,7 +917,7 @@ function SessionCard({
                 color: C.dark,
               }}
             >
-              {fmtDate(session.scheduled_at)}
+              {fmtDate(session.scheduled_at, timeZone)}
             </p>
             <p
               style={{
@@ -893,7 +927,7 @@ function SessionCard({
                 marginTop: 1,
               }}
             >
-              {fmtDay(session.scheduled_at)}
+              {fmtDay(session.scheduled_at, timeZone)}
             </p>
           </div>
 
@@ -914,7 +948,7 @@ function SessionCard({
                 marginBottom: 3,
               }}
             >
-              Time
+              {timeZone ? "Local Time" : "Time"}
             </p>
             <p
               style={{
@@ -1154,7 +1188,9 @@ function useBatchSessions() {
     batchApi
       .enrolled()
       .then((res) => {
-        const list = (res.data || []).map((e) => e.batch).filter(Boolean);
+        const list = (res.data || []).map((e) =>
+          e.batch ? (e.international ? { ...e.batch, international: e.international } : e.batch) : null,
+        ).filter(Boolean);
 
         setBatches(list);
 
@@ -1190,9 +1226,11 @@ function useBatchSessions() {
     () =>
       sessions.map((s) => ({
         ...s,
-        _derivedStatus: deriveStatus(s, selectedBatch?.time_slots || []),
+        _derivedStatus: selectedBatch?.international
+          ? deriveInternationalStatus(s, selectedBatch.international.time_zone)
+          : deriveStatus(s, selectedBatch?.time_slots || []),
       })),
-    [sessions],
+    [sessions, selectedBatch],
   );
 
   return {
@@ -1376,6 +1414,13 @@ function SessionsPage({
           selectedBatch={selectedBatch}
           setSelectedBatch={setSelectedBatch}
         />
+        {selectedBatch?.international && (
+          <p className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-xs font-bold text-blue-800">
+            Session dates and times are shown in your local time zone:
+            {" "}{timeZoneLabel(selectedBatch.international.time_zone)}.
+            Times automatically account for daylight saving.
+          </p>
+        )}
 
         {selectedBatch && (
           <div
@@ -1513,6 +1558,7 @@ function SessionsPage({
               key={session.id}
               session={session}
               timeSlots={selectedBatch?.time_slots || []}
+              timeZone={selectedBatch?.international?.time_zone || null}
               onAskQuestion={setAskSession}
               onSubmitAssignment={setSubmitSession}
               index={index}
