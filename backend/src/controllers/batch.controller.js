@@ -1,5 +1,8 @@
 const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
+const {
+  COUNTRIES, getUsdReferenceRate,
+} = require("../services/internationalStudent.service");
 
 function parseSlotStart(slot) {
   if (!slot) return null;
@@ -885,6 +888,68 @@ const getEnrolledBatches = async (req, res, next) => {
       },
     });
 
+    // Optional profile: existing Indian students continue receiving the same
+    // payload and original INR accounting. We never modify payment records.
+    // Safe rollout: if the new table/client has not been deployed yet,
+    // existing Indian student dashboards retain their legacy payload.
+    let profile = null;
+    if (prisma.studentInternationalProfile) {
+      try {
+        profile = await prisma.studentInternationalProfile.findUnique({
+          where: { student_id: studentId },
+        });
+      } catch (err) {
+        if (err?.code !== "P2021") throw err;
+      }
+    }
+    let international = null;
+    let registrationById = new Map();
+    let nextSessionByBatch = new Map();
+    if (profile) {
+      const ids = enrollments.map((row) => row.id);
+      const batchIds = enrollments.map((row) => row.batch_id);
+      const [quote, registrationRows, futureSessions] = await Promise.all([
+        getUsdReferenceRate(),
+        ids.length
+          ? prisma.$queryRaw`
+              SELECT id, registration_amount FROM enrollments
+              WHERE id = ANY(${ids})
+            `
+          : Promise.resolve([]),
+        batchIds.length
+          ? prisma.scheduledSession.findMany({
+              where: {
+                batch_id: { in: batchIds },
+                scheduled_at: { gte: new Date() },
+                status: { in: ["UPCOMING", "LIVE"] },
+              },
+              select: {
+                batch_id: true, name: true, session_number: true,
+                scheduled_at: true, duration_minutes: true,
+              },
+              orderBy: { scheduled_at: "asc" },
+            })
+          : Promise.resolve([]),
+      ]);
+      const country = COUNTRIES.find((entry) => entry.code === profile.country_code);
+      international = {
+        country_code: profile.country_code,
+        country_name: country?.name || profile.country_code,
+        dial_code: profile.dial_code,
+        time_zone: profile.time_zone,
+        currency: "USD",
+        fx: quote,
+      };
+      registrationById = new Map(
+        registrationRows.map((row) => [row.id, Number(row.registration_amount || 0)]),
+      );
+      for (const session of futureSessions) {
+        if (!nextSessionByBatch.has(session.batch_id)) {
+          nextSessionByBatch.set(session.batch_id, session);
+        }
+      }
+    }
+
     const projectMap = await getTutorCourseProjectMap(
       enrollments.map((enrollment) => ({
         tutor_id: enrollment.batch?.tutor_id,
@@ -930,7 +995,9 @@ const getEnrolledBatches = async (req, res, next) => {
         installments,
 
         payment_summary: {
-          registration_received: enrollment.payment_status === "PAID" ? 999 : 0,
+          registration_received: international
+            ? (registrationById.get(enrollment.id) || 0)
+            : (enrollment.payment_status === "PAID" ? 999 : 0),
           installment_received: installmentReceived,
           pending,
           overdue,
@@ -940,7 +1007,11 @@ const getEnrolledBatches = async (req, res, next) => {
         batch: {
           ...cleanBatch,
           recorded_projects: projectMap.get(projectKey) || [],
+          ...(international ? {
+            next_live_session: nextSessionByBatch.get(batch.id) || null,
+          } : {}),
         },
+        ...(international ? { international } : {}),
       };
     });
 

@@ -13,6 +13,7 @@ import { PageWrapper } from "../../components/ui/index.jsx";
 import { adminApi } from "../../services/api.js";
 import { cadToolAccessApi } from "../../services/cadToolAccessApi.js";
 import { manualRegistrationApi } from "../../services/manualRegistrationApi.js";
+import { studentMoney } from "../../utils/internationalDisplay.js";
 
 const money = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
 
@@ -698,6 +699,9 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
     email: "",
     phone: "",
     password: "",
+    student_type: "INDIAN",
+    country_code: "",
+    time_zone: "",
     coupon_code: "",
     registration_amount: "999",
     payment_ref: "",
@@ -708,6 +712,44 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [countries, setCountries] = useState([]);
+  const [usdQuote, setUsdQuote] = useState(null);
+  const isForeign = form.student_type === "FOREIGN";
+  const chosenCountry = countries.find((entry) => entry.code === form.country_code);
+
+  useEffect(() => {
+    if (!isForeign) return undefined;
+    let active = true;
+    Promise.all([
+      manualRegistrationApi.countries(),
+      manualRegistrationApi.usdRate(),
+    ]).then(([countryResponse, fxResponse]) => {
+      if (!active) return;
+      setCountries(countryResponse.data || []);
+      setUsdQuote(fxResponse.data || null);
+    }).catch(() => {
+      if (active) setError("Could not load the international country list. Please retry.");
+    });
+    return () => { active = false; };
+  }, [isForeign]);
+
+  const chooseStudentType = (type) => {
+    setError("");
+    setForm((current) => ({
+      ...current, student_type: type, country_code: "", time_zone: "", phone: "",
+    }));
+  };
+
+  const chooseCountry = (code) => {
+    const country = countries.find((item) => item.code === code);
+    setError("");
+    setForm((current) => ({
+      ...current,
+      country_code: code,
+      time_zone: country?.time_zones?.[0] || "",
+      phone: "",
+    }));
+  };
 
   const update = (key, value) => {
     setError("");
@@ -788,6 +830,10 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
       setError("Password must contain at least 6 characters.");
       return;
     }
+    if (isForeign && (!chosenCountry || !form.time_zone)) {
+      setError("Select the foreign student's country and local time zone.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -801,6 +847,11 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
         coupon_code: form.coupon_code.trim(),
         registration_amount: Number(form.registration_amount || 0),
         payment_ref: form.payment_ref.trim(),
+        ...(isForeign ? {
+          student_type: "FOREIGN",
+          country_code: form.country_code,
+          time_zone: form.time_zone,
+        } : {}),
       });
       await onSaved();
     } catch (err) {
@@ -845,6 +896,52 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
             </p>
           </div>
 
+          <div className="mb-5 rounded-2xl border border-gray-200 p-4">
+            <p className="mb-2 text-xs font-black uppercase text-gray-600">
+              Student Location
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => chooseStudentType("INDIAN")}
+                className={`rounded-xl px-3 py-3 text-sm font-black ${!isForeign ? "bg-dct-primary text-white" : "bg-gray-100 text-gray-600"}`}>
+                Indian Student
+              </button>
+              <button type="button" onClick={() => chooseStudentType("FOREIGN")}
+                className={`rounded-xl px-3 py-3 text-sm font-black ${isForeign ? "bg-dct-primary text-white" : "bg-gray-100 text-gray-600"}`}>
+                International Student
+              </button>
+            </div>
+            {isForeign && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label>
+                  <span className="text-xs font-black uppercase text-gray-500">Country *</span>
+                  <select value={form.country_code} onChange={(e) => chooseCountry(e.target.value)}
+                    className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm">
+                    <option value="">Select country</option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name} ({country.dial_code})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span className="text-xs font-black uppercase text-gray-500">Local Time Zone *</span>
+                  <select value={form.time_zone} disabled={!chosenCountry}
+                    onChange={(e) => update("time_zone", e.target.value)}
+                    className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm">
+                    {(chosenCountry?.time_zones || []).map((zone) => (
+                      <option key={zone} value={zone}>{zone.replaceAll("_", " ")}</option>
+                    ))}
+                  </select>
+                </label>
+                <p className="sm:col-span-2 text-xs text-gray-500">
+                  Time zone is chosen separately because countries such as the USA and Mexico have
+                  multiple zones. Local times will adjust automatically for daylight saving.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="sm:col-span-2">
               <span className="text-xs font-black uppercase text-gray-500">
@@ -873,17 +970,31 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
               <span className="text-xs font-black uppercase text-gray-500">
                 Phone Number *
               </span>
-              <input
-                value={form.phone}
-                onChange={(e) =>
-                  update(
-                    "phone",
-                    e.target.value.replace(/\D/g, "").slice(0, 10),
-                  )
-                }
-                className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
-                placeholder="10-digit WhatsApp number"
-              />
+              {isForeign ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="flex h-11 min-w-16 items-center justify-center rounded-xl bg-gray-100 px-3 text-sm font-bold">
+                    {chosenCountry?.dial_code || "+?"}
+                  </span>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value.replace(/\D/g, "").slice(0, 14))}
+                    className="h-11 min-w-0 flex-1 rounded-xl border border-gray-200 px-3 text-sm"
+                    placeholder="Local number (without country code)"
+                  />
+                </div>
+              ) : (
+                <input
+                  value={form.phone}
+                  onChange={(e) =>
+                    update(
+                      "phone",
+                      e.target.value.replace(/\D/g, "").slice(0, 10),
+                    )
+                  }
+                  className="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm"
+                  placeholder="10-digit WhatsApp number"
+                />
+              )}
             </label>
             <label className="sm:col-span-2">
               <span className="text-xs font-black uppercase text-gray-500">
@@ -928,7 +1039,7 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
 
             <label className="mt-4 block">
               <span className="text-xs font-black uppercase text-gray-500">
-                Registration Amount Received
+                {isForeign ? "Registration Amount Received (INR)" : "Registration Amount Received"}
               </span>
               <input
                 type="number"
@@ -993,6 +1104,32 @@ function ManualEnrollmentModal({ target, onClose, onSaved }) {
                   </div>
                 </div>
               ) : null}
+              {isForeign && (
+                <div className="mt-3 border-t border-blue-100 pt-3 text-xs text-blue-800">
+                  {usdQuote?.rate ? (
+                    <>
+                      <p className="font-black">
+                        Approx. USD course fee: {studentMoney(preview?.enrolled_price, { fx: usdQuote })}
+                      </p>
+                      <div className="mt-2 grid gap-1">
+                        <p>Approx. registration: {studentMoney(preview?.registration_amount, { fx: usdQuote })}</p>
+                        <p>Approx. balance: {studentMoney(preview?.balance, { fx: usdQuote })}</p>
+                        {(preview?.installments || []).map((item) => (
+                          <p key={item.installment_no}>
+                            Approx. {item.label}: {studentMoney(item.amount, { fx: usdQuote })}
+                          </p>
+                        ))}
+                      </div>
+                      <p className="mt-2">Reference rate dated {usdQuote.date}{usdQuote.stale ? " (cached)" : ""}.
+                        All amounts entered here and all accounting records remain in INR.
+                      </p>
+                    </>
+                  ) : (
+                    <p>USD exchange rate unavailable. Registration remains in INR;
+                      student USD estimates appear when a rate is available.</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

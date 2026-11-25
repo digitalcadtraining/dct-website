@@ -6,6 +6,7 @@ import { certificateApi } from "../../services/certificateApi.js";
 import CertificateCard from "../../components/certificate/CertificateCard.jsx";
 import { motion } from "framer-motion";
 import { batchApi, installmentApi } from "../../services/api.js";
+import { studentMoney } from "../../utils/internationalDisplay.js";
 import {
   BookOpen,
   ChevronRight,
@@ -158,7 +159,7 @@ function ReceiptModal({ item, onClose, onSaved }) {
               Amount paid
             </p>
             <p className="mt-1 font-black text-dct-dark">
-              ₹{money(item.amount)}
+              {studentMoney(item.amount, item.international)}
             </p>
           </div>
 
@@ -241,6 +242,7 @@ function ReceiptModal({ item, onClose, onSaved }) {
 }
 
 function CourseCard({ enrollment, index, onReceipt }) {
+  const formatMoney = (value) => studentMoney(value, enrollment.international);
   const batch = enrollment.batch || {};
   const course = batch.course || {};
   const tutor = batch.tutor || {};
@@ -279,7 +281,7 @@ function CourseCard({ enrollment, index, onReceipt }) {
 
     [
       "First EMI",
-      firstInstallment ? `₹${money(firstInstallment.amount)}` : "—",
+      firstInstallment ? formatMoney(firstInstallment.amount) : "—",
       firstInstallment
         ? firstInstallment.display_status === "PAID"
           ? `PAID · ${fmt(firstInstallment.paid_at)}`
@@ -293,7 +295,7 @@ function CourseCard({ enrollment, index, onReceipt }) {
 
     [
       "Second EMI",
-      secondInstallment ? `₹${money(secondInstallment.amount)}` : "—",
+      secondInstallment ? formatMoney(secondInstallment.amount) : "—",
       secondInstallment
         ? secondInstallment.display_status === "PAID"
           ? `PAID · ${fmt(secondInstallment.paid_at)}`
@@ -309,7 +311,7 @@ function CourseCard({ enrollment, index, onReceipt }) {
       ? [
           [
             "Third EMI",
-            `₹${money(thirdInstallment.amount)}`,
+            formatMoney(thirdInstallment.amount),
             thirdInstallment.display_status === "PAID"
               ? `PAID · ${fmt(thirdInstallment.paid_at)}`
               : thirdInstallment.display_status === "DUE"
@@ -493,7 +495,9 @@ function CourseCard({ enrollment, index, onReceipt }) {
                 {installment?.display_status === "PAID" && (
                   <button
                     type="button"
-                    onClick={() => onReceipt(installment)}
+                    onClick={() => onReceipt(enrollment.international
+                      ? { ...installment, international: enrollment.international }
+                      : installment)}
                     className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg border border-green-200 bg-white px-2 py-1.5 text-[10px] font-black text-green-700"
                   >
                     {installment.receipt?.details_completed_at ? (
@@ -530,7 +534,7 @@ function CourseCard({ enrollment, index, onReceipt }) {
               color: C.blue,
             }}
           >
-            Enrolled price: ₹{money(enrollment.enrolled_price)}
+            Enrolled price: {formatMoney(enrollment.enrolled_price)}
           </p>
 
           <p
@@ -539,8 +543,15 @@ function CourseCard({ enrollment, index, onReceipt }) {
               color: C.lg,
             }}
           >
-            Registration paid: ₹999
+            {enrollment.international ? "Registration received" : "Registration paid"}: {enrollment.international
+              ? formatMoney(enrollment.payment_summary?.registration_received)
+              : "₹999"}
           </p>
+          {enrollment.international && (
+            <p className="mt-2 text-[10px] text-gray-500">
+              Approximate USD values · Reference date: {enrollment.international.fx?.date || "unavailable"}
+            </p>
+          )}
         </div>
 
         <div style={{ marginBottom: 12 }}>
@@ -932,7 +943,9 @@ export default function MyCourses() {
                 textDecoration: "underline",
               }}
             >
-              Earn ₹2000/-
+              {enrollments[0]?.international
+                ? `Earn ${studentMoney(2000, enrollments[0].international)}`
+                : "Earn ₹2000/-"}
             </span>{" "}
             reference bonus.
           </h2>

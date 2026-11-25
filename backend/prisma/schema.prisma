@@ -85,6 +85,7 @@ model User {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
+  international_profile StudentInternationalProfile?
   enrollments           Enrollment[]
   tutor_application     TutorApplication?
   tutor_batches         Batch[]                @relation("TutorBatches")
@@ -100,6 +101,18 @@ model User {
   @@index([is_active])
   @@index([referral_code])
   @@map("users")
+}
+
+model StudentInternationalProfile {
+  student_id String @id
+  student User @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  country_code String
+  dial_code String
+  time_zone String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("student_international_profiles")
 }
 
 model OtpVerification {

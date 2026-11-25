@@ -3,6 +3,9 @@ const { prisma } = require("../config/db");
 const { success, error } = require("../utils/response");
 const { normalizePhone } = require("../utils/helpers");
 const {
+  COUNTRIES, validateInternationalStudent, getUsdReferenceRate,
+} = require("../services/internationalStudent.service");
+const {
   normalizeCode,
   isCodeUsable,
 } = require("./discountCode.controller");
@@ -239,6 +242,9 @@ async function createManualRegistration(req, res, next) {
       coupon_code,
       registration_amount,
       payment_ref,
+      student_type,
+      country_code,
+      time_zone,
     } = req.body;
 
     if (!name || !email || !phone || !password || !batch_id) {
@@ -254,7 +260,13 @@ async function createManualRegistration(req, res, next) {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const normalizedPhone = normalizePhone(phone);
+    // India's existing 10-digit phone flow is deliberately untouched.
+    const foreignProfile = validateInternationalStudent({
+      student_type, country_code, time_zone, phone,
+    });
+    const normalizedPhone = foreignProfile
+      ? foreignProfile.normalized_phone
+      : normalizePhone(phone);
 
     const [existingEmail, existingPhone] = await Promise.all([
       prisma.user.findUnique({ where: { email: normalizedEmail } }),
@@ -323,6 +335,17 @@ async function createManualRegistration(req, res, next) {
           role: true,
         },
       });
+
+      if (foreignProfile) {
+        await tx.studentInternationalProfile.create({
+          data: {
+            student_id: student.id,
+            country_code: foreignProfile.country_code,
+            dial_code: foreignProfile.dial_code,
+            time_zone: foreignProfile.time_zone,
+          },
+        });
+      }
 
       const enrollment = await tx.enrollment.create({
         data: {
@@ -516,7 +539,22 @@ async function feeTracker(req, res, next) {
   }
 }
 
+async function listInternationalCountries(req, res, next) {
+  try {
+    return success(res, 200, "Supported international student countries.", COUNTRIES);
+  } catch (err) { next(err); }
+}
+
+async function getInternationalUsdRate(req, res, next) {
+  try {
+    const quote = await getUsdReferenceRate();
+    return success(res, 200, "USD reference rate fetched.", quote);
+  } catch (err) { next(err); }
+}
+
 module.exports = {
+  listInternationalCountries,
+  getInternationalUsdRate,
   listManualRegistrationBatches,
   previewManualRegistration,
   createManualRegistration,

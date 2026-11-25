@@ -27,6 +27,14 @@ router.patch(
 
 // Admin-only direct student registration. No OTP or online payment is used.
 router.get(
+  "/manual-registrations/countries",
+  manualRegistration.listInternationalCountries,
+);
+router.get(
+  "/manual-registrations/usd-rate",
+  manualRegistration.getInternationalUsdRate,
+);
+router.get(
   "/manual-registrations/batches",
   manualRegistration.listManualRegistrationBatches,
 );
