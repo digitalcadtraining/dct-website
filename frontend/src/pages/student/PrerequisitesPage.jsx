@@ -13,7 +13,7 @@ const C = {
 
 const BUNNY_LIBRARY_ID = "818190";
 
-const GDT_BUNNY_LIBRARY_ID = "818190";
+const GDT_BUNNY_LIBRARY_ID = "822002";
 
 const GDT_BUNNY_VIDEOS = [
   // Session 01
