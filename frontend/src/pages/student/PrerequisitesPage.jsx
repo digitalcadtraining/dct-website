@@ -13,6 +13,100 @@ const C = {
 
 const BUNNY_LIBRARY_ID = "818190";
 
+const GDT_BUNNY_LIBRARY_ID = "818190";
+
+const GDT_BUNNY_VIDEOS = [
+  // Session 01
+  "789a7ead-4b58-4719-95cd-10b45e913fc0",
+
+  // Session 02
+  "dc7e56d2-4eba-41ef-9988-e381a0c7bd7f",
+
+  // Session 03
+  "f066f283-081e-44d2-b3b3-488b04a8e1f3",
+
+  // Session 04
+  "858caa85-c5a4-45d8-8d31-6a2d9d190de3",
+
+  // Session 05
+  "f598ed2d-433c-488c-a61f-602174593146",
+
+  // Session 06
+  "27be4f68-35d3-433a-ad74-7847b635cc30",
+
+  // Session 07
+  "31a9d9be-0cd5-488a-847e-1f84700139fc",
+
+  // Session 08
+  "3d7ba800-8e11-4e56-8643-01e78c6877ec",
+
+  // Session 09
+  "c94953e5-2970-48ba-a5d6-c50ee2fe557e",
+
+  // Session 10
+  "b9a4e338-1a6f-4c6c-86e1-abd164a9e126",
+
+  // Session 11
+  "a9870b0c-0da9-43e4-94b8-bf88896a81ce",
+
+  // Session 12
+  "c2a6f0ec-835b-4e3f-b87c-ab440ddf5af4",
+
+  // Session 13
+  "51f3984d-43b6-4138-b96f-dfe71b5b41d9",
+
+  // Session 14
+  "0a550a68-3edc-41b6-9622-0eeff6677455",
+
+  // Session 15
+  "c9d09912-cdf9-41a7-857e-ce1b7f709d4a",
+
+  // Session 16
+  "9d50d091-3984-4a68-80aa-7d7f2469e717",
+
+  // Session 17
+  "328d35b7-d61b-4c96-8f77-f63ae441e76b",
+
+  // Session 18
+  "31aa9233-1cf1-44db-83dd-38ad6cd55346",
+
+  // Session 19
+  "340f75d8-94fb-4c8a-be87-8e92e5fa73dc",
+
+  // Session 20
+  "ec502fdc-6362-46ad-80cf-1ebed97d93bf",
+
+  // Session 21
+  "9a435f5b-1d4a-491d-ad76-99faf7703d86",
+
+  // Session 22
+  "84781281-3542-4a18-89c1-ee9e51d005cb",
+
+  // Session 23
+  "7948b35c-dd96-43c3-a596-a4aba518e66d",
+
+  // Session 24
+  "6236ff39-06c8-44b5-8132-a2e84e2471ee",
+
+  // Session 25
+  "a119edb2-c4a0-4cda-a046-4a8d24eee016",
+
+  // Session 26
+  "2b9c337c-b884-4a40-bda5-4921b12a3448",
+
+  // Session 27
+  "f3178141-7870-4f6b-a89d-b99cd52767bf",
+
+  // Session 28
+  "305ad8da-26ba-46f2-a3fe-0b303b7be0d5",
+
+  // Session 29
+  "433231a8-6ebf-4c26-b46c-1b2b69d185b8",
+
+  // Session 30
+  "9fcacff8-ed7a-4b2f-8e58-d5da58fc7063",
+];
+
 const CATIA_BUNNY_VIDEOS = {
   // Sketcher Sessions 01–05
   900601730: "dafba3fa-43dd-4a6a-bb85-a19c684285b9",
@@ -31,6 +125,20 @@ const CATIA_BUNNY_VIDEOS = {
 
 function getPrerequisitePlayerUrl(lesson, course) {
   const originalUrl = String(lesson?.vimeo_url || "");
+
+  // GD&T Fundamentals — Bunny Stream
+  if (course?.slug === "gdt-fundamentals") {
+    const sessionNumber = Number(lesson?.order_number);
+
+    const bunnyId = GDT_BUNNY_VIDEOS[sessionNumber - 1];
+
+    if (!bunnyId) {
+      console.warn("No Bunny video mapped for GD&T session:", sessionNumber);
+      return "";
+    }
+
+    return `https://iframe.mediadelivery.net/embed/${GDT_BUNNY_LIBRARY_ID}/${bunnyId}`;
+  }
 
   // Other prerequisite courses remain unchanged.
   if (course?.slug !== "catia-tool-for-beginners") {
